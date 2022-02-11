@@ -1,0 +1,4 @@
+[submodule "connectedhomeip"]
+	path = third_party/connectedhomeip/repo
+	url = https://github.com/project-chip/connectedhomeip.git
+	branch  = master
