@@ -1,6 +1,4 @@
-# mattercloudcontroller
-
-# Working with Matter Cloud Controller (Python)
+# Matter Cloud Controller (Python)
 
 The Matter Cloud Controller is a python based tool that allows you to commission a Matter device
 (via the cloud) into the network and to communicate with it using the Zigbee Cluster Library
