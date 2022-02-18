@@ -17,7 +17,7 @@ The Matter Cloud Controller is a python based tool that allows you to commission
 ## Building and installing
 
 Before you can use the Matter cloud controller, you must install chip tool wheel package
-from https://github.com/nrfconnect/sdk-connectedhomeip.
+from the NRFConnect SDK ConnectedHomeIp repository. The script below will do this automatically.
 
 > To ensure compatibility, build the Matter Cloud controller and the Matter
 > device from the same revision of the connectedhomeip repository.
