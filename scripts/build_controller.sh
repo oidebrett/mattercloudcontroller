@@ -117,6 +117,9 @@ echo "$ENVIRONMENT_ROOT"/bin/pip install --upgrade $force_reinstall_flag --no-ca
 source "$ENVIRONMENT_ROOT"/bin/activate
 "$ENVIRONMENT_ROOT"/bin/python -m pip install --upgrade pip
 "$ENVIRONMENT_ROOT"/bin/pip install --upgrade $forcere_install_flas --no-cache-dir "$WHEEL"
+"$ENVIRONMENT_ROOT"/bin/pip install awscli --upgrade 
+"$ENVIRONMENT_ROOT"/bin/pip install aws-cdk-lib --upgrade
+
 
 echo ""
 echo_green "Compilation completed and WHL package installed in: "
