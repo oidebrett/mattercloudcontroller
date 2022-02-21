@@ -42,8 +42,23 @@ To build and run the Matter Cloud controller:
     ```
     source ./env/bin/activate
     ```
+    
+2. Install the NPM and Upgrade Node version if necessary (see https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04)
+    ```
+    sudo apt install npm
+    ```
 
-2. Run the Matter Cloud controller with root privileges, which is required to
+3. Install Docker on the Raspberry Pi by following these instructions: https://brjapon.medium.com/setting-up-ubuntu-20-04-arm-64-under-raspberry-pi-4-970654d12696
+    - install docker
+    - install docker-compose
+
+4. When bootstrapping CDK you may need to use flag --public-access-block-configuration if you AWS account is not permitted to make s3 public access buckets.
+
+    ```
+    --public-access-block-configuration false
+    ```
+
+4. Run the Matter Cloud controller with root privileges, which is required to
    obtain access to the Bluetooth interface:
 
     ```
