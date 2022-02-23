@@ -124,6 +124,8 @@ To build and run the Matter Cloud controller:
     sudo make install
     mv libcrypto.so.1.1 libssl.so.1.1 /usr/lib64/
     
+    
+    
     #download the chip tool wheel package
     mkdir /opt/chiptool/
     cd /opt/chiptool/
