@@ -66,49 +66,64 @@ To build and run the Matter Cloud controller:
     cd /env
     python3 -m venv .
     source /env/bin/activate
-    
-    #upgrade version of pip
-    pip3 install --upgrade pip
-    
+        
     #run yum update to update all libs 
     sudo yum update 
-    sudo yum install git
     
     #install libraries to build the chip tool
-    sudo yum install pkgconfig
-    sudo yum install cairo cairo-devel
-    sudo yum install gcc
-    sudo yum install make
-    sudo yum install pycairo
-    sudo yum install python-devel
-    sudo yum install python3-devel
-    sudo yum install gobject-introspection-devel
-    sudo yum install cairo-gobject-devel
-    sudo yum install dbus-glib-devel
-    sudo yum install dbus-devel
-    sudo yum install dbus-python-devel
-    sudo yum install dbus-glib-devel
+    #sudo yum groupinstall "Development Tools"
+    sudo yum install gcc-c++
+    sudo yum install git gcc make pkgconfig cairo cairo-devel pycairo \ 
+    python-devel python3-devel gobject-introspection-devel cairo-gobject-devel \
+    dbus-glib-devel dbus-devel dbus-python-devel dbus-glib-devel
     
+    #install avahi for mmdns and bluez
+    sudo yum install avahi-devel
+    sudo yum install bluez
+
+    #upgrade version of pip
+    pip3 install --upgrade pip
+
+    #install dbus-python
+    #pip install wheel
+    #pip install dbus-next
+    #pip install pydbus
+    pip install dbus-python
+    
+    #Download and install gcc 8:
+    # Install required libraries
+    sudo yum install libmpc-devel mpfr-devel gmp-devel
+
+    # Gather source code
+    export GCC_VERSION=9.3.0
+    mkdir /opt/gcc
+    cd /opt/gcc
+    curl -o "gcc-${GCC_VERSION}.tar.gz" https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
+    tar xvzf "gcc-${GCC_VERSION}.tar.gz"
+    rm gcc-${GCC_VERSION}.tar.gz
+    cd gcc-${GCC_VERSION}
+
+    # Configure and compile
+    ./configure --with-system-zlib --disable-multilib --enable-languages=c,c++
+    make -j 1
+
+    # Install
+    sudo make install
+    mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.old
+    cp /usr/local/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6
+
+
     #Download and compile/install the openssl library from source
     mkdir /opt/openssl
     cd /opt/openssl
-    wget https://www.openssl.org/source/openssl-1.1.0i.tar.gz
-    tar -zxf openssl-1.1.0i.tar.gz
-    cd openssl-1.1.0i
+    wget https://www.openssl.org/source/openssl-1.1.1.tar.gz
+    tar -zxf openssl-1.1.1.tar.gz
+    cd openssl-1.1.1
     ./config
     make
     sudo make install
     mv libcrypto.so.1.1 libssl.so.1.1 /usr/lib64/
-
-    #install avahi for mmdns
-    sudo yum install avahi-devel
-
-    #install dbus-python
-    pip install wheel
-    pip install dbus-next
-    pip install pydbus
-    pip install dbus-python
-
+    
     #download the chip tool wheel package
     mkdir /opt/chiptool/
     cd /opt/chiptool/
