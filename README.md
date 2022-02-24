@@ -111,6 +111,8 @@ To build and run the Matter Cloud controller:
     sudo make install
     mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.old
     cp /usr/local/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6
+    cd ~
+    rm -rf /opt/gcc
 
 
     #Download and compile/install the openssl library from source
@@ -123,8 +125,6 @@ To build and run the Matter Cloud controller:
     make
     sudo make install
     mv libcrypto.so.1.1 libssl.so.1.1 /usr/lib64/
-    
-    
     
     #download the chip tool wheel package
     mkdir /opt/chiptool/
@@ -144,3 +144,6 @@ To build and run the Matter Cloud controller:
     ```
     python3 local-chip-device-ctrl.py
     ```
+
+
+Alternative - compile the project chip tool from github repo
