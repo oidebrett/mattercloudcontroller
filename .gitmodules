@@ -1,3 +1,0 @@
-[submodule "third_party/ttp_templates"]
-	path = third_party/ttp_templates
-	url = https://github.com/dmulyalin/ttp_templates.git
