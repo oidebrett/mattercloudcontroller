@@ -58,9 +58,92 @@ To build and run the Matter Cloud controller:
     --public-access-block-configuration false
     ```
 
+5. Make changes to the docker image:
+
+    ```
+    #make a new environment
+    mkdir /env 
+    cd /env
+    python3 -m venv .
+    source /env/bin/activate
+        
+    #run yum update to update all libs 
+    sudo yum update 
+    
+    #install libraries to build the chip tool
+    #sudo yum groupinstall "Development Tools"
+    sudo yum install gcc-c++
+    sudo yum install git gcc make pkgconfig cairo cairo-devel pycairo \ 
+    python-devel python3-devel gobject-introspection-devel cairo-gobject-devel \
+    dbus-glib-devel dbus-devel dbus-python-devel dbus-glib-devel
+    
+    #install avahi for mmdns and bluez
+    sudo yum install avahi-devel
+    sudo yum install bluez
+
+    #upgrade version of pip
+    pip3 install --upgrade pip
+
+    #install dbus-python
+    #pip install wheel
+    #pip install dbus-next
+    #pip install pydbus
+    pip install dbus-python
+    
+    #Download and install gcc 8:
+    # Install required libraries
+    sudo yum install libmpc-devel mpfr-devel gmp-devel
+
+    # Gather source code
+    export GCC_VERSION=9.3.0
+    mkdir /opt/gcc
+    cd /opt/gcc
+    curl -o "gcc-${GCC_VERSION}.tar.gz" https://ftp.gnu.org/gnu/gcc/gcc-${GCC_VERSION}/gcc-${GCC_VERSION}.tar.gz
+    tar xvzf "gcc-${GCC_VERSION}.tar.gz"
+    rm gcc-${GCC_VERSION}.tar.gz
+    cd gcc-${GCC_VERSION}
+
+    # Configure and compile
+    ./configure --with-system-zlib --disable-multilib --enable-languages=c,c++
+    make -j 1
+
+    # Install
+    sudo make install
+    mv /usr/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6.old
+    cp /usr/local/lib64/libstdc++.so.6 /usr/lib64/libstdc++.so.6
+    cd ~
+    rm -rf /opt/gcc
+
+
+    #Download and compile/install the openssl library from source
+    mkdir /opt/openssl
+    cd /opt/openssl
+    wget https://www.openssl.org/source/openssl-1.1.1.tar.gz
+    tar -zxf openssl-1.1.1.tar.gz
+    cd openssl-1.1.1
+    ./config
+    make
+    sudo make install
+    mv libcrypto.so.1.1 libssl.so.1.1 /usr/lib64/
+    
+    #download the chip tool wheel package
+    mkdir /opt/chiptool/
+    cd /opt/chiptool/
+    wget https://github.com/nrfconnect/sdk-connectedhomeip/releases/download/v1.7.0/chip-tool-python_linux_release.zip
+    unzip chip-tool-python_linux_release.zip
+    
+    #install the wheel package
+    python3 -m pip install --force-reinstall --no-cache-dir chip-0.0-cp37-abi3-linux_x86_64.whl
+
+    ```
+
+
 4. Run the Matter Cloud controller with root privileges, which is required to
    obtain access to the Bluetooth interface:
 
     ```
     python3 local-chip-device-ctrl.py
     ```
+
+
+Alternative - compile the project chip tool from github repo
