@@ -4,7 +4,7 @@
 CONFIG_INFRA=$1
 
 echo ==--------CheckDedendencies---------==
-npm install -g aws-cdk
+# npm install -g aws-cdk
 aws --version
 npm --version
 cdk --version
@@ -28,6 +28,6 @@ echo .
 echo .
 
 echo ==--------BootstrapCDKEnvironment---------==
-cdk bootstrap aws://$ACCOUNT/$REGION --profile $PROFILE_NAME --public-access-block-configuration false
+cdk bootstrap --verbose --force aws://$ACCOUNT/$REGION --profile $PROFILE_NAME --public-access-block-configuration false
 echo .
 echo .
