@@ -19,5 +19,5 @@ src/**/__pycache__/
 src/layer/python**/python
 
 # Install Generated Config
-scripts/thing/install-gg-config-MCCDev.json
-scripts/output-thing-installer-stack-MCCDev.json
+scripts/thing/install-gg-config-*.json
+scripts/thing/output-thing-installer-stack-*.json
