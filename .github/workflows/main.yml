@@ -32,17 +32,14 @@ jobs:
 
       - name: Check Set Up 
         run: 'export APP_CONFIG=config/app-config.json'
-        working-directory: mattercloudcontroller
 
       - name: SetUp CDK Bootstrap Requirements 
         run: 'sh scripts/cicd/setup_initial.sh $APP_CONFIG'
-        working-directory: mattercloudcontroller
 
       - name: Package Up Components 
         run: 'sh scripts/pack_components.sh $APP_CONFIG'
-        working-directory: mattercloudcontroller
 
       - name: CDK List
         run: cdk list
-        working-directory: mattercloudcontroller
+        
 
