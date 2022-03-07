@@ -1,0 +1,11 @@
+{
+  "MCCDev-ThingInstallerStack": {
+    "OutputThingNamePrefix": "mcc-thing-ver01-1",
+    "OutputIoTTokenRoleAlias": "MCCDev-GreengrassV2TokenExchangeRoleAlias",
+    "OutputInstallerTempRoleARN": "arn:aws:iam::305050752393:role/MCCDev-InstallerTempRole",
+    "OutputThingGroupName": "mcc-thing",
+    "OutputIoTTokenRole": "MCCDev-GreengrassV2TokenExchangeRole",
+    "OutputProjectRegion": "eu-west-1",
+    "OutputProjectPrefix": "MCCDev"
+  }
+}
