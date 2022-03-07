@@ -1,0 +1,48 @@
+name: Deploy AWS CDK MatterCC
+
+# Controls when the action will run. 
+on:
+  #push:
+    #branches: [ main ]
+  #pull_request:
+    #branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  aws_cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: install npm
+        run: 'sudo apt update -y && sudo apt install nodejs npm -y'
+
+      - name: Install AWS CDK
+        run: 'sudo npm install -g aws-cdk'
+
+      - name: Check Set Up 
+        run: 'export APP_CONFIG=config/app-config.json'
+        working-directory: mattercloudcontroller
+
+      - name: SetUp CDK Bootstrap Requirements 
+        run: 'sh scripts/cicd/setup_initial.sh $APP_CONFIG'
+        working-directory: mattercloudcontroller
+
+      - name: Package Up Components 
+        run: 'sh scripts/pack_components.sh $APP_CONFIG'
+        working-directory: mattercloudcontroller
+
+      - name: CDK List
+        run: cdk list
+        working-directory: mattercloudcontroller
+
