@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+    commands:
+      - pwd
+      - ls -l
+      - echo $APP_CONFIG
+      - sh scripts/cicd/setup_initial.sh $APP_CONFIG
+      - sh scripts/pack_components.sh $APP_CONFIG
+      - npm install
+
+  build:
+    commands:
+      - echo ==--------ListStacks---------==
+      - cdk list
+      - echo ==--------StartDeploy---------==
+      - cdk deploy *-ThingInstallerStack --require-approval never
+      - cdk deploy *-ComponentUploadStack --require-approval never
+      - cdk deploy *-ComponentDeploymentStack --require-approval never
+      - echo ==--------CompleteDeploy---------==
+
+artifacts:
+  files: '**/*'
