@@ -32,10 +32,12 @@ jobs:
 
       - name: Set Up Config File 
         run: |
+              ls -al
+              pwd
               export APP_CONFIG=config/app-config.json
               if test -f "$APP_CONFIG"
                 then
-                echo "$APP_CONFIG exists."
+                echo "APP_CONFIG exists."
               else
                 echo "APP_CONFIG does not exist"
               fi
