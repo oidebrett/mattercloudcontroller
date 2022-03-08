@@ -30,16 +30,19 @@ jobs:
       - name: Install AWS CDK
         run: 'sudo npm install -g aws-cdk'
 
-      - name: Check Set Up 
-        run: 'export APP_CONFIG=config/app-config.json'
+      - name: Set Up Config File 
+        run: 'export APP_CONFIG=./config/app-config.json'
+
+      - name: Check Config File Set Up 
+        run: 'echo $APP_CONFIG'
 
       - name: SetUp CDK Bootstrap Requirements 
-        run: 'sh scripts/cicd/setup_initial.sh $APP_CONFIG'
+        run: 'sh ./scripts/cicd/setup_initial.sh $APP_CONFIG'
 
       - name: Package Up Components 
-        run: 'sh scripts/pack_components.sh $APP_CONFIG'
+        run: 'sh ./scripts/pack_components.sh $APP_CONFIG'
 
       - name: CDK List
         run: cdk list
-        
+
 
