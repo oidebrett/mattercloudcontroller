@@ -14,8 +14,8 @@ jobs:
   aws_cdk:
     runs-on: ubuntu-latest
     steps:
-#      - name: Checkout
-#        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
 #      - name: Configure AWS Credentials
 #        uses: aws-actions/configure-aws-credentials@v1
@@ -41,7 +41,6 @@ jobs:
               else
                 echo "APP_CONFIG does not exist"
               fi
-        working-directory: mattercloudcontroller
  #             sh scripts/cicd/setup_initial.sh $APP_CONFIG
 
 
