@@ -41,6 +41,7 @@ jobs:
               else
                 echo "APP_CONFIG does not exist"
               fi
+        working-directory: mattercloudcontroller
  #             sh scripts/cicd/setup_initial.sh $APP_CONFIG
 
 
