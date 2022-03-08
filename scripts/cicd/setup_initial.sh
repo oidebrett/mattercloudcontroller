@@ -22,10 +22,10 @@ echo $PROFILE_NAME
 echo .
 echo .
 
-#echo ==--------InstallCDKDependencies---------==
-#npm install --legacy-peer-deps
-#echo .
-#echo .
+echo ==--------InstallCDKDependencies---------==
+npm install --legacy-peer-deps
+echo .
+echo .
 
 echo ==--------BootstrapCDKEnvironment---------==
 cdk bootstrap --verbose --force aws://$ACCOUNT/$REGION --public-access-block-configuration false
