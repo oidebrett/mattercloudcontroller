@@ -31,7 +31,7 @@ jobs:
         run: 'sudo npm install -g aws-cdk'
 
       - name: Set Up Config File 
-      - run: 'export APP_CONFIG=config/app-config.json
+        run: 'export APP_CONFIG=config/app-config.json
               if test -f "$APP_CONFIG"
                 then
                 echo "$APP_CONFIG exists."
