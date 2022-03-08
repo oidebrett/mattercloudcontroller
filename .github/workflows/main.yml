@@ -40,7 +40,7 @@ jobs:
             echo "APP_CONFIG does not exist"
           fi
           sh scripts/cicd/setup_initial.sh $APP_CONFIG
-        shell: run
+
 
 #      - name: Set Up Config File 
 #        run: 'export APP_CONFIG=config/app-config.json'
