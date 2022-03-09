@@ -60,11 +60,10 @@ jobs:
                 echo "APP_CONFIG does not exist"
               fi
               cdk list
-              sh ./scripts/deploy_stacks.sh config/app-config.json
-#              echo ==--------StartDeploy---------==
-#              cdk deploy *-ThingInstallerStack --require-approval never
-#              cdk deploy *-ComponentUploadStack --require-approval never
-#              cdk deploy *-ComponentDeploymentStack --require-approval never
-#              echo ==--------CompleteDeploy---------==
+              echo ==--------StartDeploy---------==
+              cdk deploy *-ThingInstallerStack --require-approval never
+              cdk deploy *-ComponentUploadStack --require-approval never
+              cdk deploy *-ComponentDeploymentStack --require-approval never
+              echo ==--------CompleteDeploy---------==
 
 
