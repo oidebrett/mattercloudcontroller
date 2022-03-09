@@ -44,7 +44,9 @@ jobs:
               sh scripts/cicd/setup_initial.sh $APP_CONFIG
 
       - name: Package Up Components 
-        run: 'sh scripts/pack_components.sh $APP_CONFIG'
+        run: |
+              export APP_CONFIG=config/app-config.json
+              sh scripts/pack_components.sh $APP_CONFIG
 
       - name: CDK Deploy
         run: |
