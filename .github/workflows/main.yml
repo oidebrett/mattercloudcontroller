@@ -51,6 +51,7 @@ jobs:
       - name: CDK Deploy
         run: |
               cdk list
+              export APP_CONFIG=config/app-config.json
               echo ==--------StartDeploy---------==
               cdk deploy *-ThingInstallerStack --require-approval never
               cdk deploy *-ComponentUploadStack --require-approval never
