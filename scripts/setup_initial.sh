@@ -28,6 +28,6 @@ echo .
 echo .
 
 echo ==--------BootstrapCDKEnvironment---------==
-cdk bootstrap --verbose --force aws://$ACCOUNT/$REGION --profile $PROFILE_NAME --public-access-block-configuration false
+cdk bootstrap aws://$ACCOUNT/$REGION --profile $PROFILE_NAME --public-access-block-configuration false
 echo .
 echo .
