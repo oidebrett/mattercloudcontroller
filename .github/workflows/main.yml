@@ -24,7 +24,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
-      - name: install npm
+      - name: Install npm
         run: 'sudo apt update -y && sudo apt install nodejs npm -y'
 
       - name: Install AWS CDK
@@ -51,7 +51,15 @@ jobs:
       - name: CDK Deploy
         run: |
               cdk list
+              ls -al
+              pwd
               export APP_CONFIG=config/app-config.json
+              if test -f "$APP_CONFIG"
+                then
+                echo "APP_CONFIG exists."
+              else
+                echo "APP_CONFIG does not exist"
+              fi
               echo ==--------StartDeploy---------==
               cdk deploy *-ThingInstallerStack --require-approval never
               cdk deploy *-ComponentUploadStack --require-approval never
