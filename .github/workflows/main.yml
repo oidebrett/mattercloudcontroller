@@ -43,20 +43,16 @@ jobs:
               fi
               sh scripts/cicd/setup_initial.sh $APP_CONFIG
 
+      - name: Package Up Components 
+        run: 'sh scripts/pack_components.sh $APP_CONFIG'
 
-#      - name: Set Up Config File 
-#        run: 'export APP_CONFIG=config/app-config.json'
-
-#      - name: Check Config File Set Up 
-#        run: 'echo $APP_CONFIG'
-
-#      - name: SetUp CDK Bootstrap Requirements 
-#        run: 'sh scripts/cicd/setup_initial.sh config/app-config.json'
-
-#      - name: Package Up Components 
-#        run: 'sh scripts/pack_components.sh $APP_CONFIG'
-
-#      - name: CDK List
-#        run: cdk list
+      - name: CDK Deploy
+        run: |
+              cdk list
+              echo ==--------StartDeploy---------==
+              cdk deploy *-ThingInstallerStack --require-approval never
+              cdk deploy *-ComponentUploadStack --require-approval never
+              cdk deploy *-ComponentDeploymentStack --require-approval never
+              echo ==--------CompleteDeploy---------==
 
 

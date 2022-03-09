@@ -1,5 +1,4 @@
 env/
-lib/
 
 *.js
 !jest.config.js
