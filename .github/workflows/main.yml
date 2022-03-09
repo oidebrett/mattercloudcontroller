@@ -50,7 +50,6 @@ jobs:
 
       - name: CDK Deploy
         run: |
-              cdk list
               ls -al
               pwd
               export APP_CONFIG=config/app-config.json
@@ -60,6 +59,7 @@ jobs:
               else
                 echo "APP_CONFIG does not exist"
               fi
+              cdk list
               sh ./scripts/deploy_stacks.sh config/app-config.json
 #              echo ==--------StartDeploy---------==
 #              cdk deploy *-ThingInstallerStack --require-approval never
