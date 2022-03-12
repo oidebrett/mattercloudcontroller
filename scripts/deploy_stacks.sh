@@ -27,5 +27,6 @@ echo ==--------DeployStacksStepByStep---------==
 cdk deploy *-ThingInstallerStack --require-approval never --profile $PROFILE_NAME --outputs-file ./scripts/thing/output-thing-installer-stack-$PROJECT_NAME$PROJECT_STAGE.json
 cdk deploy *-ComponentUploadStack --require-approval never --profile $PROFILE_NAME
 cdk deploy *-ComponentDeploymentStack --require-approval never --profile $PROFILE_NAME
+cdk deploy *-ApiGatewayDeploymentStack --require-approval never --profile $PROFILE_NAME
 echo .
 echo .

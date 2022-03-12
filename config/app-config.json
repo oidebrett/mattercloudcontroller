@@ -28,6 +28,10 @@
                 "Version": "0.0.9",
                 "CodePath": "src/component/mcc-daemon"
             }
+        },
+        "ApiGatewayDeployment": {
+            "Name": "ApiGatewayDeploymentStack",
+            "IotEndpointAddress": "a2mfqulpofetfu-ats"
         }
     }
 }
