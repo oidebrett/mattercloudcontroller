@@ -287,3 +287,17 @@ To build and run the Matter Cloud controller:
     ```
     python3 local-chip-device-ctrl.py
     ```
+
+## Testing using the API
+
+1. Find the IOT Endpoint using
+
+    ```
+    aws iot describe-endpoint --endpoint-type iot:Data-ATS
+    ```
+
+1. Execute API call using CURL
+
+    ```
+    curl -XPOST https://XXXXX.execute-api.eu-west-1.amazonaws.com/prod/message/chip-tool/request -H "x-api-key: XXXXX" -H "Content-Type: application/json" -d '{"txid": "123","command":"help"}'
+    ```
