@@ -296,8 +296,10 @@ To build and run the Matter Cloud controller:
     aws iot describe-endpoint --endpoint-type iot:Data-ATS
     ```
 
-1. Execute API call using CURL
+2. Execute API call using CURL
 
     ```
     curl -XPOST https://XXXXX.execute-api.eu-west-1.amazonaws.com/prod/message/chip-tool/request -H "x-api-key: XXXXX" -H "Content-Type: application/json" -d '{"txid": "123","command":"help"}'
     ```
+
+3. Testing in Postman - Install Postman and import the Curl command above. You will need to set up Postman to generate AWS signature in the Curl requests. You can following this guide: https://blog.knoldus.com/how-to-generate-aws-signature-with-postman/
