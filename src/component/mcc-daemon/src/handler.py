@@ -299,7 +299,7 @@ count = 0
 while True:
     message = create_data(sample, count)
 
-    publish_data(topic, message)
+#    publish_data(topic, message)
     logger.info('--->run: sleep- {}'.format(sleep_time_in_sec))
     time.sleep(sleep_time_in_sec)
 
