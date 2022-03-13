@@ -293,7 +293,7 @@ count = 0
 
 # Keep the main thread alive, or the process will exit.
 while True:
-    message = create_data(sample, count)
+#    message = create_data(sample, count)
 
 #    publish_data(topic, message)
 #    logger.info('--->run: sleep- {}'.format(sleep_time_in_sec))
