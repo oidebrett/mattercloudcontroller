@@ -28,7 +28,7 @@ jobs:
         run: 'sudo apt update -y && sudo apt install nodejs npm -y'
 
       - name: Install AWS CDK
-        run: 'sudo npm install -g --save-exact @aws-cdk@2.15.0'
+        run: 'sudo npm install -g --save-exact aws-cdk@2.15.0'
 
       - name: Set Up Config File 
         run: |
