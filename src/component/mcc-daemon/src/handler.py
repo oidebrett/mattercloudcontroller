@@ -137,10 +137,6 @@ def load_environ():
     logger.info('--->load_environ: lambda version- {} at {}--==<<'.format(_version, str(datetime.datetime.now())))
 
 def respond(event):
-
-    #message = str(event.message.payload, "utf-8")
-    #topic_name = event.message.topic_name
-
     resp = {}
     resp["return_code"] = 200
     resp["response"] = ""
@@ -300,7 +296,7 @@ while True:
     message = create_data(sample, count)
 
 #    publish_data(topic, message)
-    logger.info('--->run: sleep- {}'.format(sleep_time_in_sec))
+#    logger.info('--->run: sleep- {}'.format(sleep_time_in_sec))
     time.sleep(sleep_time_in_sec)
 
 
