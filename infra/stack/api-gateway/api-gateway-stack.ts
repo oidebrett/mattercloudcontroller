@@ -14,7 +14,8 @@ export class ApiGatewayDeploymentStack extends base.BaseStack {
       super(appContext, stackConfig);
 
       new ApiGatewayToIot(this, 'ApiGatewayToIotPattern', {
-        iotEndpoint: stackConfig.IotEndpointAddress
+        iotEndpoint: stackConfig.IotEndpointAddress,
+        apiGatewayCreateApiKey: true
       });
   }
 }
