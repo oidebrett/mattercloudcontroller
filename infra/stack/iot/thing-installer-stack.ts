@@ -32,7 +32,7 @@ export class ThingInstallerStack extends base.BaseStack {
             managedPolicies: [
                 { managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole' }
             ]
-        }) as any;
+        });
         lambdaRole.addToPolicy(new iam.PolicyStatement({
             actions: [
                 "iot:CreateThingGroup",
