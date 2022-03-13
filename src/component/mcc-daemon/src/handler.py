@@ -62,7 +62,8 @@ MSG_TIMEOUT = f"Command timed out, limit of {TIMEOUT} seconds"
 MSG_MISSING_ATTRIBUTE = "The attributes 'txid' and 'command' missing from request"
 MSG_INVALID_JSON = "Request message was not a valid JSON object"
 THING_NAME = os.getenv('AWS_IOT_THING_NAME')
-BASE_COMMAND = "chip-tool"
+#BASE_COMMAND = "chip-tool"
+BASE_COMMAND = ""
 
 # Set up bucket, request topic and response topic from passed in arguments
 BUCKET = ""
@@ -201,6 +202,7 @@ def respond(event):
         raise
     
     command = BASE_COMMAND + " " + message_from_core["command"]
+    command = command.lstrip()
     logger.info(command)
     
     try:
