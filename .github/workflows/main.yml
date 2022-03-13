@@ -53,17 +53,12 @@ jobs:
               ls -al
               pwd
               export APP_CONFIG=config/app-config.json
-              if test -f "$APP_CONFIG"
-                then
-                echo "APP_CONFIG exists."
-              else
-                echo "APP_CONFIG does not exist"
-              fi
               cdk list
               echo ==--------StartDeploy---------==
               cdk deploy *-ThingInstallerStack --require-approval never
               cdk deploy *-ComponentUploadStack --require-approval never
               cdk deploy *-ComponentDeploymentStack --require-approval never
+              cdk deploy *-ApiGatewayDeploymentStack --require-approval never
               echo ==--------CompleteDeploy---------==
 
 

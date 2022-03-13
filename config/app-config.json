@@ -25,7 +25,7 @@
             "Name": "ComponentDeploymentStack",
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.9",
+                "Version": "0.0.10",
                 "CodePath": "src/component/mcc-daemon"
             }
         },
