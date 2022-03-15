@@ -66,6 +66,7 @@ export class ApiGatewayToIot extends Construct {
   public readonly apiGatewayRole: iam.IRole;
   private readonly iotEndpoint: string;
   private readonly requestValidator: api.IRequestValidator;
+  private readonly getRequestValidator: api.IRequestValidator;
   // IoT Core topic nesting. A topic in a publish or subscribe request can have no more than 7 forward slashes (/).
   // This excludes the first 3 slashes in the mandatory segments for Basic Ingest
   // Refer IoT Limits - https://docs.aws.amazon.com/general/latest/gr/iot-core.html#limits_iot
@@ -113,7 +114,9 @@ export class ApiGatewayToIot extends Construct {
         Statement: [
           {
             Action: [
-              "iot:UpdateThingShadow"
+              "iot:UpdateThingShadow",
+              "iot:GetThingShadow",
+              "iot:ListNamedShadowsForThing"
             ],
             Resource: `arn:aws:iot:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:thing/*`,
             Effect: "Allow"
@@ -153,6 +156,14 @@ export class ApiGatewayToIot extends Construct {
     };
     this.requestValidator = new api.RequestValidator(this, `aws-apigateway-iot-req-val`, requestValidatorProps);
 
+    // Validate the GET Params
+    const getRequestValidatorProps: api.RequestValidatorProps = {
+      restApi: this.apiGateway,
+      validateRequestBody: false,
+      validateRequestParameters: false
+    };
+    this.getRequestValidator = new api.RequestValidator(this, `aws-apigateway-iot-getreq-val`, getRequestValidatorProps);
+
     // Create a resource for messages '/message'
     const msgResource: api.IResource = this.apiGateway.root.addResource('message');
 
@@ -169,19 +180,19 @@ export class ApiGatewayToIot extends Construct {
       topicPath = `${topicPath}/{${topicName}}`;
       integParams = Object.assign(integParams, integReqParam);
       methodParams = Object.assign(methodParams, methodReqParam);
-      this.addResourceMethod(topicResource, props, topicPath, integParams, methodParams);
+      this.addResourceMethod(topicResource, props, topicPath, integParams, methodParams, 'POST');
       parentNode = topicResource;
     }
 
     // Create a resource for shadow updates '/shadow'
     const shadowResource: api.IResource = this.apiGateway.root.addResource('shadow');
 
-    // Create resource '/shadow/{thingName}'
+    // Create resource '/shadow/{thingName}'0
     const defaultShadowResource: api.IResource = shadowResource.addResource('{thingName}');
     const shadowReqParams = {'integration.request.path.thingName': 'method.request.path.thingName'};
     const methodShadowReqParams = {'method.request.path.thingName': true};
     this.addResourceMethod(defaultShadowResource, props, 'things/{thingName}/shadow',
-      shadowReqParams, methodShadowReqParams);
+      shadowReqParams, methodShadowReqParams, 'POST');
 
     // Create resource '/shadow/{thingName}/{shadowName}'
     const namedShadowResource: api.IResource = defaultShadowResource.addResource('{shadowName}');
@@ -191,7 +202,27 @@ export class ApiGatewayToIot extends Construct {
     const methodNamedShadowReqParams = Object.assign({
       'method.request.path.shadowName': true}, methodShadowReqParams);
     this.addResourceMethod(namedShadowResource, props, 'things/{thingName}/shadow?name={shadowName}',
-      namedShadowReqParams, methodNamedShadowReqParams);
+      namedShadowReqParams, methodNamedShadowReqParams, 'POST');
+
+    // Create a resource for getting things '/things'
+    // e.g HTTP GET https://endpoint/things/thingName/shadow?name=shadowName
+    //Add a GET request on same resource '/shadow/{thingName}/{shadowName}'
+    this.addResourceMethod(namedShadowResource, props, 'things/{thingName}/shadow?name={shadowName}',
+    namedShadowReqParams, methodNamedShadowReqParams, 'GET');
+
+    // Create a resource for getting a list of shadowns '/things'
+    // e.g HTTP GET /api/things/shadow/ListNamedShadowsForThing/thingName?nextToken=nextToken&pageSize=pageSize HTTP/1.1
+    // Create a resource for shadow updates '/api'
+    const apiResource: api.IResource = this.apiGateway.root.addResource('api');
+    // Create resource '/api/things'
+    const apiThingsResource: api.IResource = apiResource.addResource('things');
+    // Create resource '/api//things/shadow'
+    const apiThingsShadowResource: api.IResource = apiThingsResource.addResource('shadow');
+    // Create resource '/api/things/shadow/ListNamedShadowsForThing/{thingName}'
+    const apiThingsShadowListResource: api.IResource = apiThingsShadowResource.addResource('ListNamedShadowsForThing');
+    const listNamedShadowResource: api.IResource = apiThingsShadowListResource.addResource('{thingName}');
+    this.addResourceMethod(listNamedShadowResource, props, 'api/things/shadow/ListNamedShadowsForThing/{thingName}', namedShadowReqParams, methodNamedShadowReqParams, 'GET');
+
 
   }
 
@@ -204,7 +235,8 @@ export class ApiGatewayToIot extends Construct {
    */
    private addResourceMethod(resource: api.IResource, props: ApiGatewayToIotProps, resourcePath: string,
     integReqParams: { [key: string]: string },
-    methodReqParams: { [key: string]: boolean }) {
+    methodReqParams: { [key: string]: boolean },
+    httpApiMethod: string) {
     const integResp: api.IntegrationResponse[] = [
       {
         statusCode: "200",
@@ -257,14 +289,25 @@ export class ApiGatewayToIot extends Construct {
       methodResponses: methodResp,
     };
 
+    //Check validation depending on whether GET or POST
+    let requestTemplate = "$input.json('$')";
+    let requestValidator = this.requestValidator
+    let contentType = "";
+    if (httpApiMethod == 'GET'){
+      requestTemplate = "";
+      requestValidator = this.getRequestValidator
+      contentType = "'text/html'"
+    }
+
     const resourceMethodParams: AddProxyMethodToApiResourceInputParams = {
       service: 'iotdata',
       path: resourcePath,
       apiGatewayRole: this.apiGatewayRole,
-      apiMethod: 'POST',
+      apiMethod: httpApiMethod,
       apiResource: resource,
-      requestTemplate: "$input.json('$')",
-      requestValidator: this.requestValidator,
+      requestTemplate: requestTemplate,
+      requestValidator: requestValidator,
+      contentType: contentType,
       awsIntegrationProps: integrationReqProps,
       methodOptions: resourceMethodOptions
     };
@@ -439,9 +482,10 @@ export interface AddProxyMethodToApiResourceInputParams {
 }
 
 export function addProxyMethodToApiResource(params: AddProxyMethodToApiResourceInputParams): api.Method {
+
   let baseProps: api.AwsIntegrationProps = {
     service: params.service,
-    integrationHttpMethod: "POST",
+    integrationHttpMethod: params.apiMethod,
     options: {
       passthroughBehavior: api.PassthroughBehavior.NEVER,
       credentialsRole: params.apiGatewayRole,
