@@ -1,0 +1,10 @@
+{
+    "ThingName": "mcc-thing-ver01-1",
+    "MessageID": "fdsfdsfsdfsdfsdfdsfrrr",
+    "Message": {
+        "Type": "sensor-01",
+        "Status": "on",
+        "Value": 0,
+        "Count": 0
+    }
+}

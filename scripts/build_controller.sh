@@ -38,7 +38,7 @@ MATTER_ROOT=$(_normpath "$(dirname "$0")/..")
 ENVIRONMENT_ROOT="$MATTER_ROOT/env"
 OUTPUT_ROOT="$MATTER_ROOT/python_lib"
 
-declare chip_version="v1.7.0"
+declare chip_version="v1.9.0"
 declare force_reinstall=0
 declare force_reinstall_flag=""
 

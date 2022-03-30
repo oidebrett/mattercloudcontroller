@@ -1,3 +1,22 @@
 env/
-lib/
 
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+#package-lock.json
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+# Python temp files
+**/*.pyc
+src/**/__pycache__/
+
+# Lambda Layer
+src/layer/python**/python
+
+# Install Generated Config
+scripts/thing/install-gg-config-*.json
+scripts/thing/output-thing-installer-stack-*.json

@@ -1,0 +1,37 @@
+{
+    "Project": {
+        "Name": "MCC",
+        "Stage": "Dev",
+        "Account": "305050752393",
+        "Region": "eu-west-1",
+        "Profile": "ggcuser"
+    },
+
+    "Stack": {
+        "ThingInstaller": {
+            "Name": "ThingInstallerStack",
+            "ThingGroupName": "mcc-thing",
+            "ThingNamePrefix": "ver01-1",
+            "TempCredential": {
+                "TempSetupRoleName": "InstallerTempRole"
+            }
+        },
+        "ComponentUpload": {
+            "Name": "ComponentUploadStack",
+            "BucketName": "gg-comp-upload",
+            "BucketPrefix": "deployment"            
+        },
+        "ComponentDeployment": {
+            "Name": "ComponentDeploymentStack",
+            "Thing": {
+                "Name": "mcc-daemon",
+                "Version": "0.0.13",
+                "CodePath": "src/component/mcc-daemon"
+            }
+        },
+        "ApiGatewayDeployment": {
+            "Name": "ApiGatewayDeploymentStack",
+            "IotEndpointAddress": "a2mfqulpofetfu-ats"
+        }
+    }
+}

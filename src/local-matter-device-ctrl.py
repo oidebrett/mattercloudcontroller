@@ -187,7 +187,8 @@ class DeviceMgrCmd(Cmd):
             except Exception as ex:
                 traceback.print_exc()
                 print(
-                    "Failed to initialize BLE, if you don't have BLE, run chip-device-ctrl with --no-ble")
+                    "Failed to initialize BLE, if you don't have BLE, run chip-device-ctrl with --no-ble"
+)
                 raise ex
 
         self.historyFileName = os.path.expanduser(
@@ -385,7 +386,8 @@ class DeviceMgrCmd(Cmd):
                 args = parser.parse_args(arglist[1:])
 
                 SetupPayload().PrintOnboardingCodes(args.passcode, args.vendorId, args.productId,
-                                                    args.discriminator, args.customFlow, args.capabilities, args.version)
+                                                    args.discriminator, args.customFlow, args.capabilitie
+s, args.version)
 
             if arglist[0] == "parse-manual":
                 SetupPayload().ParseManualPairingCode(arglist[1]).Print()
@@ -410,7 +412,8 @@ class DeviceMgrCmd(Cmd):
             self.bleMgr.ble_adapter_select(line)
             print(
                 "This change only applies to ble-scan\n"
-                "Please run device controller with --bluetooth-adapter=<adapter-name> to select adapter\n" +
+                "Please run device controller with --bluetooth-adapter=<adapter-name> to select adapter\n
+" +
                 "e.g. chip-device-ctrl --bluetooth-adapter hci0"
             )
         else:
@@ -674,7 +677,8 @@ class DeviceMgrCmd(Cmd):
         addrStrStorage = ctypes.create_string_buffer(strlen)
         count = 0
         maxWaitTime = 2
-        while (not self.devCtrl.GetIPForDiscoveredDevice(0, addrStrStorage, strlen) and count < maxWaitTime):
+        while (not self.devCtrl.GetIPForDiscoveredDevice(0, addrStrStorage, strlen) and count < maxWaitTi
+me):
             time.sleep(0.2)
             count = count + 0.2
         return count < maxWaitTime
@@ -800,7 +804,8 @@ class DeviceMgrCmd(Cmd):
                 if command is None:
                     raise exceptions.UnknownCommand(args[0], args[1])
                 err, res = self.devCtrl.ZCLSend(args[0], args[1], int(
-                    args[2]), int(args[3]), int(args[4]), FormatZCLArguments(args[5:], command), blocking=True)
+                    args[2]), int(args[3]), int(args[4]), FormatZCLArguments(args[5:], command), blocking
+=True)
                 if err != 0:
                     print("Failed to receive command response: {}".format(res))
                 elif res != None:
@@ -960,7 +965,8 @@ class DeviceMgrCmd(Cmd):
           -d  Discriminator Value
           -i  Iteration
 
-          This command is used by a current Administrator to instruct a Node to go into commissioning mode
+          This command is used by a current Administrator to instruct a Node to go into commissioning mod
+e
         """
         try:
             arglist = shlex.split(line)
@@ -1094,7 +1100,8 @@ def main():
             "--no-ble",
             action="store_true",
             dest="disableBluetooth",
-            help="Disable bluetooth, calling BLE related feature with this flag results in undefined behavior.",
+            help="Disable bluetooth, calling BLE related feature with this flag results in undefined beha
+vior.",
         )
     (options, remainingArgs) = optParser.parse_args(sys.argv[1:])
 

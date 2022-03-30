@@ -1,0 +1,64 @@
+name: Deploy AWS CDK MatterCC
+
+# Controls when the action will run. 
+on:
+  #push:
+    #branches: [ main ]
+  #pull_request:
+    #branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  aws_cdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Install npm
+        run: 'sudo apt update -y && sudo apt install nodejs npm -y'
+
+      - name: Install AWS CDK
+        run: 'sudo npm install -g --save-exact aws-cdk@2.15.0'
+
+      - name: Set Up Config File 
+        run: |
+              ls -al
+              pwd
+              export APP_CONFIG=config/app-config.json
+              if test -f "$APP_CONFIG"
+                then
+                echo "APP_CONFIG exists."
+              else
+                echo "APP_CONFIG does not exist"
+              fi
+              sh scripts/cicd/setup_initial.sh $APP_CONFIG
+
+      - name: Package Up Components 
+        run: |
+              export APP_CONFIG=config/app-config.json
+              sh scripts/pack_components.sh $APP_CONFIG
+
+      - name: CDK Deploy
+        run: |
+              ls -al
+              pwd
+              export APP_CONFIG=config/app-config.json
+              cdk list
+              echo ==--------StartDeploy---------==
+              cdk deploy *-ThingInstallerStack --require-approval never
+              cdk deploy *-ComponentUploadStack --require-approval never
+              cdk deploy *-ComponentDeploymentStack --require-approval never
+              cdk deploy *-ApiGatewayDeploymentStack --require-approval never
+              echo ==--------CompleteDeploy---------==
+
+
