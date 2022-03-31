@@ -1048,6 +1048,11 @@ e
         return True
 
     def do_quit(self, line):
+        print("*************************************************************")
+        #print(dir(self.devCtrl._ChipStack))
+        #print((self.devCtrl._ChipStack.commissioningEventRes))
+        print("*************************************************************")
+
         return True
 
     def do_q(self, line):
