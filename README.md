@@ -2,6 +2,20 @@
 
 The Matter Cloud Controller is a python based tool that allows you to commission a Matter device (via the cloud) into the network and to communicate with it using the Zigbee Cluster Library (ZCL) messages.
 
+# Control Device Setup
+
+1. On raspberry pi 4 (4GB). Download Ubuntu Server 21.10 using RPI imager on a 64 GB micro SD card. Note 21.04 is no longer available.
+
+2. Follow build instructions "Building Matter" from GitHub.com/NRFConnect/sdk-connectedhomeip
+
+2. Install python 3.8 from deadsnakes (since 21.10 has moved to python 3.9 and this breaks the matter initialisation)
+
+'''
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install python3.8
+'''
+
 # The stack provisioning is loosely based on "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk
 
 ## Solution Architecture
