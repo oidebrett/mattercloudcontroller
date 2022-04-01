@@ -7,14 +7,30 @@ The Matter Cloud Controller is a python based tool that allows you to commission
 1. On raspberry pi 4 (4GB). Download Ubuntu Server 21.10 using RPI imager on a 64 GB micro SD card. Note 21.04 is no longer available.
 
 2. Follow build instructions "Building Matter" from GitHub.com/NRFConnect/sdk-connectedhomeip
+Note: ensure that the versions are aligned between nrf app and chip controller
+e.g. if nrf version is v1.9.0 then git checkout v1.9.0 of sdk-connectedhomeip
 
-2. Install python 3.8 from deadsnakes (since 21.10 has moved to python 3.9 and this breaks the matter initialisation)
+3. Ensure router advertising is enabled on raspberry pi controller
+```
+sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
+sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
+```
+4. If having difficulties try these steps:
 
-'''
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt-get update
-sudo apt-get install python3.8
-'''
+Remove temp files
+```
+sudo rm -rf /tmp/chip*
+```
+
+Clear out MDNS cache on OTBR
+```
+sudo systemctl restart mdns.service 
+```
+
+Clear out avahi MDNS cache on Raspberry Pi
+```
+sudo systemctl restart avahi-daemon.socket 
+```
 
 # The stack provisioning is loosely based on "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk
 
