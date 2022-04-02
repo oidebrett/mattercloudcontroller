@@ -10,6 +10,8 @@ The Matter Cloud Controller is a python based tool that allows you to commission
 Note: ensure that the versions are aligned between nrf app and chip controller
 e.g. if nrf version is v1.9.0 then git checkout v1.9.0 of sdk-connectedhomeip
 
+2.1 In order to speed up the compilation and reduce risk of pi hanging you might consider adding 4GB as swap as per https://www.linuxtut.com/en/71e3874cb83ed12ec405/
+
 3. Ensure router advertising is enabled on raspberry pi controller
 ```
 sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
