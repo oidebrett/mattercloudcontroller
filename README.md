@@ -215,29 +215,51 @@ Check whether ***install-gg-config-[ProjectPrefix].json*** is created in ***./sc
 }
 ```
 
-2. Run the following commands
+2. Install a Open JDK (headless Java JDK) on raspberry pi and confirm the installation
+```
+sudo apt install default-jdk-headless
+java -version
+```
 
-First, if not already done so, activate the python virtual env
+3. Run the following commands
+
+First, if not already done so, create some directories, the python virtual env
+
+```
+mkdir -p /home/ubuntu/mattercloudcontroller/scripts/thing
+cd /home/ubuntu/mattercloudcontroller/scripts/thing
+wget https://raw.githubusercontent.com/oidebrett/mattercloudcontroller/main/scripts/thing/install-gg-thing.sh .
+python3 -m venv /home/ubuntu/mattercloudcontroller/env
+```
+
+then activate the python virtual env
 ```bash
 source /home/ubuntu/mattercloudcontroller/env/bin/activate
 ```
 
-3. Make sure your main user account is add to the ggc_group:
+4. Copy over the config details from your installation PC and store the contents in a new file install-gg-config-[ProjectPrefix].json
 
-```bash
-sudo usermod -a -G ggc_group ubuntu
-```
-
-and that the mattercloudcontroller directory jas grouped permissions set
-
-```bash
-sudo chown -R ubuntu:ggc_group /home/ubuntu/mattercloudcontroller/
-```
 
 4. Then Run the following commands
 
 ```bash
 sh ./install-gg-thing.sh install-gg-config-[ProjectPrefix].json
+```
+
+5. Make sure your main user account is add to the ggc_group:
+
+```bash
+sudo usermod -a -G ggc_group ubuntu
+```
+
+and that the ubuntu directory has grouped permissions set
+
+```bash
+sudo chown -R ubuntu:ggc_group /home/ubuntu/
+```
+
+```bash
+sudo systemctl restart greengrass
 ```
 
 Result of install-script
