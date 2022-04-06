@@ -357,3 +357,4 @@ To build and run the Matter Cloud controller:
     ```
 
 3. Testing in Postman - Install Postman and import the Curl command above. You will need to set up Postman to generate AWS signature in the Curl requests. You can following this guide: https://blog.knoldus.com/how-to-generate-aws-signature-with-postman/
+Note: the APIGateway URL and API key can be parameterised and made as a variable.
