@@ -23,9 +23,41 @@
         },
         "ComponentDeployment": {
             "Name": "ComponentDeploymentStack",
+            "PublicComponents": [
+                {
+                    "Name": "aws.greengrass.Nucleus",
+                    "Version": "2.5.5",
+                    "ConfigurationUpdate": {
+                    }
+                },
+                {
+                    "Name": "aws.greengrass.ShadowManager",
+                    "Version": "2.1.0",
+                    "ConfigurationUpdate": {
+                        "synchronize":{
+                            "coreThing":{
+                                "classic": true,
+                                "namedShadows": [
+                                  "shadow1",
+                                  "shadow2",
+                                  "shadow3"
+                                ]
+                            },
+                            "shadowDocuments": []
+                        },
+                        "rateLimits": {       
+                          "maxOutboundSyncUpdatesPerSecond": 100,
+                          "maxTotalLocalRequestsRate": 200,
+                          "maxLocalRequestsPerSecondPerThing": 20
+                        },
+                        "shadowDocumentSizeLimitBytes": 8192                        
+                    },
+                    "DocsForDependencies": "https://docs.aws.amazon.com/greengrass/v2/developerguide/shadow-manager-component.html"
+                }
+            ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.13",
+                "Version": "0.0.57",
                 "CodePath": "src/component/mcc-daemon"
             }
         },

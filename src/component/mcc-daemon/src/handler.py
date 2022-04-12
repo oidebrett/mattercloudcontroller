@@ -47,7 +47,9 @@ from awsiot.greengrasscoreipc.model import (
     IoTCoreMessage,
     QOS,
     SubscribeToIoTCoreRequest,
-    PublishToIoTCoreRequest
+    PublishToIoTCoreRequest,
+    SubscribeToTopicRequest,
+    SubscriptionResponseMessage    
 )
 
 curr_dir = os.path.abspath(os.path.dirname(__file__))
@@ -244,6 +246,35 @@ def respond(event):
     response_op = ipc_client.new_publish_to_iot_core()
     response_op.activate(response)
 
+#Handler for subscription callback
+class SubHandler(client.SubscribeToTopicStreamHandler):
+    def __init__(self):
+        super().__init__()
+
+    def on_stream_event(self, event: SubscriptionResponseMessage) -> None:
+        try:
+            message_string = str(event.binary_message.message, "utf-8")
+            logger.info('for message: '.format(message_string))
+            # Load message and check values
+#            jsonmsg = json.loads(message_string)
+#            if jsonmsg['state']['desired']['redledon']:
+#                print("true turn led on")
+#                GPIO.output(18,GPIO.HIGH)
+#            else:
+#                print("false turn off")
+#                GPIO.output(18,GPIO.LOW)
+        except:
+            traceback.print_exc()
+
+    def on_stream_error(self, error: Exception) -> bool:
+        # Handle error.
+        return True  # Return True to close stream, False to keep stream open.
+
+    def on_stream_closed(self) -> None:
+        # Handle close.
+        pass
+
+
 class StreamHandler(client.SubscribeToIoTCoreStreamHandler):
     def __init__(self):
         super().__init__()
@@ -298,7 +329,7 @@ while True:
 #    message = create_data(sample, count)
 
 #    publish_data(topic, message)
-#    logger.info('--->run: sleep- {}'.format(sleep_time_in_sec))
+    logger.info('--->run: sleep- {}'.format(sleep_time_in_sec) + subscribetopic)
     time.sleep(sleep_time_in_sec)
 
 

@@ -49,10 +49,34 @@ export class ThingComponent extends base.BaseConstruct {
             "ComponentName": this.compName,
             "ComponentVersion": compVersion,
             "ComponentDescription": `This component's name is ${this.compName}`,
-            "ComponentPublisher": "beat",
+            "ComponentPublisher": "oide",
             "ComponentConfiguration": {
                 "DefaultConfiguration": {
-                    
+                    "accessControl": {
+                        "aws.greengrass.ShadowManager": {
+                            "thing:shadow:1": {
+                            "policyDescription": "Allows access to shadows",
+                            "operations": [
+                              "aws.greengrass#GetThingShadow",
+                              "aws.greengrass#UpdateThingShadow",
+                              "aws.greengrass#DeleteThingShadow",
+                              "aws.greengrass#SubscribeToTopic"
+                            ],
+                            "resources": [
+                              "*"
+                            ]
+                          },
+                          "thing:shadow:2": {
+                            "policyDescription": "Allows access to things with shadows",
+                            "operations": [
+                              "aws.greengrass#ListNamedShadowsForThing"
+                            ],
+                            "resources": [
+                              "*"
+                            ]
+                          }    
+                        }
+                      }  
                 }
             },
             "Manifests": [
@@ -71,7 +95,7 @@ export class ThingComponent extends base.BaseConstruct {
                             "script": `. /home/ubuntu/mattercloudcontroller/env/bin/activate\npip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
                         },
                         "Run": {
-                            "script": `. /home/ubuntu/mattercloudcontroller/env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/handler.py  mattercloudcontroller chip-tool/request chip-tool/response\n`
+                            "script": `. /home/ubuntu/mattercloudcontroller/env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/shadowy.py\n`
                         },
                     },
                     "Artifacts": [
@@ -101,7 +125,8 @@ export class ThingComponent extends base.BaseConstruct {
                                 "policyDescription": "Allows access to subscribe and publish to IoTCore",
                                 "operations": [
                                     "aws.greengrass#PublishToIoTCore",
-                                    "aws.greengrass#SubscribeToIoTCore"
+                                    "aws.greengrass#SubscribeToIoTCore",
+                                    "aws.greengrass#SubscribeTopic"
                                 ],
                                 "resources": [
                                     topicWild
