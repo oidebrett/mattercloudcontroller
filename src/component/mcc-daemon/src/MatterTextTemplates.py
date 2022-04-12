@@ -35,6 +35,33 @@ class Templater:
     def get_response(self):
         return self.response
 
+class LsTemplater(Templater):
+    def __init__(self, response, name="Ls"):
+        self.name = name
+        self.response = response
+
+    def parse(self):
+
+
+        template = """
+<group name="bleDevices">
+[1649187014.823464][5796:5801] CHIP:DIS: 	Vendor ID: {{vendorID}}
+[1649187014.823504][5796:5801] CHIP:DIS: 	Product ID: {{productID}}
+[1649187014.823513][5796:5801] CHIP:DIS: 	Long Discriminator: {{longDiscriminator}}
+[1649187014.823521][5796:5801] CHIP:DIS: 	Pairing Hint: {{pairingHint}}
+[1649187014.823530][5796:5801] CHIP:DIS: 	Hostname: {{hostname}}
+[1649187014.823538][5796:5801] CHIP:DIS: 	Instance Name: {{instanceName}}
+[1649187014.823556][5796:5801] CHIP:DIS: 	IP Address #1: {{ipAddress#1}}
+[1649187014.823556][5796:5801] CHIP:DIS: 	IP Address #2: {{ipAddress#2}}
+[1649187014.823556][5796:5801] CHIP:DIS: 	IP Address #3: {{ipAddress#3}}
+[1649187014.823587][5796:5801] CHIP:DIS: 	Port: {{port}}
+</group>
+        """
+        print(self.response)
+        parser = ttp.ttp(self.response, template)
+        parser.parse()
+        pprint.pprint(parser.result(), width=100)
+
 
 class BleScanTemplater(Templater):
     def __init__(self, response, name="BleScan"):

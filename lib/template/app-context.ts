@@ -81,7 +81,7 @@ export class AppContext {
         if (configFilePath == undefined) {
             console.error(`==> CDK App-Config File is empty, 
         please check your environment variable(Usage: export ${key}=config/app-config.json) 
-                        or input parameter(--context=${key}=config/app-config-xxx.json)`);
+                        or input parameter(--context=${key}=config/app-config.json)`);
             return false;
         } else {
             console.info(`==> CDK App-Config File is ${configFilePath}, which is from ${fromType}.`);
