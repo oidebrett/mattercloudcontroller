@@ -7,7 +7,9 @@ import * as s3 from '@aws-cdk/aws-s3';
 import * as base from '../../../lib/template/stack/base/base-stack';
 import { AppContext } from '../../../lib/template/app-context';
 
+import * as public_comp from './components/public-component-template';
 import * as thing from './components/thing-component-construct'
+
 
 export class ComponentDeploymentStack extends base.BaseStack {
     
@@ -24,23 +26,32 @@ export class ComponentDeploymentStack extends base.BaseStack {
             stackConfig: this.stackConfig,
             account: this.account,
             region: this.region,
-
             bucket: uploadBucket,
             compConfig: stackConfig.Thing,
             components: components
         })
 
-        this.deployComponents(components);
+
+        this.createPublicComponents(components, stackConfig.PublicComponents);
+        this.createPrivateComponents(components);
     }
 
-    private deployComponents(components: any) {
+    private createPublicComponents(components: any, publicCompList: any[]) {
+        publicCompList.forEach(item => new public_comp.PublicComponentTemplate(components, {
+            componentName: item.Name,
+            componentVersion: item.Version,
+            configurationUpdate: item.ConfigurationUpdate
+        }));
+    }
+
+    private createPrivateComponents(components: any) {
         const deplymentName = this.projectPrefix;
         const thingGroupName = this.commonProps.appConfig.Stack.ThingInstaller.ThingGroupName;
         const thingTargetArn = `arn:aws:iot:${this.region}:${this.account}:thinggroup/${thingGroupName}`
 
-        const name = 'ComponentDeploymnet';
-        const provider = this.createComponentDeploymnetProvider(`${name}ProviderLambda`);
-        new cdk.CustomResource(this, `ComponentDeploymnetCustomResource`, {
+        const name = 'ComponentDeployment';
+        const provider = this.createComponentDeploymentProvider(`${name}ProviderLambda`);
+        new cdk.CustomResource(this, `ComponentDeploymentCustomResource`, {
             serviceToken: provider.serviceToken,
             properties: {
                 TARGET_ARN: thingTargetArn,
@@ -50,7 +61,7 @@ export class ComponentDeploymentStack extends base.BaseStack {
         });
     }
 
-    private createComponentDeploymnetProvider(lambdaBaseName: string): cr.Provider {
+    private createComponentDeploymentProvider(lambdaBaseName: string): cr.Provider {
         const lambdaName: string = `${this.projectPrefix}-${lambdaBaseName}`;
 
         const lambdaRole = new iam.Role(this, `${lambdaBaseName}Role`, {

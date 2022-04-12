@@ -179,6 +179,19 @@ export class ThingInstallerStack extends base.BaseStack {
             resources: ["*"]
         }));
 
+        tokenRole.addToPolicy(this.createGreengrassV2CustomIoTThingPolicy());
+
+        tokenRole.addToPolicy(new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: [
+                "iot:DeleteThingShadow",
+                "iot:GetThingShadow",
+                "iot:UpdateThingShadow",
+                "iot:ListNamedShadowsForThing"
+            ],
+            resources: ["*"]
+        }));
+
         const tokenRoleAliasName = `${this.projectPrefix}-${roleName}Alias`;
         const provider = this.createCustomResourceProvider(`${roleName}ProviderLambda`);
         new cdk.CustomResource(this, `IoTRoleAliasCustomResource`, {
@@ -206,7 +219,26 @@ export class ThingInstallerStack extends base.BaseStack {
                 "iot:Publish",
                 "iot:Subscribe",
                 "iot:Receive",
-                "s3:GetBucketLocation"
+                "s3:GetBucketLocation",
+                "iot:GetThingShadow",
+                "iot:UpdateThingShadow",
+                "iot:DeleteThingShadow",
+                "iot:ListNamedShadowsForThing"
+            ],
+            "Resource": "*"
+        });
+
+        return policy;
+    }
+
+    private createGreengrassV2CustomIoTThingPolicy(): iam.PolicyStatement {
+        const policy = iam.PolicyStatement.fromJson({
+            "Effect": "Allow",
+            "Action": [
+                "iot:GetThingShadow",
+                "iot:UpdateThingShadow",
+                "iot:DeleteThingShadow",
+                "iot:ListNamedShadowsForThing"
             ],
             "Resource": "*"
         });

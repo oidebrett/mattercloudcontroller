@@ -30,6 +30,8 @@ import json
 import subprocess
 from ttp import ttp
 import pprint
+import shlex
+import MatterTextTemplates
 
 TIMEOUT = 100
 RESPONSE_FORMAT = "json"
@@ -44,6 +46,7 @@ class RequestsHandler(logging.Handler):
         """Send the log records (created by loggers) to
         the appropriate destination.
         """
+        #print(record.getMessage())
         messages.append(record.getMessage())
 
 logging.basicConfig(level=logging.DEBUG)
@@ -67,6 +70,22 @@ parser.add_argument("--request-topic", required=False)
 parser.add_argument("--response-topic", required=False)
 args = parser.parse_args()
 
+def run_command(command):
+    response = ""
+    try:
+        process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline().decode()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                response += (output.strip()) + '\n'
+        rc = process.poll()
+        return response
+    except subprocess.TimeoutExpired:
+        logger.error(
+            f"Comand took longer than {TIMEOUT} seconds for message"
+        )
 
 def main() -> None:
     """Code to execute from script"""
@@ -78,40 +97,47 @@ def main() -> None:
     logger.info(f"Arguments: {args}")
 
     try:
-        output = subprocess.run(
-            "echo 'zclread ?' | chip-device-ctrl",
-            timeout=operation_timeout,
-            capture_output=True,
-            shell=True,
-        )
-        if output.returncode == 0:
-            response = output.stdout.decode("utf-8")
-        else:
-            response = output.stderr.decode("utf-8")
+###        
+#        output = subprocess.run(
+#            "chip-tool discover commissionables",
+#            timeout=operation_timeout,
+#            capture_output=True,
+#            shell=True,
+#        )
+#
+#        if output.returncode == 0:
+#            response = output.stdout.decode("utf-8")
+#        else:
+#            response = output.stderr.decode("utf-8")
+        command = "chip-tool discover commissionables"
+        output = run_command(command)
+        print("********")
+        lsTtp = MatterTextTemplates.LsTemplater(output)
+
+        lsTtp.parse()
+
     except subprocess.TimeoutExpired:
         response = MSG_TIMEOUT
         logger.error(
             f"Comand took longer than {operation_timeout} seconds for message: {message}"
         )
 
-    logger.info(f"Response: {response}")
+    print(response)
+    #logger.info(f"Response: {response}")
 
 
-    time.sleep(5)
+    #time.sleep(5)
     print(messages)
 
-'''
+
     template = """
-    interface {{ interface }}
-     ip address {{ ip }}/{{ mask }}
-     description {{ description }}
-     ip vrf {{ vrf }}
+    Long Discriminator {{ ld }}
     """
 
     parser = ttp(response, template)
     parser.parse()
     pprint.pprint(parser.result(), width=100)
-'''
+
 #    while True:
         # Keep app open and running
 #        time.sleep(1)
