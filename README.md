@@ -316,7 +316,7 @@ from the NRFConnect SDK ConnectedHomeIp repository. The script below will do thi
 
 To build and run the Matter Cloud controller:
 
-1. Build and install the Python CHIP controller:
+1. Build and install the Python CHIP controller (to be changed to build instructions from CHIP repo):
 
     ```
     scripts/build_controller.sh
