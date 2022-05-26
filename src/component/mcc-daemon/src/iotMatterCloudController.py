@@ -55,23 +55,13 @@ from awsiot.greengrasscoreipc.model import (
     GetThingShadowRequest,
     UpdateThingShadowRequest
 )
-
-from rich.console import Console
 import argparse
+from rich.console import Console
 from rich import pretty
 import coloredlogs
-from chip import ChipDeviceCtrl
-from chip import ChipCommissionableNodeCtrl
-import chip.clusters as Clusters
-from chip.ChipStack import *
-import chip.FabricAdmin
-import chip.logging
 import logging
-import builtins
-import asyncio
-import subprocess
 
-import iotMatterRuleEngine
+import iotMatterDeviceController
 
 curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
@@ -88,14 +78,15 @@ THING_NAME = os.getenv('AWS_IOT_THING_NAME')
 REQUEST_TOPIC = "chip/request"
 RESPONSE_TOPIC = "chip/response"
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
 args = parser.parse_args()
 LOCAL_TEST_ARG = args.test
-
 LOCAL_TEST = LOCAL_TEST_ARG.lower() == 'true'
+
+#create variable for matterDevices to store all information relating to local devices
+matterDevices = None
 
 def lPrint(msg):
     console = Console()
@@ -122,7 +113,7 @@ _thing_name = None
 _version = None
 
 #This topic is triggered every time the shadow is updated.
-subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/2/update/accepted"
+#subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/3/update/accepted"
 
 messages = []
 class RequestsHandler(logging.Handler):
@@ -158,6 +149,29 @@ def loadAndCleanSampleData(file_name: str):
     clearSampleData(file_name)
     return sample
 
+def pollForDeviceReports():
+    shadowName = '3'
+    thingName = 'mcc-thing-ver01-1'
+    lPrint("pollForDeviceReports.........")
+    
+    deviceNodeIds = matterDevices.getCommissionedDevices()
+
+    for nodeId in deviceNodeIds:
+        #check device to read current state
+        currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
+
+        #just print out the response for now
+        lPrint(currentStateStr)
+
+        if not LOCAL_TEST:
+            #set the device shadow for test
+            shadowName = '3'
+            thingName = 'mcc-thing-ver01-1'
+            newStr = '{"state": {"reported": '+currentStateStr+'}}'
+            lPrint(newStr)
+            newState = json.loads(newStr)
+            sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+
 def pollForCommand(file_name: str):
     sample = loadAndCleanSampleData(file_name)
     lPrint(sample)
@@ -166,14 +180,25 @@ def pollForCommand(file_name: str):
         lPrint(command)
         if command == "commission":
             if not LOCAL_TEST:
-                commissionDevice('192.168.0.12')
+                matterDevices.commissionDevice('192.168.0.12', 3)
+                currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
             else:
-                commissionDevice('127.0.0.1')
-                readDevAttributes()
+                matterDevices.commissionDevice('127.0.0.1', 3)
+                currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
+                lPrint(currentStateStr)
+                #set the device shadow for test
+                shadowName = '3'
+                thingName = 'mcc-thing-ver01-1'
+                newStr = '{"state": {"reported": '+currentStateStr+'}}'
+                lPrint(newStr)
+                newState = json.loads(newStr)
+                lPrint("TaaaaaDaaaaaa---------------")
+                lPrint(newState)
+
         elif command == "on":
-            devOn()
+            matterDevices.devOn()
         elif command == "off":
-            devOff()
+            matterDevices.devOff()
     except:
         pass
 
@@ -255,17 +280,39 @@ def respond(event):
     lPrint(command)
 
     if command == "commission":
-        commissionDevice('192.168.0.12')
+        matterDevices.commissionDevice('192.168.0.12', 3)
+        currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
+        lPrint(currentStateStr)
+        #set the device shadow for test
+        shadowName = '3'
+        thingName = 'mcc-thing-ver01-1'
+        newStr = '{"state": {"desired": '+currentStateStr+',"reported": '+currentStateStr+'}}'
+        lPrint(newStr)
+        newState = json.loads(newStr)
+        sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+
         resp["response"] = "commissioned"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
+
+        #set up subscription of device shadow update deltas
+        subscribeShadowDeltaTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/3/update/delta"
+        lPrint("Setting up the Shadow Subscription")
+        # Setup the Shadow Subscription
+        request = SubscribeToTopicRequest()
+        request.topic = subscribeShadowDeltaTopic 
+        handler = SubHandler()
+        operation = ipc_client.new_subscribe_to_topic(handler) 
+        future = operation.activate(request)
+        future.result(TIMEOUT)
+
     elif command == "on":
-        devOn()
+        matterDevices.devOn()
         resp["response"] = "turned on"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
     elif command == "off":
-        devOff()
+        matterDevices.devOff()
         resp["response"] = "turned off"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
@@ -351,15 +398,15 @@ if not LOCAL_TEST:
 
                 lPrint(jsonmsg)
 
-                #if redledon is equal to true/1 then turn on else off
-                if jsonmsg['state']['desired']['on']:
-                    lPrint("true turn led on")
+                #if onoff is equal to true/1 then turn on else off
+                if jsonmsg['state']['1']['chip.clusters.Objects.OnOff']['chip.clusters.Objects.OnOff.Attributes.OnOff']:
+                    lPrint("true turn on")
                     #set current status to bad and update actual value of led output to reported
-                    devOn()
+                    matterDevices.devOn()
                 else:
-                    lPrint("false turn led off")
+                    lPrint("false turn off")
                     #set current status to good and update actual value of led output to reported
-                    devOff()
+                    matterDevices.devOff()
 
             except:
                 traceback.print_exc()
@@ -426,110 +473,6 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
 #End of the code that is not used for local testing
 
 
-def LoadFabricAdmins():
-    global _fabricAdmins
-
-    #
-    # Shutdown any fabric admins we had before as well as active controllers. This ensures we
-    # relinquish some resources if this is called multiple times (e.g in a Jupyter notebook)
-    #
-    chip.FabricAdmin.FabricAdmin.ShutdownAll()
-    ChipDeviceCtrl.ChipDeviceController.ShutdownAll()
-    _fabricAdmins = []
-    storageMgr = builtins.chipStack.GetStorageManager()
-    console = Console()
-
-    try:
-        adminList = storageMgr.GetReplKey('fabricAdmins')
-    except KeyError:
-        lPrint("\n[purple]No previous fabric admins discovered in persistent storage - creating a new one...")
-        _fabricAdmins.append(chip.FabricAdmin.FabricAdmin())
-        return _fabricAdmins
-    lPrint('\n')
-    
-    for k in adminList:
-        lPrint(f"[purple]Restoring FabricAdmin from storage to manage FabricId {adminList[k]['fabricId']}, FabricIndex {k}...")
-        _fabricAdmins.append(chip.FabricAdmin.FabricAdmin(fabricId=adminList[k]['fabricId'], fabricIndex=int(k)))
-
-    lPrint('\n[blue]Fabric Admins have been loaded and are available at [red]fabricAdmins')
-    return _fabricAdmins
-    
-def CreateDefaultDeviceController():
-    global _fabricAdmins
-    
-    if (len(_fabricAdmins) == 0):
-        raise RuntimeError("Was called before calling LoadFabricAdmins()")
-    lPrint('\n')
-    lPrint(f"[purple]Creating default device controller on fabric {_fabricAdmins[0]._fabricId}...")
-    return _fabricAdmins[0].NewController()
-
-def ReplInit():
-    global console
-	#
-    # Install the pretty printer that rich provides to replace the existing
-    # printer.
-    #
-    pretty.install(indent_guides=True, expand_all=True)
-    console = Console()
-    console.rule('Matter REPL')
-    console.print('''
-            [bold blue]
-            Welcome to the Matter Python REPL!
-            For help, please type [/][bold green]matterhelp()[/][bold blue]
-            To get more information on a particular object/class, you can pass
-			that into [bold green]matterhelp()[/][bold blue] as well.''')
-    console.rule()
-    
-    coloredlogs.install(level='DEBUG')
-    chip.logging.RedirectToPythonLogging()
-    
-    #logging.getLogger().setLevel(logging.DEBUG)
-    logging.getLogger().setLevel(logging.WARN)
-
-
-
-
-def devCtrlStart():
-    global devCtrl
-    fabricAdmins = LoadFabricAdmins()
-    devCtrl = CreateDefaultDeviceController()
-    builtins.devCtrl = devCtrl
-
-def cleanStart():
-    if os.path.isfile('/tmp/repl-storage.json'):
-        os.remove('/tmp/repl-storage.json')
-    # So that the all-clusters-app won't boot with stale prior state.
-    os.system('rm -rf /tmp/chip_*')
-    os.chdir(workingDir)
-    time.sleep(2)
-
-def commissionDevice(ipAddress):
-    time.sleep(5)
-    lPrint("Commissioning")
-    ipAddressAsBytes = str.encode(ipAddress)
-    devCtrl.CommissionIP(ipAddressAsBytes, 20202021, 2)
-    time.sleep(10)
-
-def readDevAttributes():
-    data = (asyncio.run(devCtrl.ReadAttribute(2, [(1, Clusters.OnOff)])))
-    matterRules = iotMatterRuleEngine.MatterRuleEngine(args)
-    jsonStr = matterRules.jsonDumps(data)
-    lPrint(jsonStr)
-    a = json.loads(jsonStr)   
-    lPrint("Print json object for Attributes.OnOff") 
-    lPrint(a['1']['chip.clusters.Objects.OnOff']['chip.clusters.Objects.OnOff.Attributes.OnOff'])
-    lPrint("Print json object for Attributes.GlobalSceneControl") 
-    lPrint(a['1']['chip.clusters.Objects.OnOff']['chip.clusters.Objects.OnOff.Attributes.GlobalSceneControl'])
-
-def devOn():
-    lPrint('on')
-    asyncio.run(devCtrl.SendCommand(2, 1, Clusters.OnOff.Commands.On()))
-    time.sleep(2)
-
-def devOff():
-    lPrint('off')
-    asyncio.run(devCtrl.SendCommand(2, 1, Clusters.OnOff.Commands.Off()))
-    time.sleep(2)
 
 def wait_for_many_discovered_devices():
     # Discovery happens through mdns, which means we need to wait for responses to come back.
@@ -538,8 +481,6 @@ def wait_for_many_discovered_devices():
     time.sleep(2)
 
 def exitGracefully():
-    a = (asyncio.run(devCtrl.ReadAttribute(2, [(1, Clusters.OnOff)])))
-    lPrint(a)
     # To stop subscribing, close the operation stream.
     if not LOCAL_TEST:
         operation1.close()
@@ -549,6 +490,7 @@ def exitGracefully():
 def main():
     global operation1
     global operation2
+    global matterDevices
 
     message = "Hello!"
 
@@ -567,15 +509,6 @@ def main():
         future1 = operation1.activate(request1)
         future1.result(TIMEOUT)
 
-        lPrint("Setting up the Shadow Subscription")
-        # Setup the Shadow Subscription
-        request2 = SubscribeToTopicRequest()
-        request2.topic = subscribeShadowUpdateTopic 
-        handler2 = SubHandler()
-        operation2 = ipc_client.new_subscribe_to_topic(handler2) 
-        future2 = operation2.activate(request2)
-        future2.result(TIMEOUT)
-
     lPrint('------------------------run-------------------')
     load_environ()
 
@@ -584,42 +517,37 @@ def main():
     #Setting up the chip repl
     console = Console()
     console.print("Current Working Directory " , os.getcwd())
-    cleanStart()
+
+    matterDevices = iotMatterDeviceController.MatterDeviceController(args)
+
+    matterDevices.cleanStart(workingDir)
     lPrint("Current Working Directory " + os.getcwd())
-    ReplInit()
+    matterDevices.MatterInit()
 
-    try:
-        chipStack = ChipStack(persistentStoragePath=args.storagepath)
-    except KeyError:
-        lPrint("caught error")
-        chipStack = ChipStack(persistentStoragePath=args.storagepath)
+    matterDevices.devCtrlStart()
 
-    devCtrlStart()
-
-    commissionableNodeCtrl = ChipCommissionableNodeCtrl.ChipCommissionableNodeController(chipStack)
-
-    lPrint(commissionableNodeCtrl)
-    
-    logging.getLogger().setLevel(logging.DEBUG)
-    messages = []
-    devCtrl.DiscoverCommissionableNodesCommissioningEnabled()
-    wait_for_many_discovered_devices()
-    devCtrl.PrintDiscoveredDevices()
-    print(messages)
-    logging.getLogger().setLevel(logging.WARN)
-    #commissionDevice()
+    #commissionableNodeCtrl = ChipCommissionableNodeCtrl.ChipCommissionableNodeController(chipStack)
+    #lPrint(commissionableNodeCtrl)    
+    #logging.getLogger().setLevel(logging.DEBUG)
+    #messages = []
+    #devCtrl.DiscoverCommissionableNodesCommissioningEnabled()
+    #wait_for_many_discovered_devices()
+    #devCtrl.PrintDiscoveredDevices()
+    #lPrint(messages)
+    #logging.getLogger().setLevel(logging.WARN)
 
     # Keep the main thread alive, or the process will exit.
     x=1
-    #initial settings for the reported states of the device
-    currentstate = json.loads('''{"state": {"reported": {"status": "startup","on": false}}}''')
 
     while True:
         lPrint(x)
         x += 1
 
-        if LOCAL_TEST:
+        if LOCAL_TEST: # if local testing we will use a file for commissioning
             pollForCommand(_sample_file_name)
+
+        # poll every sleep_time_in_sec for latest device state
+        pollForDeviceReports()
 
         lPrint('--->run: sleep- {}'.format(sleep_time_in_sec) + " " + REQUEST_TOPIC)
         time.sleep(sleep_time_in_sec)
