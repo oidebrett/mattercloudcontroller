@@ -81,9 +81,12 @@ RESPONSE_TOPIC = "chip/response"
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
+parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 args = parser.parse_args()
 LOCAL_TEST_ARG = args.test
 LOCAL_TEST = LOCAL_TEST_ARG.lower() == 'true'
+CLEAN_ARG = args.clean
+CLEAN = CLEAN_ARG.lower() == 'true'
 
 #create variable for matterDevices to store all information relating to local devices
 matterDevices = None
@@ -113,7 +116,7 @@ _thing_name = None
 _version = None
 
 #This topic is triggered every time the shadow is updated.
-#subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/3/update/accepted"
+#subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/1/update/accepted"
 
 messages = []
 class RequestsHandler(logging.Handler):
@@ -138,7 +141,6 @@ def loadSampleData(file_name: str):
         except:
             return json.loads('''{}''')
 
-
 def clearSampleData(file_name: str):
     file = open(curr_dir + '/' + file_name,"r+")
     file. truncate(0)
@@ -150,11 +152,11 @@ def loadAndCleanSampleData(file_name: str):
     return sample
 
 def pollForDeviceReports():
-    shadowName = '3'
     thingName = 'mcc-thing-ver01-1'
     lPrint("pollForDeviceReports.........")
     
     deviceNodeIds = matterDevices.getCommissionedDevices()
+    time.sleep(2)
 
     for nodeId in deviceNodeIds:
         #check device to read current state
@@ -165,8 +167,7 @@ def pollForDeviceReports():
 
         if not LOCAL_TEST:
             #set the device shadow for test
-            shadowName = '3'
-            thingName = 'mcc-thing-ver01-1'
+            shadowName = str(nodeId)
             newStr = '{"state": {"reported": '+currentStateStr+'}}'
             lPrint(newStr)
             newState = json.loads(newStr)
@@ -175,19 +176,21 @@ def pollForDeviceReports():
 def pollForCommand(file_name: str):
     sample = loadAndCleanSampleData(file_name)
     lPrint(sample)
+    nodeId = None
     try:
         command = sample["command"]
         lPrint(command)
         if command == "commission":
             if not LOCAL_TEST:
-                matterDevices.commissionDevice('192.168.0.12', 3)
-                currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
+                nodeId = matterDevices.commissionDevice('192.168.0.12')
+                currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
             else:
-                matterDevices.commissionDevice('127.0.0.1', 3)
-                currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
+                lPrint("Calling commissionDevice function")
+                nodeId = matterDevices.commissionDevice('192.168.0.46')
+                currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
                 lPrint(currentStateStr)
                 #set the device shadow for test
-                shadowName = '3'
+                shadowName = str(nodeId)
                 thingName = 'mcc-thing-ver01-1'
                 newStr = '{"state": {"reported": '+currentStateStr+'}}'
                 lPrint(newStr)
@@ -196,9 +199,9 @@ def pollForCommand(file_name: str):
                 lPrint(newState)
 
         elif command == "on":
-            matterDevices.devOn()
+            matterDevices.devOn(nodeId)
         elif command == "off":
-            matterDevices.devOff()
+            matterDevices.devOff(nodeId)
     except:
         pass
 
@@ -229,7 +232,6 @@ def respond(event):
             resp["response"] = MSG_MISSING_ATTRIBUTE
             resp["return_code"] = 255
             response_message = {
-                "timestamp": int(round(time.time() * 1000)),
                 "message": str(event.message.payload),
                 "response": resp["response"],
                 "return_code": resp["return_code"]
@@ -279,12 +281,13 @@ def respond(event):
     command = command.lstrip()
     lPrint(command)
 
+    nodeId = None
     if command == "commission":
-        matterDevices.commissionDevice('192.168.0.12', 3)
-        currentStateStr = matterDevices.readDevAttributesAsJsonStr(3)
+        nodeId = matterDevices.commissionDevice('192.168.0.12')
+        currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
         lPrint(currentStateStr)
         #set the device shadow for test
-        shadowName = '3'
+        shadowName = str(nodeId)
         thingName = 'mcc-thing-ver01-1'
         newStr = '{"state": {"desired": '+currentStateStr+',"reported": '+currentStateStr+'}}'
         lPrint(newStr)
@@ -296,7 +299,7 @@ def respond(event):
         resp["txid"] = message_from_core["txid"]
 
         #set up subscription of device shadow update deltas
-        subscribeShadowDeltaTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/3/update/delta"
+        subscribeShadowDeltaTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/"+str(nodeId)+"/update/delta"
         lPrint("Setting up the Shadow Subscription")
         # Setup the Shadow Subscription
         request = SubscribeToTopicRequest()
@@ -307,12 +310,12 @@ def respond(event):
         future.result(TIMEOUT)
 
     elif command == "on":
-        matterDevices.devOn()
+        matterDevices.devOn(nodeId)
         resp["response"] = "turned on"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
     elif command == "off":
-        matterDevices.devOff()
+        matterDevices.devOff(nodeId)
         resp["response"] = "turned off"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
@@ -402,11 +405,11 @@ if not LOCAL_TEST:
                 if jsonmsg['state']['1']['chip.clusters.Objects.OnOff']['chip.clusters.Objects.OnOff.Attributes.OnOff']:
                     lPrint("true turn on")
                     #set current status to bad and update actual value of led output to reported
-                    matterDevices.devOn()
+                    matterDevices.devOn(1)
                 else:
                     lPrint("false turn off")
                     #set current status to good and update actual value of led output to reported
-                    matterDevices.devOff()
+                    matterDevices.devOff(1)
 
             except:
                 traceback.print_exc()
@@ -520,11 +523,24 @@ def main():
 
     matterDevices = iotMatterDeviceController.MatterDeviceController(args)
 
-    matterDevices.cleanStart(workingDir)
+    if CLEAN:
+        matterDevices.cleanStart()
+
+    #make sure we are in correct working directory (so relative paths to certs work)
+    os.chdir(workingDir)
+
     lPrint("Current Working Directory " + os.getcwd())
     matterDevices.MatterInit()
 
     matterDevices.devCtrlStart()
+
+
+    if not CLEAN:
+        #Discover commissioned devices
+        lPrint("Discovering commissioned devices - please wait. May take a while......")
+        print(matterDevices.discoverFabricDevices())
+        #lPrint(matterDevices.discoverDevices())
+        #lPrint("Finished Discovering commissioned devices")
 
     #commissionableNodeCtrl = ChipCommissionableNodeCtrl.ChipCommissionableNodeController(chipStack)
     #lPrint(commissionableNodeCtrl)    
