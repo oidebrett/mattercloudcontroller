@@ -22,6 +22,8 @@ import subprocess
 class MatterDeviceController(object):
     args = None
     commissionedDevices = []
+    fabricDevices = set()
+    MAX_DEVICES = 10
 
     def __init__(self,args):    
         self.args = args
@@ -32,6 +34,41 @@ class MatterDeviceController(object):
         logging.info(msg)
         print(msg, file=sys.stdout)
         sys.stderr.flush()
+
+    def discoverDevices(self):
+        self.lPrint("Discovering devices")
+        for nodeId in range(1,self.MAX_DEVICES+1):
+            try:
+                err = devCtrl.ResolveNode(int(nodeId))
+                if err == 0:
+                    ret = devCtrl.GetAddressAndPort(int(nodeId))
+                    if ret == None:
+                        self.lPrint("Get address and port failed: " + str(nodeId))
+                    else:
+                        self.commissionedDevices.append(nodeId)
+                else:
+                    self.lPrint("Resolve node failed [{}]".format(err))
+            except:
+                self.lPrint("No discovered devices on nodeId:" + str(nodeId))
+
+        return self.commissionedDevices
+
+    def discoverFabricDevices(self):
+        # Discovery happens through mdns, which means we need to wait for responses to come back.
+        self.lPrint("Querying cache for devices on this fabric...")
+        compressFabricId = devCtrl.GetCompressedFabricId()
+        compressFabricIdHex = "%0.2X" % compressFabricId
+        #self.lPrint(compressFabricIdHex)
+        cmd = subprocess.Popen('avahi-browse -rt _matter._tcp', shell=True, stdout=subprocess.PIPE)
+        for line in cmd.stdout:
+            lineStr = line.decode("utf-8")
+            if "_matter._tcp" in lineStr:
+                print(lineStr)
+                if re.search(compressFabricIdHex+'-[\d]+', lineStr) is not None:
+                    for catch in re.finditer(compressFabricIdHex+'-[\d]+', lineStr):
+                        self.fabricDevices.add(int(catch[0][len(compressFabricIdHex)+1:])) # catch is a match object
+
+        return list(self.fabricDevices)
 
     def devCtrlStart(self):
         global devCtrl
@@ -99,6 +136,8 @@ class MatterDeviceController(object):
         #logging.getLogger().setLevel(logging.DEBUG)
         logging.getLogger().setLevel(logging.WARN)
 
+        self.lPrint("Storage path is:")
+        self.lPrint(self.args.storagepath)
         #
         # Set up the ChipStack.
         #
@@ -109,29 +148,40 @@ class MatterDeviceController(object):
             chipStack = ChipStack(persistentStoragePath=self.args.storagepath)
 
     def getCommissionedDevices(self):
-        return self.commissionedDevices
+        #return self.commissionedDevices
+        return list(self.fabricDevices)
 
-    def commissionDevice(self, ipAddress, nodeId):
+    def commissionDevice(self, ipAddress, nodeId=None):
+        #if we dont have a nodeId then set one
+        if nodeId is None:
+            self.lPrint("nodeId is None")
+            if len(self.fabricDevices) == 0:
+                nodeId = 1
+            else:
+                nodeId = max(self.fabricDevices) + 1
+
         time.sleep(5)
-        self.lPrint("Commissioning")
+        self.lPrint("Commissioning - nodeId = " + str(nodeId))
         ipAddressAsBytes = str.encode(ipAddress)
         devCtrl.CommissionIP(ipAddressAsBytes, 20202021, nodeId)
-        self.commissionedDevices.append(nodeId)
+        #self.commissionedDevices.append(nodeId)
+        self.fabricDevices.add(nodeId)
         time.sleep(10)
+        return nodeId
 
     def readDevAttributesAsJsonStr(self, nodeId):
         data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [Clusters.OnOff])))
         jsonStr = self.jsonDumps(data)
         return jsonStr
 
-    def devOn(self):
+    def devOn(self, nodeId):
         self.lPrint('on')
-        asyncio.run(devCtrl.SendCommand(3, 1, Clusters.OnOff.Commands.On()))
+        asyncio.run(devCtrl.SendCommand(nodeId, 1, Clusters.OnOff.Commands.On()))
         time.sleep(2)
 
     def devOff(self):
         self.lPrint('off')
-        asyncio.run(devCtrl.SendCommand(3, 1, Clusters.OnOff.Commands.Off()))
+        asyncio.run(devCtrl.SendCommand(nodeId, 1, Clusters.OnOff.Commands.Off()))
         time.sleep(2)
 
     def jsonDumps(self, dm):
@@ -155,12 +205,11 @@ class MatterDeviceController(object):
         dmstr = pprint.pformat(dm)
         return dmstr
 
-    def cleanStart(self, workingDir):
+    def cleanStart(self):
         if os.path.isfile('/tmp/repl-storage.json'):
             os.remove('/tmp/repl-storage.json')
         # So that the all-clusters-app won't boot with stale prior state.
         os.system('rm -rf /tmp/chip_*')
-        os.chdir(workingDir)
         time.sleep(2)
 
 
