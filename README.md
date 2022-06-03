@@ -358,3 +358,44 @@ To build and run the Matter Cloud controller:
 
 3. Testing in Postman - Install Postman and import the Curl command above. You will need to set up Postman to generate AWS signature in the Curl requests. You can following this guide: https://blog.knoldus.com/how-to-generate-aws-signature-with-postman/
 Note: the APIGateway URL and API key can be parameterised and made as a variable.
+
+
+## Testing during developement
+
+navigate to the directory above the matter controller
+
+Avahi keeps a cache of old results. To reset the cache, kill the daemon. It will auto-restart.
+
+    ```
+sudo avahi-daemon --kill
+    ```
+
+or restart each service
+
+    ```
+    sudo systemctl restart mdns.service
+    sudo systemctl restart avahi-daemon.socket 
+    ```
+
+Remove the temporary files (dont do this if checking persistance)
+
+    ```
+    sudo rm -rf /tmp/chip_*
+    sudo rm -rf /tmp/repl-storage.json 
+    ```
+Run the controller locally (using the -t flag)
+
+    ```
+    python3 mattercloudcontroller/src/component/mcc-daemon/src/iotMatterCloudController.py -t True
+    ```
+
+Send commands to the matter controller by saving the following to the sample_data.json file
+
+Command message structure (JSON):
+
+    ```
+    {
+        "command": "commission",
+        "txid": "12345ABC"
+    }
+    ```
