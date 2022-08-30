@@ -399,3 +399,35 @@ Command message structure (JSON):
         "txid": "12345ABC"
     }
     ```
+
+## Testing using a local all clusters app
+    ```
+ sudo sysctl -w net.ipv6.conf.wlo1.accept_ra=2
+ sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
+ sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
+ cd connectedhomeip/
+ cd examples/all-clusters-app/linux/
+ sudo rm -rf /tmp/ch*
+ sudo rm -rf /tmp/repl-storage.json 
+ avahi-browse -rt _matter._tcp
+ sudo out/debug/chip-all-clusters-app
+ sudo rm -rf /tmp/ch*
+ avahi-browse -rt _matter._tcp
+ sudo rm -rf /tmp/repl-storage.json 
+ avahi-browse -rt _matter._tcp
+ history | grep mdns
+ sudo systemctl restart mdns.service
+ avahi-browse -rt _matter._tcp
+ sudo systemctl restart avahi-daemon.socket 
+ avahi-browse -rt _matter._tcp
+ sudo out/debug/chip-all-clusters-app
+ sudo rm -rf /tmp/repl-storage.json 
+ sudo rm -rf /tmp/ch*
+ sudo systemctl restart avahi-daemon.socket 
+ avahi-browse -rt _matter._tcp
+ sudo out/debug/chip-all-clusters-app
+ sudo rm -rf /tmp/repl-storage.json 
+ sudo rm -rf /tmp/ch*
+ sudo systemctl restart avahi-daemon.socket 
+   ```
+ 
