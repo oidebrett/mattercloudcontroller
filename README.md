@@ -229,7 +229,7 @@ First, if not already done so, create some directories, the python virtual env
 mkdir -p /home/ubuntu/mattercloudcontroller/scripts/thing
 cd /home/ubuntu/mattercloudcontroller/scripts/thing
 wget https://raw.githubusercontent.com/oidebrett/mattercloudcontroller/main/scripts/thing/install-gg-thing.sh .
-python3 -m venv /home/ubuntu/mattercloudcontroller/env
+python3 -m venv /home/ubuntumattercloudcontroller/env
 ```
 
 then activate the python virtual env
