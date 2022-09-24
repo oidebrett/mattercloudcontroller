@@ -61,6 +61,13 @@ First of all, AWS Account and IAM User is required. And then the following modul
 - Node.js: node --version
 - AWS CDK: cdk --version
 - [jq](https://stedolan.github.io/jq/): jq --version
+- boto3
+
+```bash
+pip install -r ./requirements_dev.txt
+```
+
+if not installed you can use the command:
 
 Please refer to the kind guide in [CDK Workshop](https://cdkworkshop.com/15-prerequisites.html).
 
