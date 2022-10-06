@@ -6,7 +6,7 @@ Listen for incoming chip requests and publish the results onto response topic
 
 Command message structure (JSON):
 {
-    "command": "onoff toggle 1",
+    "command": "commission",
     "txid": "12345ABC",
     "format": "json|text",
     "timeout": 10
@@ -107,7 +107,7 @@ if not LOCAL_TEST:
     ipc_client = awsiot.greengrasscoreipc.connect()
 else:
     logger.info("is LOCAL_TEST")
-    workingDir = "/home/ivob/Projects/connectedhomeip"
+    workingDir = "/home/ubuntu/connectedhomeip"
     _sample_file_name = 'sample_data.json'
 
 
@@ -186,17 +186,20 @@ def pollForCommand(file_name: str):
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
             else:
                 lPrint("Calling commissionDevice function")
-                nodeId = matterDevices.commissionDevice('192.168.0.46')
+                nodeId = matterDevices.commissionDevice('192.168.0.62')
+                time.sleep(10)
+                lPrint("Calling readDevAttributesAsJsonStr function on nodeId:")
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
+                lPrint("FInished ReadDevAttributesAsJsonStr function")
                 lPrint(currentStateStr)
                 #set the device shadow for test
-                shadowName = str(nodeId)
-                thingName = 'mcc-thing-ver01-1'
-                newStr = '{"state": {"reported": '+currentStateStr+'}}'
-                lPrint(newStr)
-                newState = json.loads(newStr)
+                #shadowName = str(nodeId)
+                #thingName = 'mcc-thing-ver01-1'
+                #newStr = '{"state": {"reported": '+currentStateStr+'}}'
+                #lPrint(newStr)
+                #newState = json.loads(newStr)
                 lPrint("TaaaaaDaaaaaa---------------")
-                lPrint(newState)
+                #lPrint(newState)
 
         elif command == "on":
             matterDevices.devOn(nodeId)
@@ -283,7 +286,7 @@ def respond(event):
 
     nodeId = None
     if command == "commission":
-        nodeId = matterDevices.commissionDevice('192.168.0.12')
+        nodeId = matterDevices.commissionDevice('192.168.0.62')
         currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
         lPrint(currentStateStr)
         #set the device shadow for test
@@ -308,6 +311,7 @@ def respond(event):
         operation = ipc_client.new_subscribe_to_topic(handler) 
         future = operation.activate(request)
         future.result(TIMEOUT)
+        subscribeToTopic(subscribeShadowDeltaTopic, handler)
 
     elif command == "on":
         matterDevices.devOn(nodeId)
@@ -392,10 +396,11 @@ if not LOCAL_TEST:
 
         def on_stream_event(self, event: SubscriptionResponseMessage) -> None:
 
-            lPrint(event)
+            lPrint("Handler for subscription callback")
 
             try:
                 message_string = str(event.binary_message.message, "utf-8")
+                lPrint(message_string)
                 # Load message and check values
                 jsonmsg = json.loads(message_string)
 
@@ -486,13 +491,23 @@ def wait_for_many_discovered_devices():
 def exitGracefully():
     # To stop subscribing, close the operation stream.
     if not LOCAL_TEST:
-        operation1.close()
-        operation2.close()
+        operation.close()
     lPrint("exiting gracefully")
 
+def subscribeToTopic(topic, handler):
+    global operation
+    lPrint("Setting up the MQTT Subscription")
+    # Setup the MQTT Subscription
+    qos = QOS.AT_MOST_ONCE
+    request = SubscribeToIoTCoreRequest()
+    request.topic_name = topic
+    request.qos = qos
+    operation = ipc_client.new_subscribe_to_iot_core(handler)
+    future = operation.activate(request)
+    future.result(TIMEOUT)
+
 def main():
-    global operation1
-    global operation2
+    #global operation2
     global matterDevices
 
     message = "Hello!"
@@ -503,14 +518,8 @@ def main():
     if not LOCAL_TEST:
         lPrint("Setting up the MQTT Subscription")
         # Setup the MQTT Subscription
-        qos = QOS.AT_MOST_ONCE
-        request1 = SubscribeToIoTCoreRequest()
-        request1.topic_name = REQUEST_TOPIC
-        request1.qos = qos
-        handler1 = StreamHandler()
-        operation1 = ipc_client.new_subscribe_to_iot_core(handler1)
-        future1 = operation1.activate(request1)
-        future1.result(TIMEOUT)
+        handler = StreamHandler()
+        subscribeToTopic(REQUEST_TOPIC, handler)
 
     lPrint('------------------------run-------------------')
     load_environ()
@@ -530,9 +539,9 @@ def main():
     os.chdir(workingDir)
 
     lPrint("Current Working Directory " + os.getcwd())
-    matterDevices.MatterInit()
+    matterDevices.MatterInit(args)
 
-    matterDevices.devCtrlStart()
+    #matterDevices.devCtrlStart()
 
 
     if not CLEAN:
@@ -540,17 +549,8 @@ def main():
         lPrint("Discovering commissioned devices - please wait. May take a while......")
         print(matterDevices.discoverFabricDevices())
         #lPrint(matterDevices.discoverDevices())
-        #lPrint("Finished Discovering commissioned devices")
+        lPrint("Finished Discovering commissioned devices")
 
-    #commissionableNodeCtrl = ChipCommissionableNodeCtrl.ChipCommissionableNodeController(chipStack)
-    #lPrint(commissionableNodeCtrl)    
-    #logging.getLogger().setLevel(logging.DEBUG)
-    #messages = []
-    #devCtrl.DiscoverCommissionableNodesCommissioningEnabled()
-    #wait_for_many_discovered_devices()
-    #devCtrl.PrintDiscoveredDevices()
-    #lPrint(messages)
-    #logging.getLogger().setLevel(logging.WARN)
 
     # Keep the main thread alive, or the process will exit.
     x=1
@@ -577,4 +577,3 @@ if __name__ == "__main__":
     finally:
         exitGracefully()
         pass
-        

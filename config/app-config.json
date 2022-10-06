@@ -38,9 +38,9 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
-                                  "shadow1",
-                                  "shadow2",
-                                  "shadow3"
+                                  "1",
+                                  "2",
+                                  "3"
                                 ]
                             },
                             "shadowDocuments": []
@@ -57,7 +57,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.57",
+                "Version": "0.0.82",
                 "CodePath": "src/component/mcc-daemon"
             }
         },

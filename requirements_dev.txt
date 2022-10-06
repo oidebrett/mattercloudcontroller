@@ -1,3 +1,4 @@
 awscli
 aws-cdk-lib
 jq
+boto3
