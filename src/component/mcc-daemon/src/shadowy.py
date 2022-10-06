@@ -50,6 +50,7 @@ def sample_get_thing_shadow_request(thingName, shadowName):
     except Exception as e:
         logger.info("Error get shadow")
         # except ResourceNotFoundError | UnauthorizedError | ServiceError
+        return json.loads('''{"state": {"reported": {"status": "errror on get","redledon": false}}}''')
 
 def sample_list_named_shadows_for_thing_request(thingName):
     try:
@@ -77,6 +78,7 @@ def sample_list_named_shadows_for_thing_request(thingName):
         logger.info("Error List Named shadows")         
         # add error handling
         # except ResourceNotFoundError | UnauthorizedError | ServiceError
+        return json.loads('''{"state": {"reported": {"status": "errror on list","redledon": false}}}''')
 
 #Set the local shadow using the IPC
 def sample_update_thing_shadow_request(thingName, shadowName, payload):
@@ -101,27 +103,27 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
     except Exception as e:
         logger.info("Error update shadow")
         # except ConflictError | UnauthorizedError | ServiceError
+        return json.loads('''{"state": {"reported": {"status": "errror on update","redledon": false}}}''')
 
 #initial settings for the reported states of the device
 currentstate = json.loads('''{"state": {"reported": {"status": "startup","redledon": false}}}''')
 
 
 while(True):
-    shadowName = 'shadow3'
+    shadowName = '3'
     thingName = 'mcc-thing-ver01-1'
     logger.info("getting shadow document")
     #check document to see if led states need updating
     response = sample_get_thing_shadow_request(thingName, shadowName)
     time.sleep(5)
 
-
-    #convert string to json object
-    jsonmsg = json.loads(response)
-
-    # logger.info("jsonmsg")
-    logger.info(jsonmsg)
-        
     try:
+        #convert string to json object
+        jsonmsg = json.loads(response)
+
+        # logger.info("jsonmsg")
+        logger.info(jsonmsg)
+        
         #if redledon is equal to true/1 then turn on else off
         if jsonmsg['state']['desired']['redledon']:
             logger.info("true turn led on")
@@ -149,4 +151,6 @@ while(True):
     logger.info("listing named shadows for a thing:"+thingName)
     #check document to see if led states need updating
     logger.info(sample_list_named_shadows_for_thing_request(thingName))
+
+    logger.info("sleeping for 5 secs")
     time.sleep(5)
