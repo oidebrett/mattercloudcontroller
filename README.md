@@ -188,7 +188,7 @@ sh ./scripts/deploy_stacks.sh config/app-config.json # generated-> ./scripts/thi
 python3 ./scripts/thing/generate-install-gg-config.py -a config/app-config.json -t ./scripts/thing/output-thing-installer-stack-[ProjectPrefix].json # generated-> ./scripts/thing/install-gg-config-[ProjectPrefix].json
 
 #Do this the first time when run to update the iot policy to allow iot shadow interactions
-python3 ./scripts/thing/update_iot_policy.py.py -a config/app-config.json -p '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["iot:GetThingShadow","iot:UpdateThingShadow","iot:DeleteThingShadow","iot:Connect","iot:Publish","iot:Subscribe","iot:Receive","greengrass:*"],"Resource": "*"}]}' 
+python3 ./scripts/thing/update_iot_policy.py -a config/app-config.json -p '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["iot:GetThingShadow","iot:UpdateThingShadow","iot:DeleteThingShadow","iot:Connect","iot:Publish","iot:Subscribe","iot:Receive","greengrass:*"],"Resource": "*"}]}' 
 
 ```
 
@@ -240,12 +240,12 @@ First, if not already done so, create some directories, the python virtual env
 mkdir -p /home/ubuntu/mattercloudcontroller/scripts/thing
 cd /home/ubuntu/mattercloudcontroller/scripts/thing
 wget https://raw.githubusercontent.com/oidebrett/mattercloudcontroller/main/scripts/thing/install-gg-thing.sh .
-python3 -m venv /home/ubuntumattercloudcontroller/env
 ```
 
 then activate the python virtual env
 ```bash
-source /home/ubuntu/mattercloudcontroller/env/bin/activate
+source /home/ubuntu/connectedhomeip/out/python_env/bin/activate
+
 ```
 
 4. Copy over the config details from your installation PC and store the contents in a new file install-gg-config-[ProjectPrefix].json
@@ -296,7 +296,7 @@ Result of Greengrass-service
 
 ```bash
 sudo tail -f /greengrass/v2/logs/greengrass.log
-sudo tail -f /greengrass/v2/logs/com.xxx.xxx.xxx.log
+sudo tail -f /greengrass/v2/logs/MCCDev-mcc-daemon.log
 ```
 
 Result of Greengrass-log
@@ -319,40 +319,19 @@ sh ./script/deploy_stacks.sh config/app-config-demo.json
 
 ## Building and installing the local python matter controller
 
-Before you can use the Matter cloud controller, you must install chip tool wheel package
-from the NRFConnect SDK ConnectedHomeIp repository. The script below will do this automatically.
-
-> To ensure compatibility, build the Matter Cloud controller and the Matter
-> device from the same revision of the connectedhomeip repository.
+Before you can use the Matter cloud controller, you must install the connected home over ip library
 
 To build and run the Matter Cloud controller:
 
-1. Build and install the Python CHIP controller (to be changed to build instructions from CHIP repo):
+1. Build and install the Python CHIP repl tool :
 
     ```
-    scripts/build_controller.sh
+    [Follow the instructions for CHIP Repl Tool](https://github.com/project-chip/connectedhomeip/blob/interop_testing_te9/docs/guides/python_chip_controller_building.md#building)
     ```
-
-    > Note: To get more details about available build configurations, run the
-    > following command: `scripts/build_controller.sh --help`
 
 <hr>
 
-## Running the tool
-
-2. Activate the Python virtual environment:
-
-    ```
-    source ./env/bin/activate
-    ```
-
-3. Run the Matter Cloud controller with root privileges, which is required to
-   obtain access to the Bluetooth interface:
-
-    ```
-    python3 local-chip-device-ctrl.py
-    ```
-
+  
 ## Testing using the API
 
 1. Find the IOT Endpoint using
@@ -413,32 +392,32 @@ Command message structure (JSON):
 
 ## Testing using a local all clusters app
     ```
- sudo sysctl -w net.ipv6.conf.wlo1.accept_ra=2
- sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
- sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
- cd connectedhomeip/
- cd examples/all-clusters-app/linux/
- sudo rm -rf /tmp/ch*
- sudo rm -rf /tmp/repl-storage.json 
- avahi-browse -rt _matter._tcp
- sudo out/debug/chip-all-clusters-app
- sudo rm -rf /tmp/ch*
- avahi-browse -rt _matter._tcp
- sudo rm -rf /tmp/repl-storage.json 
- avahi-browse -rt _matter._tcp
- history | grep mdns
- sudo systemctl restart mdns.service
- avahi-browse -rt _matter._tcp
- sudo systemctl restart avahi-daemon.socket 
- avahi-browse -rt _matter._tcp
- sudo out/debug/chip-all-clusters-app
- sudo rm -rf /tmp/repl-storage.json 
- sudo rm -rf /tmp/ch*
- sudo systemctl restart avahi-daemon.socket 
- avahi-browse -rt _matter._tcp
- sudo out/debug/chip-all-clusters-app
- sudo rm -rf /tmp/repl-storage.json 
- sudo rm -rf /tmp/ch*
- sudo systemctl restart avahi-daemon.socket 
+    sudo sysctl -w net.ipv6.conf.wlo1.accept_ra=2
+    sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
+    sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
+    cd connectedhomeip/
+    cd examples/all-clusters-app/linux/
+    sudo rm -rf /tmp/ch*
+    sudo rm -rf /tmp/repl-storage.json
+    avahi-browse -rt _matter._tcp
+    sudo out/debug/chip-all-clusters-app
+    sudo rm -rf /tmp/ch*
+    avahi-browse -rt _matter._tcp
+    sudo rm -rf /tmp/repl-storage.json
+    avahi-browse -rt _matter._tcp
+    sudo systemctl restart mdns.service
+    avahi-browse -rt _matter._tcp
+    sudo systemctl restart avahi-daemon.socket
+    avahi-browse -rt _matter._tcp
+    avahi-browse -rt _matterc._udp
+    sudo out/debug/chip-all-clusters-app
+    sudo rm -rf /tmp/repl-storage.json
+    sudo rm -rf /tmp/ch*
+    sudo systemctl restart avahi-daemon.socket
+    avahi-browse -rt _matter._tcp
+    sudo out/debug/chip-all-clusters-app
+    sudo rm -rf /tmp/repl-storage.json
+    sudo rm -rf /tmp/ch*
+    sudo systemctl restart avahi-daemon.socket 
    ```
  
