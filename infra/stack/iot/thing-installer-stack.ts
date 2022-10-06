@@ -107,6 +107,7 @@ export class ThingInstallerStack extends base.BaseStack {
             "Effect": "Allow",
             "Action": [
                 "greengrass:CreateDeployment",
+                "greengrass:ListTagsForResource",
                 "iot:CancelJob",
                 "iot:CreateJob",
                 "iot:DeleteThingShadow",

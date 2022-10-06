@@ -2,3 +2,5 @@ boto3
 awsiot
 awsiotsdk
 ttp
+rich
+coloredlogs

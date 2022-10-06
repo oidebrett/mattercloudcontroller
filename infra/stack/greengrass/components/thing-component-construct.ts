@@ -92,10 +92,10 @@ export class ThingComponent extends base.BaseConstruct {
                             "FUNCTION_VERION": `${this.compName}:${compVersion}`,
                         },
                         "Install": {
-                            "script": `. /home/ubuntu/mattercloudcontroller/env/bin/activate\npip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
+                            "script": `. /home/ubuntu/connectedhomeip/out/python_env/bin/activate\npip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
                         },
                         "Run": {
-                            "script": `. /home/ubuntu/mattercloudcontroller/env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/shadowy.py\n`
+                            "script": `. /home/ubuntu/connectedhomeip/out/python_env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py\n`
                         },
                     },
                     "Artifacts": [
@@ -126,13 +126,26 @@ export class ThingComponent extends base.BaseConstruct {
                                 "operations": [
                                     "aws.greengrass#PublishToIoTCore",
                                     "aws.greengrass#SubscribeToIoTCore",
-                                    "aws.greengrass#SubscribeTopic"
+                                    "aws.greengrass#SubscribeTopic",
+                                    "aws.greengrass#SubscribeToTopic"
                                 ],
                                 "resources": [
                                     topicWild
                                 ]
                             }
-                        }
+                        },
+                        "aws.greengrass.ipc.pubsub": {
+                            "thing:pubsub:1": {
+                              "policyDescription": "Allows access to publish/subscribe to all topics.",
+                              "operations": [
+                                "aws.greengrass#PublishToTopic",
+                                "aws.greengrass#SubscribeToTopic"
+                              ],
+                              "resources": [
+                                "*"
+                              ]
+                            }
+                          }
                     }
                 })
             }
