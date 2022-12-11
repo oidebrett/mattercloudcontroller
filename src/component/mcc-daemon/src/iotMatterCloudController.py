@@ -7,11 +7,13 @@ Listen for incoming chip requests and publish the results onto response topic
 Command message structure (JSON):
 {
     "command": "commission",
+    "id":"192.168.0.36 | 1",
     "txid": "12345ABC",
     "format": "json|text",
     "timeout": 10
 }
 - `command` - full string to pass to chip
+- `id` - is the IP address when commissioning and the node id when sending a command
 - `txid` - unique id to track status of message, returned as part of response.
   Note: New commands cannot use the id of any in-flight operations that have not completed.
 - `format` - Optional, default json. Format of response message. JSON is serialized string,
@@ -42,30 +44,43 @@ import time
 import datetime
 import uuid
 import logger
-import awsiot.greengrasscoreipc
-import awsiot.greengrasscoreipc.client as client
-from awsiot.greengrasscoreipc.model import (
-    IoTCoreMessage,
-    QOS,
-    SubscribeToIoTCoreRequest,
-    PublishToIoTCoreRequest,
-    SubscribeToTopicRequest,
-    SubscriptionResponseMessage,
-    ListNamedShadowsForThingRequest,
-    GetThingShadowRequest,
-    UpdateThingShadowRequest
-)
 import argparse
 from rich.console import Console
 from rich import pretty
 import coloredlogs
 import logging
+import shlex
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
+parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
+parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
+args = parser.parse_args()
+LOCAL_TEST_ARG = args.test
+LOCAL_TEST = LOCAL_TEST_ARG.lower() == 'true'
+CLEAN_ARG = args.clean
+CLEAN = CLEAN_ARG.lower() == 'true'
+
+if not LOCAL_TEST:
+    import awsiot.greengrasscoreipc
+    import awsiot.greengrasscoreipc.client as client
+    from awsiot.greengrasscoreipc.model import (
+        IoTCoreMessage,
+        QOS,
+        SubscribeToIoTCoreRequest,
+        PublishToIoTCoreRequest,
+        SubscribeToTopicRequest,
+        SubscriptionResponseMessage,
+        ListNamedShadowsForThingRequest,
+        GetThingShadowRequest,
+        UpdateThingShadowRequest
+    )
 
 import iotMatterDeviceController
 
 curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
-sleep_time_in_sec = int(os.environ.get('SLEEP_TIME', '5'))
+sleep_time_in_sec = int(os.environ.get('SLEEP_TIME', '10'))
 
 RESPONSE_FORMAT = "json"
 TIMEOUT = 10
@@ -78,15 +93,6 @@ THING_NAME = os.getenv('AWS_IOT_THING_NAME')
 REQUEST_TOPIC = "chip/request"
 RESPONSE_TOPIC = "chip/response"
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
-parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
-parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
-args = parser.parse_args()
-LOCAL_TEST_ARG = args.test
-LOCAL_TEST = LOCAL_TEST_ARG.lower() == 'true'
-CLEAN_ARG = args.clean
-CLEAN = CLEAN_ARG.lower() == 'true'
 
 #create variable for matterDevices to store all information relating to local devices
 matterDevices = None
@@ -107,17 +113,19 @@ if not LOCAL_TEST:
     ipc_client = awsiot.greengrasscoreipc.connect()
 else:
     logger.info("is LOCAL_TEST")
-    workingDir = "/home/ubuntu/connectedhomeip"
+    workingDir = "/home/ivob/Projects/v1.0.0/connectedhomeip"
     _sample_file_name = 'sample_data.json'
 
 
 _topic = None
 _thing_name = None
 _version = None
+_ip_addr = '192.168.0.36'
 
 #This topic is triggered every time the shadow is updated.
 #subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/1/update/accepted"
 
+'''
 messages = []
 class RequestsHandler(logging.Handler):
     def emit(self, record):
@@ -131,6 +139,24 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 handler = RequestsHandler()
 logger.addHandler(handler)
+'''
+
+def runUnixCommand(command):
+    response = ""
+    try:
+        process = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline().decode()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                response += (output.strip()) + '\n'
+        rc = process.poll()
+        return response
+    except subprocess.TimeoutExpired:
+        logger.error(
+            f"Comand took longer than {TIMEOUT} seconds for message"
+        )
 
 def loadSampleData(file_name: str):
     with open(curr_dir + '/' + file_name) as f:
@@ -179,6 +205,7 @@ def pollForCommand(file_name: str):
     nodeId = None
     try:
         command = sample["command"]
+        id = sample["id"]
         lPrint(command)
         if command == "commission":
             if not LOCAL_TEST:
@@ -186,7 +213,7 @@ def pollForCommand(file_name: str):
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
             else:
                 lPrint("Calling commissionDevice function")
-                nodeId = matterDevices.commissionDevice('192.168.0.62')
+                nodeId = matterDevices.commissionDevice(id)
                 time.sleep(10)
                 lPrint("Calling readDevAttributesAsJsonStr function on nodeId:")
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
@@ -202,9 +229,28 @@ def pollForCommand(file_name: str):
                 #lPrint(newState)
 
         elif command == "on":
+            lPrint("Turning On")
+            nodeId = int(id)
             matterDevices.devOn(nodeId)
         elif command == "off":
+            lPrint("Turning Off")
+            nodeId = int(id)
             matterDevices.devOff(nodeId)
+        elif command == "resolve":
+            lPrint("Resolving")
+            nodeId = int(id)
+            #Try running a command
+            command = f'examples/chip-tool/out/debug/chip-tool discover resolve {nodeId} {matterDevices.getFabricId()}'
+            output = runUnixCommand(command)
+            lPrint(output)
+
+            #time.sleep(sleep_time_in_sec)
+            #command = "examples/chip-tool/out/debug/chip-tool onoff toggle 1 1"
+            #output = runUnixCommand(command)
+            #lPrint(output)
+
+
+
     except:
         pass
 
@@ -539,10 +585,10 @@ def main():
     os.chdir(workingDir)
 
     lPrint("Current Working Directory " + os.getcwd())
-    matterDevices.MatterInit(args)
-
-    #matterDevices.devCtrlStart()
-
+    matterDevices.MatterInit(args, False)
+    
+    #print(matterDevices.discoverCommissionableDevices()[0])
+    #return
 
     if not CLEAN:
         #Discover commissioned devices
@@ -550,7 +596,6 @@ def main():
         print(matterDevices.discoverFabricDevices())
         #lPrint(matterDevices.discoverDevices())
         lPrint("Finished Discovering commissioned devices")
-
 
     # Keep the main thread alive, or the process will exit.
     x=1

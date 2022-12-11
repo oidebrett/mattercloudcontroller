@@ -424,3 +424,80 @@ Command message structure (JSON):
    ```
  
 >>>>>>> 126415e5cded80f6a1aed49bc19ea64d9fba8e16
+
+# Testing the OTA requestor / Provider
+
+##Terminal 1 (run esp2 ota requestor app)
+```
+cd connectedhomeip/examples/ota-requestor-app/esp32
+idf.py menuconfig #here I set the wifi access point ssid and password
+idf.py build
+idf.py -p /dev/ttyUSB1 flash monitor
+```
+
+##Terminal 2 (run the linux OTA provider)
+I create an ota image from the esp32 lighting app and start the linux OTA provider
+
+```
+./src/app/ota_image_tool.py create -v 0xDEAD -p 0xBEEF -vn 1 -vs "1.0" -da sha256 examples/lighting-app/esp32/build/ota_data_initial.bin /tmp/esp2-image.bin
+./src/app/ota_image_tool.py show /tmp/esp2-image.bin
+out/chip-ota-provider-app --discriminator 22 --secured-device-port 5565 --KVS /tmp/chip_kvs_provider --filepath /tmp/esp2-image.bin 
+
+```
+
+##Terminal 3 (run the chip tool)
+I join the esp32 OTA-requestor to the fabric and then I join the OTA-provider to the same fabric
+I set the appropriate ACL on the OTA provider
+I then initiate the sw update on the OTA requestor
+
+```
+examples/chip-tool/out/debug/chip-tool pairing onnetwork-long 0x1234567890 20202021 3840
+examples/chip-tool/out/debug/chip-tool pairing onnetwork-long 0xDEADBEEF 20202021 22
+examples/chip-tool/out/debug/chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 5, "authMode": 2, "subjects": [112233], "targets": null}, {"fabricIndex": 1, "privilege": 3, "authMode": 2, "subjects": null, "targets": [{"cluster": 41, "endpoint": null, "deviceType": null}]}]' 0xDEADBEEF 0
+examples/chip-tool/out/debug/chip-tool otasoftwareupdaterequestor announce-ota-provider 0xDEADBEEF 0 0 0 0x1234567890 0
+```
+
+
+This results in
+OTA Provider receiveing QueryImage
+Generating an updateToken
+Generating an URI: bdx://00000000DEADBEEF//tmp/esp2-image.bin
+Sending the response message
+
+However, the esp32 ota-requestor app receives a response but does not show any logging for updating the image or compatible software version
+
+```
+chip[DMG]: Received Command Response Data, Endpoint=0 Cluster=0x0000_0029 Command=0x0000_0001
+echo-devicecallbacks: PostAttributeChangeCallback - Cluster ID: '0x0000_002A', EndPoint ID: '0x00', Attribute ID: '0x0000_0002'
+echo-devicecallbacks: Unhandled cluster ID: 0x0000_002A
+```
+
+# Testing on the local linux server using chip-repl and the matter controller code
+
+```
+import time, os
+import subprocess
+import sys
+import re
+import asyncio
+import json
+
+sys.path.append(os.path.abspath("/home/ivob/Projects/mattercloudcontroller/src/component/mcc-daemon/src"))
+import iotMatterDeviceController
+matterDevices = iotMatterDeviceController.MatterDeviceController(args)
+
+devices = devCtrl.DiscoverCommissionableNodes(filterType=chip.discovery.FilterType.LONG_DISCRIMINATOR, filter=3840, stopOnFirst=True, timeoutSecond=2)
+devices[0].Commission(2, 20202021)
+
+nodeId = 2
+data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0, Clusters.Identify])))
+
+jsonStr = matterDevices.jsonDumps(data)
+
+#If you have changed the code base in the DeviceController you can reload it this way
+
+del sys.modules['iotMatterDeviceController']
+import iotMatterDeviceController
+matterDevices = iotMatterDeviceController.MatterDeviceController(args)
+
+```
