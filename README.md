@@ -496,7 +496,7 @@ jsonStr = matterDevices.jsonDumps(data)
 
 #If you have changed the code base in the DeviceController you can reload it this way
 
-del sys.modules['iotMatterDeviceController']
+del sys.modules['iotMatterDeviceController']src/component/mcc-daemon/src/iotMatterCloudController.py
 import iotMatterDeviceController
 matterDevices = iotMatterDeviceController.MatterDeviceController(args)
 
