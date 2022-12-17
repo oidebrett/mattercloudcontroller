@@ -38,6 +38,7 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
+                                  "commissionableNodes",
                                   "1",
                                   "2",
                                   "3"
@@ -57,7 +58,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.82",
+                "Version": "0.0.90",
                 "CodePath": "src/component/mcc-daemon"
             }
         },
