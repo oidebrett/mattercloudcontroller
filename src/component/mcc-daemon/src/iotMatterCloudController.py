@@ -113,7 +113,8 @@ if not LOCAL_TEST:
     ipc_client = awsiot.greengrasscoreipc.connect()
 else:
     logger.info("is LOCAL_TEST")
-    workingDir = "/home/ivob/Projects/v1.0.0/connectedhomeip"
+    #workingDir = "/home/ivob/Projects/v1.0.0/connectedhomeip"
+    workingDir = "/home/ubuntu/connectedhomeip"
     _sample_file_name = 'sample_data.json'
 
 
@@ -205,11 +206,11 @@ def pollForCommand(file_name: str):
     nodeId = None
     try:
         command = sample["command"]
-        id = sample["id"]
         lPrint(command)
         if command == "commission":
+            id = sample["id"]
             if not LOCAL_TEST:
-                nodeId = matterDevices.commissionDevice('192.168.0.12')
+                nodeId = matterDevices.commissionDevice(id)
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
             else:
                 lPrint("Calling commissionDevice function")
@@ -219,37 +220,49 @@ def pollForCommand(file_name: str):
                 currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
                 lPrint("FInished ReadDevAttributesAsJsonStr function")
                 lPrint(currentStateStr)
-                #set the device shadow for test
-                #shadowName = str(nodeId)
-                #thingName = 'mcc-thing-ver01-1'
-                #newStr = '{"state": {"reported": '+currentStateStr+'}}'
+                #set the device shadow for the thing
+                shadowName = str(nodeId)
+                thingName = 'mcc-thing-ver01-1'
+                newStr = '{"state": {"reported": '+currentStateStr+'}}'
+                lPrint(newStr)
+                newState = json.loads(newStr)
+                lPrint("TaaaaaDaaaaaa---------------")
+                lPrint(newState)
+
+        if command == "discover" or command == "commission": # we always have to update the discoveredCommissionableDevices after we commission
+            discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
+            commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
+            lPrint(commissionableNodesJsonStr)
+            if not LOCAL_TEST:
+                #set the device shadow for commissionableNodes
+                shadowName = "commissionableNodes"
+                thingName = 'mcc-thing-ver01-1'
+                newStr = '{"state": {"desired": '+commissionableNodesJsonStr+',"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
                 #newState = json.loads(newStr)
-                lPrint("TaaaaaDaaaaaa---------------")
-                #lPrint(newState)
+                #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+                sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+            else:
+                pass
 
         elif command == "on":
+            id = sample["id"]
             lPrint("Turning On")
             nodeId = int(id)
             matterDevices.devOn(nodeId)
         elif command == "off":
+            id = sample["id"]
             lPrint("Turning Off")
             nodeId = int(id)
             matterDevices.devOff(nodeId)
         elif command == "resolve":
+            id = sample["id"]
             lPrint("Resolving")
             nodeId = int(id)
             #Try running a command
             command = f'examples/chip-tool/out/debug/chip-tool discover resolve {nodeId} {matterDevices.getFabricId()}'
             output = runUnixCommand(command)
             lPrint(output)
-
-            #time.sleep(sleep_time_in_sec)
-            #command = "examples/chip-tool/out/debug/chip-tool onoff toggle 1 1"
-            #output = runUnixCommand(command)
-            #lPrint(output)
-
-
 
     except:
         pass
@@ -293,7 +306,7 @@ def respond(event):
             response_op = ipc_client.new_publish_to_iot_core()
             response_op.activate(response)
             lPrint('{} for message: '.format(MSG_MISSING_ATTRIBUTE))
-            lPrint('for message: '.format(message))
+            #lPrint('for message: '.format(message))
             return
         
         # check for and update optional settings
@@ -332,13 +345,15 @@ def respond(event):
 
     nodeId = None
     if command == "commission":
-        nodeId = matterDevices.commissionDevice('192.168.0.62')
+        id = message_from_core["id"]
+        nodeId = matterDevices.commissionDevice(id)
         currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
         lPrint(currentStateStr)
         #set the device shadow for test
         shadowName = str(nodeId)
         thingName = 'mcc-thing-ver01-1'
         newStr = '{"state": {"desired": '+currentStateStr+',"reported": '+currentStateStr+'}}'
+
         lPrint(newStr)
         newState = json.loads(newStr)
         sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
@@ -359,12 +374,35 @@ def respond(event):
         future.result(TIMEOUT)
         subscribeToTopic(subscribeShadowDeltaTopic, handler)
 
+    elif command == "discover":
+        discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
+        commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
+        lPrint(commissionableNodesJsonStr)
+        if not LOCAL_TEST:
+            #set the device shadow for test
+            shadowName = "commissionableNodes"
+            thingName = 'mcc-thing-ver01-1'
+            newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
+            #newStr = '{"state":{"desired":{"welcome":"aws-iot","status":"good"},"reported":{"welcome":"aws-iot","status":"good"}}}'
+            lPrint(newStr)
+            newState = json.loads(newStr)
+            sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+        else:
+            pass
+        resp["response"] = "discovery complete"
+        resp["return_code"] = 200
+        resp["txid"] = message_from_core["txid"]
+
     elif command == "on":
+        id = message_from_core["id"]
+        nodeId = int(id)
         matterDevices.devOn(nodeId)
         resp["response"] = "turned on"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
     elif command == "off":
+        id = message_from_core["id"]
+        nodeId = int(id)
         matterDevices.devOff(nodeId)
         resp["response"] = "turned off"
         resp["return_code"] = 200
@@ -586,9 +624,6 @@ def main():
 
     lPrint("Current Working Directory " + os.getcwd())
     matterDevices.MatterInit(args, False)
-    
-    #print(matterDevices.discoverCommissionableDevices()[0])
-    #return
 
     if not CLEAN:
         #Discover commissioned devices
