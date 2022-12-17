@@ -12,10 +12,10 @@ import time
 from pprint import pformat
 from base64 import b64encode, b64decode
 
-import chip.CertificateAuthority
+#import chip.CertificateAuthority
 import chip.clusters as Clusters
 import chip.discovery
-import chip.FabricAdmin
+#import chip.FabricAdmin
 import chip.logging
 import chip.native
 import coloredlogs
