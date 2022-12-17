@@ -121,26 +121,6 @@ else:
 _topic = None
 _thing_name = None
 _version = None
-_ip_addr = '192.168.0.36'
-
-#This topic is triggered every time the shadow is updated.
-#subscribeShadowUpdateTopic = "$aws/things/mcc-thing-ver01-1/shadow/name/1/update/accepted"
-
-'''
-messages = []
-class RequestsHandler(logging.Handler):
-    def emit(self, record):
-        """Send the log records (created by loggers) to
-        the appropriate destination.
-        """
-        #lPrint(record.getMessage())
-        messages.append(record.getMessage())
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
-handler = RequestsHandler()
-logger.addHandler(handler)
-'''
 
 def runUnixCommand(command):
     response = ""
@@ -197,8 +177,9 @@ def pollForDeviceReports():
             shadowName = str(nodeId)
             newStr = '{"state": {"reported": '+currentStateStr+'}}'
             lPrint(newStr)
-            newState = json.loads(newStr)
-            sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+#            newState = json.loads(newStr)
+#            sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+            sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
 def pollForCommand(file_name: str):
     sample = loadAndCleanSampleData(file_name)
@@ -226,10 +207,9 @@ def pollForCommand(file_name: str):
                 newStr = '{"state": {"reported": '+currentStateStr+'}}'
                 lPrint(newStr)
                 newState = json.loads(newStr)
-                lPrint("TaaaaaDaaaaaa---------------")
                 lPrint(newState)
 
-        if command == "discover" or command == "commission": # we always have to update the discoveredCommissionableDevices after we commission
+        if command == "discover": # we always have to update the discoveredCommissionableDevices after we commission
             discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
             commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
             lPrint(commissionableNodesJsonStr)
@@ -355,8 +335,9 @@ def respond(event):
         newStr = '{"state": {"desired": '+currentStateStr+',"reported": '+currentStateStr+'}}'
 
         lPrint(newStr)
-        newState = json.loads(newStr)
-        sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+        #newState = json.loads(newStr)
+        #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+        sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
         resp["response"] = "commissioned"
         resp["return_code"] = 200
@@ -385,8 +366,9 @@ def respond(event):
             newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
             #newStr = '{"state":{"desired":{"welcome":"aws-iot","status":"good"},"reported":{"welcome":"aws-iot","status":"good"}}}'
             lPrint(newStr)
-            newState = json.loads(newStr)
-            sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+            #newState = json.loads(newStr)
+            #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
+            sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
         else:
             pass
         resp["response"] = "discovery complete"
@@ -564,14 +546,6 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
 
 #End of the code that is not used for local testing
 
-
-
-def wait_for_many_discovered_devices():
-    # Discovery happens through mdns, which means we need to wait for responses to come back.
-    # x number of responses are received. For now, just 2 seconds. We can all wait that long.
-    lPrint("Waiting for device responses...")
-    time.sleep(2)
-
 def exitGracefully():
     # To stop subscribing, close the operation stream.
     if not LOCAL_TEST:
@@ -593,11 +567,6 @@ def subscribeToTopic(topic, handler):
 def main():
     #global operation2
     global matterDevices
-
-    message = "Hello!"
-
-    # Print the message to stdout, which Greengrass saves in a log file.
-    lPrint(message)
 
     if not LOCAL_TEST:
         lPrint("Setting up the MQTT Subscription")
@@ -629,7 +598,6 @@ def main():
         #Discover commissioned devices
         lPrint("Discovering commissioned devices - please wait. May take a while......")
         print(matterDevices.discoverFabricDevices())
-        #lPrint(matterDevices.discoverDevices())
         lPrint("Finished Discovering commissioned devices")
 
     # Keep the main thread alive, or the process will exit.

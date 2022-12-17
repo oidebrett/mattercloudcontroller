@@ -214,19 +214,19 @@ class MatterDeviceController(object):
 
         console = Console()
 
-        console.rule('Matter REPL')
-        console.print('''
-                [bold blue]
-        
-                Welcome to the Matter Python REPL!
-        
-                For help, please type [/][bold green]matterhelp()[/][bold blue]
-        
-                To get more information on a particular object/class, you can pass
-                that into [bold green]matterhelp()[/][bold blue] as well.
-        
-                ''')
-        console.rule()
+        #console.rule('Matter REPL')
+        #console.print('''
+        #        [bold blue]
+        #
+        #        Welcome to the Matter Python REPL!
+        #
+        #        For help, please type [/][bold green]matterhelp()[/][bold blue]
+        #
+        #        To get more information on a particular object/class, you can pass
+        #        that into [bold green]matterhelp()[/][bold blue] as well.
+        #
+        #        ''')
+        #console.rule()
 
         coloredlogs.install(level='DEBUG')
         chip.logging.RedirectToPythonLogging()
