@@ -178,6 +178,8 @@ class MatterDeviceController(object):
         jsonStr = jsonStr.replace(" ", "")
         jsonStr = jsonStr.replace("\n", "")
         jsonStr = jsonStr.replace("<class'", "\"")
+        jsonStr = jsonStr.replace("chip.clusters.Objects.", "")
+        jsonStr = jsonStr.replace("chip.clusters.", "")
         jsonStr = jsonStr.replace("\'>", "\"")
         jsonStr = jsonStr.replace("False", "false")
         jsonStr = jsonStr.replace("True", "true")
