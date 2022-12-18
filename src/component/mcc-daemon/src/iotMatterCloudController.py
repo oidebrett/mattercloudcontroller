@@ -473,7 +473,7 @@ if not LOCAL_TEST:
                 lPrint(jsonmsg)
 
                 #if onoff is equal to true/1 then turn on else off
-                if jsonmsg['state']['1']['chip.clusters.Objects.OnOff']['chip.clusters.Objects.OnOff.Attributes.OnOff']:
+                if jsonmsg['state']['1']['OnOff']['OnOff.Attributes.OnOff']:
                     lPrint("true turn on")
                     #set current status to bad and update actual value of led output to reported
                     matterDevices.devOn(1)
