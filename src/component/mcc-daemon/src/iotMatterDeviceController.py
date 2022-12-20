@@ -101,6 +101,7 @@ class MatterDeviceController(object):
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
         data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
+        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [Clusters.Identify])))
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = self.jsonDumps(data)
@@ -167,7 +168,7 @@ class MatterDeviceController(object):
                         jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=Base64Encoder)) + ","
             elif isinstance(d, list):
                 for item in d:
-                    jsonStr = "[" + iterator(jsonStr, item) + "]"
+                    jsonStr = '{"list":[' + iterator(jsonStr, item) + ']}'
             else: 
                 jsonStr = jsonStr + json.dumps(d, cls=Base64Encoder)
 
@@ -190,8 +191,7 @@ class MatterDeviceController(object):
         jsonStr = "{" + jsonStr
 
         #to handle the extra curly put in for a list we will remove now - fix this later
-        jsonStr = jsonStr.replace("{[", "[")
-        jsonStr = jsonStr.replace("}}]}", "}]")
+        jsonStr = jsonStr.replace("}]}}", "}]}")
 
         #to handle the extra curly put in for a standard commissionable node entry we will remove now- fix this later
         result = re.search(r"(^{{)(.*?)(}})", jsonStr)
@@ -215,20 +215,6 @@ class MatterDeviceController(object):
         pretty.install(indent_guides=True, expand_all=True)
 
         console = Console()
-
-        #console.rule('Matter REPL')
-        #console.print('''
-        #        [bold blue]
-        #
-        #        Welcome to the Matter Python REPL!
-        #
-        #        For help, please type [/][bold green]matterhelp()[/][bold blue]
-        #
-        #        To get more information on a particular object/class, you can pass
-        #        that into [bold green]matterhelp()[/][bold blue] as well.
-        #
-        #        ''')
-        #console.rule()
 
         coloredlogs.install(level='DEBUG')
         chip.logging.RedirectToPythonLogging()
