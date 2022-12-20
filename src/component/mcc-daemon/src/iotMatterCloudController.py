@@ -167,7 +167,8 @@ def pollForDeviceReports():
 
     for nodeId in deviceNodeIds:
         #check device to read current state
-        currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
+        #currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
+        currentStateStr = matterDevices.readEndpointZeroAsJsonStr(nodeId)
 
         #just print out the response for now
         lPrint(currentStateStr)
@@ -217,7 +218,7 @@ def pollForCommand(file_name: str):
                 #set the device shadow for commissionableNodes
                 shadowName = "commissionableNodes"
                 thingName = 'mcc-thing-ver01-1'
-                newStr = '{"state": {"desired": '+commissionableNodesJsonStr+',"reported": '+commissionableNodesJsonStr+'}}'
+                newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
                 #newState = json.loads(newStr)
                 #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
@@ -314,7 +315,8 @@ def respond(event):
         response.qos = QOS.AT_MOST_ONCE
         response_op = ipc_client.new_publish_to_iot_core()
         response_op.activate(response)        
-        lPrint(f"{MSG_INVALID_JSON} for message: {message}")
+#        lPrint(f"{MSG_INVALID_JSON} for message: {message}")
+        lPrint(f"{MSG_INVALID_JSON} for message")
         return
     except Exception as e:
         raise
@@ -327,7 +329,7 @@ def respond(event):
     if command == "commission":
         id = message_from_core["id"]
         nodeId = matterDevices.commissionDevice(id)
-        currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
+        currentStateStr = matterDevices.readEndpointZeroAsJsonStr(nodeId)
         lPrint(currentStateStr)
         #set the device shadow for test
         shadowName = str(nodeId)
@@ -363,7 +365,8 @@ def respond(event):
             #set the device shadow for test
             shadowName = "commissionableNodes"
             thingName = 'mcc-thing-ver01-1'
-            newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
+            newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
+            #newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
             #newStr = '{"state":{"desired":{"welcome":"aws-iot","status":"good"},"reported":{"welcome":"aws-iot","status":"good"}}}'
             lPrint(newStr)
             #newState = json.loads(newStr)
