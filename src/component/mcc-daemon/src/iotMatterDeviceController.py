@@ -100,8 +100,9 @@ class MatterDeviceController(object):
 
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
-        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
-        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [Clusters.Identify])))
+        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
+        #We are limited to json document size so just asking for these
+        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = self.jsonDumps(data)

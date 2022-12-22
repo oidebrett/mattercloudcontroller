@@ -363,7 +363,7 @@ def respond(event):
         lPrint(commissionableNodesJsonStr)
         if not LOCAL_TEST:
             #set the device shadow for test
-            shadowName = "commissionableNodes"
+            shadowName = "0"
             thingName = 'mcc-thing-ver01-1'
             newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
             #newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
