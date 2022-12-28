@@ -102,7 +102,8 @@ class MatterDeviceController(object):
         self.lPrint('Start Reading Endpoint0 Attributes')
         #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
         #We are limited to json document size so just asking for these
-        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = self.jsonDumps(data)
@@ -157,6 +158,14 @@ class MatterDeviceController(object):
 
         def cleanUpClassNames(jsonStr):
             #to handle the extra classname we will remove now
+            #First we need to make the Dataversion unique - otherwise the AWS device shadow complains
+            #result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
+            #while (result is not None):
+            #    newDataVersionClassName= f"<class'chip.clusters.Attribute.{result.group(1)}.DataVersion'>"
+            #    newStr = "<class\'chip.clusters.Objects."+result.group(1)+"\'>:{"+newDataVersionClassName
+            #    jsonStr = jsonStr.replace(result.group(0), newStr)
+            #    result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
+
             result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
             while (result is not None):
                 jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
@@ -167,10 +176,15 @@ class MatterDeviceController(object):
                 jsonStr = jsonStr.replace(result.group(0), '"'+result.group(2)+'"')
                 result = re.search(r"<class\'chip.clusters.Objects.(\w+).Attributes.([^.]*)\'>", jsonStr)
 
-            result = re.search(r"<class\'chip.clusters.Attribute.([^.]*)\'>", jsonStr)
+            result = re.search(r"\"([\w+]+)\":{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
             while (result is not None):
-                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
-                result = re.search(r"<class\'chip.clusters.Attribute.([^.]*)\'>", jsonStr)
+                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'":{"'+result.group(1)+'.DataVersion"')
+                result = re.search(r"\"([\w+]+)\":{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
+
+
+
+
+
 
             return jsonStr
 
