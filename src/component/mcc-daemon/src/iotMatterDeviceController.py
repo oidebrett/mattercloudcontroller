@@ -154,7 +154,26 @@ class MatterDeviceController(object):
                         }
                     
                 return o.__dict__ 
-            
+
+        def cleanUpClassNames(jsonStr):
+            #to handle the extra classname we will remove now
+            result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
+            while (result is not None):
+                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
+                result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
+
+            result = re.search(r"<class\'chip.clusters.Objects.(\w+).Attributes.([^.]*)\'>", jsonStr)
+            while (result is not None):
+                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(2)+'"')
+                result = re.search(r"<class\'chip.clusters.Objects.(\w+).Attributes.([^.]*)\'>", jsonStr)
+
+            result = re.search(r"<class\'chip.clusters.Attribute.([^.]*)\'>", jsonStr)
+            while (result is not None):
+                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
+                result = re.search(r"<class\'chip.clusters.Attribute.([^.]*)\'>", jsonStr)
+
+            return jsonStr
+
         def iterator(jsonStr, d):
             if isinstance(d, dict):
                 for k, v in d.items():
@@ -179,10 +198,10 @@ class MatterDeviceController(object):
         jsonStr = iterator(jsonStr, dm)
         jsonStr = jsonStr.replace(" ", "")
         jsonStr = jsonStr.replace("\n", "")
-        jsonStr = jsonStr.replace("<class'", "\"")
-        jsonStr = jsonStr.replace("chip.clusters.Objects.", "")
-        jsonStr = jsonStr.replace("chip.clusters.", "")
-        jsonStr = jsonStr.replace("\'>", "\"")
+
+        #call function to clean up class names in json str
+        jsonStr = cleanUpClassNames(jsonStr)
+
         jsonStr = jsonStr.replace("False", "false")
         jsonStr = jsonStr.replace("True", "true")
         jsonStr = jsonStr.replace("Null", "null")
