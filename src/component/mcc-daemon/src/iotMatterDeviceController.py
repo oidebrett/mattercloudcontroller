@@ -1,31 +1,49 @@
 import argparse
 import asyncio
-import atexit
 import builtins
 import json
 import logging
 import os
+import pathlib
 import re
-import subprocess
 import sys
+import uuid
+from binascii import hexlify, unhexlify
+from dataclasses import asdict as dataclass_asdict
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+import atexit
+import subprocess
 import time
-from pprint import pformat
-from base64 import b64encode, b64decode
+from binascii import hexlify, unhexlify
+import queue
+from dataModelLookup import PreDefinedDataModelLookup
 
 #import chip.CertificateAuthority
 import chip.clusters as Clusters
-import chip.discovery
 #import chip.FabricAdmin
 import chip.logging
 import chip.native
-import coloredlogs
 from chip import ChipDeviceCtrl
 from chip.ChipStack import *
+from chip.storage import PersistentStorage
 from chip.utils import CommissioningBuildingBlocks
-from chip.clusters.Types import Nullable, NullValue
-from rich import inspect, pretty, print
-from rich.console import Console
-from rich.pretty import pprint
+from chip import discovery, exceptions
+from chip.clusters.Attribute import SubscriptionTransaction, TypedAttributePath
+
+from mobly import base_test, logger, signals, utils
+from mobly.config_parser import ENV_MOBLY_LOGPATH, TestRunConfig
+from mobly.test_runner import TestRunner
+import jsonDumps
+
+
+# TODO: Add utility to commission a device if needed
+# TODO: Add utilities to keep track of controllers/fabrics
+
+logger = logging.getLogger("matter.cloud_controller")
+logger.setLevel(logging.INFO)
+
+output_queue = queue.Queue()
 
 class MatterDeviceController(object):
     args = None
@@ -37,21 +55,20 @@ class MatterDeviceController(object):
         self.args = args
 
     def lPrint(self,msg):
-        console = Console()
-        console.print(msg)
-        logging.info(msg)
+        logger.info(msg)
         print(msg, file=sys.stdout)
         sys.stderr.flush()
 
     def getFabricId(self):
         return devCtrl.GetCompressedFabricId()
 
-    def discoverFabricDevices(self):
+    def discoverFabricDevices(self, stopAtFirstFail = False):
         # Discovery happens through mdns, which means we need to wait for responses to come back.
+        '''
         self.lPrint("Querying cache for devices on this fabric...")
         compressFabricId = devCtrl.GetCompressedFabricId()
         compressFabricIdHex = "%0.2X" % compressFabricId
-        #self.lPrint(compressFabricIdHex)
+        self.lPrint(compressFabricIdHex)
         cmd = subprocess.Popen('avahi-browse -rt _matter._tcp', shell=True, stdout=subprocess.PIPE)
         for line in cmd.stdout:
             lineStr = line.decode("utf-8")
@@ -62,6 +79,20 @@ class MatterDeviceController(object):
                         self.fabricDevices.add(int(catch[0][len(compressFabricIdHex)+1:])) # catch is a match object
 
         return list(self.fabricDevices)
+        '''
+
+        for nodeId in range(1, self.MAX_DEVICES+1):
+            self.lPrint(nodeId)
+            try:
+                devCtrl.ResolveNode(nodeId)
+                self.lPrint("Found a node: " + str(nodeId))
+                self.fabricDevices.add(int(nodeId)) 
+            except exceptions.ChipStackError as ex:
+                self.lPrint("DiscoverCommissionableNodes stopped {}".format(str(ex)))
+                if stopAtFirstFail:
+                    break
+
+        return list(self.fabricDevices)
 
     def discoverCommissionableDevices(self):
         # Discovery happens through mdns, which means we need to wait for responses to come back.
@@ -69,9 +100,6 @@ class MatterDeviceController(object):
         self.commissionableDevices = devCtrl.DiscoverCommissionableNodes(filterType=chip.discovery.FilterType.LONG_DISCRIMINATOR, filter=3840, stopOnFirst=False, timeoutSecond=2)
         #print(devices)
         return list(self.commissionableDevices)
-
-    def getCommissionedDevices(self):
-        return list(self.fabricDevices)
 
     def commissionDevice(self, ipAddress, nodeId=None):
         try:
@@ -89,35 +117,42 @@ class MatterDeviceController(object):
             #Commented Out support for byte type of IpAddress
             #ipAddressAsBytes = str.encode(ipAddress)0
             #builtins.devCtrl.CommissionIP(ipAddressAsBytes, 20202021, nodeId)
-            self.fabricDevices.add(nodeId)
+
+            #Set the nodel label to node id so that when we restart the controller we can
+            #build a list of the controllers in the correct order
             time.sleep(10)
+            self.writeNodeLabel(nodeId)
+
+            #Then add this one to the fabricDevices
+            self.fabricDevices.add(nodeId)
+            time.sleep(5)
             return nodeId
         except Exception as e:
             self.lPrint("Commission failed: ", e.message)
             return -1
 
+    def getCommissionedDevices(self):
+        return list(self.fabricDevices)
 
+    async def readSingleAttribute(self, node_id: int, endpoint: int, attribute: object) -> object:
+        self.lPrint('readSingleSttribute')
+        result = await devCtrl.ReadAttribute(node_id, [(endpoint, attribute)])
+        data = result[endpoint]
+        return list(data.values())[0][attribute]
 
-    def readEndpointZeroAsJsonStr(self, nodeId):
-        self.lPrint('Start Reading Endpoint0 Attributes')
-        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
-        #We are limited to json document size so just asking for these
-        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
-        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
-        self.lPrint('End Reading Endpoint0 Attributes')
+    def writeNodeLabel(self, node_id: int):
+        # when its commissioned, set the NodeLabel to "node_id"
+        self.lPrint(f"Set BasicInformation.NodeLabel to {node_id}")
+        asyncio.run(devCtrl.WriteAttribute(node_id, [(0, Clusters.BasicInformation.Attributes.NodeLabel(value=node_id))]))
+        time.sleep(2)
 
-        jsonStr = self.jsonDumps(data)
-        self.lPrint(jsonStr)
-        return jsonStr
-
-    def readDevAttributesAsJsonStr(self, nodeId):
-        self.lPrint('Start Reading Dev Attributes')
-        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [Clusters.OnOff])))
-        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [('*')])))
-        self.lPrint('End Reading Dev Attributes')
-        jsonStr = self.jsonDumps(data)
-        self.lPrint(jsonStr)
-        return jsonStr
+    def writeAttribute(self, node_id: int, endpoint: int, clusterName: str, attributeName: str, value: str):
+        # when its commissioned, set the NodeLabel to "node_id"
+        self.lPrint(f"WriteAttribute to {attributeName}")
+        pddml = PreDefinedDataModelLookup()
+        attributeClass = pddml.get_attribute(clusterName,attributeName)
+        asyncio.run(devCtrl.WriteAttribute(node_id, [(endpoint, attributeClass(value=value))]))
+        time.sleep(2)
 
     def devOn(self, nodeId):
         self.lPrint('on')
@@ -129,110 +164,46 @@ class MatterDeviceController(object):
         asyncio.run(devCtrl.SendCommand(nodeId, 1, Clusters.OnOff.Commands.Off()))
         time.sleep(2)
 
-    def jsonDumps(self, dm):
-        class Base64Encoder(json.JSONEncoder):
-            # pylint: disable=method-hidden
-            def default(self, o):
-                if isinstance(o, bytes):
-                    return b64encode(o).decode() #Note we will be able to get back to bytes using b64decode(o)
-                if isinstance(o, chip.ChipDeviceCtrl.CommissionableNode):
-                    return {
-                        "addresses": o.addresses, 
-                        "commissioningMode": o.commissioningMode,
-                        "deviceName": o.deviceName ,
-                        "deviceType": o.deviceType,
-                        "hostName": o.hostName ,
-                        "instanceName": o.instanceName ,
-                        "longDiscriminator": o.longDiscriminator ,
-                        "mrpRetryIntervalActive": o.mrpRetryIntervalActive ,
-                        "mrpRetryIntervalIdle": o.mrpRetryIntervalIdle ,
-                        "pairingHint": o.pairingHint ,
-                        "pairingInstruction": o.pairingInstruction ,
-                        "port": o.port,
-                        "productId": o.productId,
-                        "supportsTcp": o.supportsTcp,
-                        "vendorId": o.vendorId
-                        }
-                    
-                return o.__dict__ 
+    def readEndpointZeroAsJsonStr(self, nodeId):
+        self.lPrint('Start Reading Endpoint0 Attributes')
+        #if we are limited to json document size we could just ask for these
+        #data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        large_read_contents = [
+            Clusters.BasicInformation.Attributes.DataModelRevision,
+            Clusters.BasicInformation.Attributes.VendorName,
+            Clusters.BasicInformation.Attributes.VendorID,
+            Clusters.BasicInformation.Attributes.ProductName,
+            Clusters.BasicInformation.Attributes.ProductID,
+            Clusters.BasicInformation.Attributes.NodeLabel,
+            Clusters.BasicInformation.Attributes.Location,
+            Clusters.BasicInformation.Attributes.HardwareVersion,
+            Clusters.BasicInformation.Attributes.HardwareVersionString,
+        ]
+        large_read_paths = [(0, attrib) for attrib in large_read_contents]
+        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, large_read_paths)))
+        '''
+        data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0])))
+        '''
+        self.lPrint('End Reading Endpoint0 Attributes')
 
-        def cleanUpClassNames(jsonStr):
-            #to handle the extra classname we will remove now
-            #First we need to make the Dataversion unique - otherwise the AWS device shadow complains
-            #result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-            #while (result is not None):
-            #    newDataVersionClassName= f"<class'chip.clusters.Attribute.{result.group(1)}.DataVersion'>"
-            #    newStr = "<class\'chip.clusters.Objects."+result.group(1)+"\'>:{"+newDataVersionClassName
-            #    jsonStr = jsonStr.replace(result.group(0), newStr)
-            #    result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-
-            result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
-            while (result is not None):
-                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
-                result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
-
-            result = re.search(r"<class\'chip.clusters.Objects.(\w+).Attributes.([^.]*)\'>", jsonStr)
-            while (result is not None):
-                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(2)+'"')
-                result = re.search(r"<class\'chip.clusters.Objects.(\w+).Attributes.([^.]*)\'>", jsonStr)
-
-            result = re.search(r"\"([\w+]+)\":{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-            while (result is not None):
-                jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'":{"'+result.group(1)+'.DataVersion"')
-                result = re.search(r"\"([\w+]+)\":{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-
-
-
-
-
-
-            return jsonStr
-
-        def iterator(jsonStr, d):
-            if isinstance(d, dict):
-                for k, v in d.items():
-                    if isinstance(v, dict):
-                        if isinstance(k, int):
-                            jsonStr = jsonStr + "\"" + str(k) + "\"" + ": {"
-                        else:
-                            jsonStr = jsonStr + str(k) + ": {"
-
-                        jsonStr = iterator(jsonStr, v)
-                    else:
-                        jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=Base64Encoder)) + ","
-            elif isinstance(d, list):
-                for item in d:
-                    jsonStr = '{"list":[' + iterator(jsonStr, item) + ']}'
-            else: 
-                jsonStr = jsonStr + json.dumps(d, cls=Base64Encoder)
-
-            return jsonStr + "},"
-
-        jsonStr = ""
-        jsonStr = iterator(jsonStr, dm)
-        jsonStr = jsonStr.replace(" ", "")
-        jsonStr = jsonStr.replace("\n", "")
-
-        #call function to clean up class names in json str
-        jsonStr = cleanUpClassNames(jsonStr)
-
-        jsonStr = jsonStr.replace("False", "false")
-        jsonStr = jsonStr.replace("True", "true")
-        jsonStr = jsonStr.replace("Null", "null")
-        jsonStr = jsonStr.replace(",}", "}")
-        jsonStr = jsonStr.replace(",]", "]")
-        jsonStr = jsonStr.rstrip(',')
-        jsonStr = "{" + jsonStr
-
-        #to handle the extra curly put in for a list we will remove now - fix this later
-        jsonStr = jsonStr.replace("}]}}", "}]}")
-
-        #to handle the extra curly put in for a standard commissionable node entry we will remove now- fix this later
-        result = re.search(r"(^{{)(.*?)(}})", jsonStr)
-        if (result is not None):
-            jsonStr = jsonStr.replace(result.group(0), "{"+result.group(2)+"}")
+        jsonStr = jsonDumps.jsonDumps(data)
+        self.lPrint(jsonStr)
         return jsonStr
 
+    def subscribeForAttributeChange(self, nodeId, callback):
+        # Immediate reporting
+        min_report_interval_sec = 0
+        # 10 minutes max reporting interval --> We don't care about keep-alives per-se and
+        # want to avoid resubscriptions
+        max_report_interval_sec = 10 * 60
+ 
+        self.lPrint("Establishing subscription from controller node %s" % (nodeId))
+
+        sub = asyncio.run(devCtrl.ReadAttribute(nodeId, attributes=[(0, Clusters.BasicInformation.Attributes.NodeLabel)],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=False))
+        attribute_handler = AttributeChangeAccumulator(name=nodeId, callback=callback, expected_attribute=Clusters.BasicInformation.Attributes.NodeLabel, output=output_queue)
+        sub.SetAttributeUpdateCallback(attribute_handler)
+
+        return sub
 
     def cleanStart(self):
         if os.path.isfile('/tmp/repl-storage.json'):
@@ -241,48 +212,17 @@ class MatterDeviceController(object):
         os.system('rm -rf /tmp/chip_*')
         time.sleep(2)
 
-    def ReplInit(self, debug):
-        #
-        # Install the pretty printer that rich provides to replace the existing
-        # printer.
-        #
-        pretty.install(indent_guides=True, expand_all=True)
-
-        console = Console()
-
-        coloredlogs.install(level='DEBUG')
-        chip.logging.RedirectToPythonLogging()
-
-        if debug:
-            logging.getLogger().setLevel(logging.DEBUG)
-        else:
-            logging.getLogger().setLevel(logging.WARN)
+    def bytes_from_hex(self, hex: str) -> bytes:
+        """Converts any `hex` string representation including `01:ab:cd` to bytes
+        Handles any whitespace including newlines, which are all stripped.
+        """
+        return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
 
 
-    def StackShutdown(self):
-        certificateAuthorityManager.Shutdown()
-        builtins.chipStack.Shutdown()
+    def hex_from_bytes(self, b: bytes) -> str:
+        """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
+        return hexlify(b).decode("utf-8")
 
-
-    def matterhelp(self, classOrObj=None):
-        if (classOrObj is None):
-            inspect(builtins.devCtrl, methods=True, help=True, private=False)
-            inspect(mattersetlog)
-            inspect(mattersetdebug)
-        else:
-            inspect(classOrObj, methods=True, help=True, private=False)
-
-
-    def mattersetlog(self, level):
-        logging.getLogger().setLevel(level)
-
-
-    def mattersetdebug(self, enableDebugMode: bool = True):
-        ''' Enables debug mode that is utilized by some Matter modules
-            to better facilitate debugging of failures (e.g throwing exceptions instead
-            of returning well-formatted results).
-        '''
-        builtins.enableDebugMode = enableDebugMode
 
     def MatterInit(self, args, debug=True):
         global devCtrl
@@ -290,11 +230,8 @@ class MatterDeviceController(object):
         global chipStack
         global certificateAuthorityManager
 
-        console = Console()
-
         chip.native.Init()
 
-        self.ReplInit(debug)
         chipStack = ChipStack(persistentStoragePath=args.storagepath, enableServerInteractions=False)
         certificateAuthorityManager = chip.CertificateAuthority.CertificateAuthorityManager(chipStack, chipStack.GetStorageManager())
 
@@ -311,6 +248,40 @@ class MatterDeviceController(object):
         devCtrl = caList[0].adminList[0].NewController()
         builtins.devCtrl = devCtrl
 
-        atexit.register(self.StackShutdown)
+        atexit.register(self.StackShutdown)        
+
+    def StackShutdown(self):
+        certificateAuthorityManager.Shutdown()
+        builtins.chipStack.Shutdown()
+
+class AttributeChangeAccumulator:
+    def __init__(self, name: str, callback, expected_attribute: Clusters.ClusterAttributeDescriptor, output: queue.Queue):
+        self._name = name
+        self._callback = callback
+        self._output = output
+        self._expected_attribute = expected_attribute
+
+    def lPrint(self,msg):
+        logger.info(msg)
+        print(msg, file=sys.stdout)
+        sys.stderr.flush()
+
+    def __call__(self, path: TypedAttributePath, transaction: SubscriptionTransaction):
+        #if path.AttributeType == self._expected_attribute:
+        data = transaction.GetAttribute(path)
+
+        value = {
+            'name': self._name,
+            'endpoint': path.Path.EndpointId,
+            'attribute': path.AttributeType,
+            'value': data
+        }
+        self.lPrint("Got subscription report on client %s for %s: %s" % (self.name, path.AttributeType, data))
+        self._output.put(value)
+        self._callback(self._name )
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
