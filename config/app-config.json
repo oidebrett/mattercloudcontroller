@@ -38,7 +38,7 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
-                                  "commissionableNodes",
+                                  "0",
                                   "1",
                                   "2",
                                   "3"
@@ -51,14 +51,14 @@
                           "maxTotalLocalRequestsRate": 200,
                           "maxLocalRequestsPerSecondPerThing": 20
                         },
-                        "shadowDocumentSizeLimitBytes": 8192                        
+                        "shadowDocumentSizeLimitBytes": 30720                        
                     },
                     "DocsForDependencies": "https://docs.aws.amazon.com/greengrass/v2/developerguide/shadow-manager-component.html"
                 }
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.90",
+                "Version": "0.0.105",
                 "CodePath": "src/component/mcc-daemon"
             }
         },
