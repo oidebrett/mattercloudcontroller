@@ -501,3 +501,90 @@ import iotMatterDeviceController
 matterDevices = iotMatterDeviceController.MatterDeviceController(args)
 
 ```
+
+# Testing lightswitch binging to light bulb using chip-repl and the ESP32 (running light bulb) and NRF52840 (running light switch) as per https://github.com/project-chip/connectedhomeip/tree/master/examples/light-switch-app/nrfconnect
+
+```
+devices = devCtrl.DiscoverCommissionableNodes(filterType=chip.discovery.FilterType.LONG_DISCRIMINATOR, filter=3840, stopOnFirst=True, timeoutSecond=2)
+
+devices[0].Commission(1, 20202021)
+
+await devCtrl.SendCommand(1, 1, Clusters.OnOff.Commands.On())
+
+devCtrl.CommissionThread(3840, 20202021, 2, bytes.fromhex("0e080000000000010000000300000f35060004001fffe0020811111111222222220708fdac0186760ae20c051000112233445566778899aabbccddeeff030e4f70656e54687265616444656d6f010212340410445f2b5ca6f2a93a55ce570a70efeecb0c0402a0f7f8"))
+
+await devCtrl.ReadAttribute(2, [(0, Clusters.Basic)])
+
+acl = [ Clusters.AccessControl.Structs.AccessControlEntry(
+            fabricIndex = 1,
+            privilege = Clusters.AccessControl.Enums.Privilege.kAdminister,
+            authMode = Clusters.AccessControl.Enums.AuthMode.kCase,
+            subjects = [112233] )
+            ]
+
+acl.append(Clusters.AccessControl.Structs.AccessControlEntry(
+            fabricIndex = 1,
+            privilege = Clusters.AccessControl.Enums.Privilege.kAdminister,
+            authMode = Clusters.AccessControl.Enums.AuthMode.kCase,
+            subjects = [2],
+            targets = [
+                Clusters.AccessControl.Structs.Target(
+                    cluster=6,
+                    endpoint = 1,
+                ),
+                Clusters.AccessControl.Structs.Target(
+                    cluster=8,
+                    endpoint =1
+                )
+            ]
+        )
+    )
+
+await devCtrl.WriteAttribute(1, [ (0, Clusters.AccessControl.Attributes.Acl( acl ) ) ] )
+
+targets = [Clusters.Binding.Structs.TargetStruct(
+    fabricIndex = 1,
+    node=1,
+    endpoint=1,
+    cluster=6),
+    Clusters.Binding.Structs.TargetStruct(
+        fabricIndex = 1,
+        node=1,
+        endpoint=1,
+        cluster=8) ]
+
+await devCtrl.WriteAttribute(2, [ (1, Clusters.Binding.Attributes.Binding( targets ) ) ] )
+
+```
+
+
+## How to setup the ubuntu environment properly for the matter cloud controller pi
+
+after you have cloned the repo and installed the submodules then
+
+'''
+scripts/build_python.sh -m platform -i separate
+'''
+
+then on a seperate laptop build the all clusters app variant that has only ipv6 (this is to simulate what will be the most probably interface for all devices post commissioning by other fabric)
+
+'''
+./scripts/run_in_build_env.sh "./scripts/build/build_examples.py --target linux-x64-all-clusters-no-ble-asan-clang build"
+
+'''
+
+then we have to 
+
+Activate the Python virtual environment:
+
+'''
+source out/python_env/bin/activate
+'''
+
+Verify the install by Launching the REPL.
+
+'''
+sudo out/python_env/bin/chip-repl
+'''
+
+
