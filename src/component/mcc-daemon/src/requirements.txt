@@ -4,3 +4,6 @@ awsiotsdk
 ttp
 rich
 coloredlogs
+click
+lark
+stringcase
