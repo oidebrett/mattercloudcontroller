@@ -39,6 +39,7 @@ import datetime
 import subprocess
 import json
 import traceback
+from rich.console import Console
 
 import config
 
@@ -63,6 +64,8 @@ curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
 
 def lPrint(msg):
+    console = Console()
+    console.print(msg)
     logging.info(msg)
     print(msg, file=sys.stdout)
     sys.stderr.flush()
@@ -95,6 +98,7 @@ else:
     _sample_file_name = 'sample_data.json'
 
 config.chipDir = workingDir
+
 config.MAX_DEVICES = int(args.maxdevices)
 
 import iotMatterDeviceController
@@ -207,7 +211,6 @@ def pollForCommand(file_name: str):
             changedNodeIds.append(nodeId) #add nodeId to the changedIds
             time.sleep(stabilisation_time_in_sec)
 
-
             #Set up a subscription that will call OnValueChange when ever we get a change
             lPrint("Settting Up Subscription on nodeId:")
             matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
@@ -219,7 +222,7 @@ def pollForCommand(file_name: str):
             lPrint(commissionableNodesJsonStr)
             if not LOCAL_TEST:
                 #set the device shadow for commissionableNodes
-                shadowName = "commissionableNodes"
+                shadowName = "0"
                 thingName = 'mcc-thing-ver01-1'
                 newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
@@ -342,8 +345,17 @@ def respond(event):
 
     nodeId = None
     if command == "commission":
-        id = message_from_core["id"]
-        nodeId = matterDevices.commissionDevice(id)
+        ipaddress = message_from_core["id"]
+        lPrint("Calling commissionDevice function")
+        nodeId = matterDevices.commissionDevice(ipaddress, nodeId=None, allocatedNodeIds = None)
+        changedNodeIds.append(nodeId) #add nodeId to the changedIds
+        time.sleep(stabilisation_time_in_sec)
+
+        #Set up a subscription that will call OnValueChange when ever we get a change
+        lPrint("Settting Up Subscription on nodeId:")
+        matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
+
+        '''
         currentStateStr = matterDevices.readEndpointZeroAsJsonStr(nodeId)
         lPrint(currentStateStr)
         #set the device shadow for test
@@ -355,6 +367,7 @@ def respond(event):
         #newState = json.loads(newStr)
         #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
         sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+        '''
 
         resp["response"] = "commissioned"
         resp["return_code"] = 200
@@ -382,13 +395,11 @@ def respond(event):
             thingName = 'mcc-thing-ver01-1'
             newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
             #newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
-            #newStr = '{"state":{"desired":{"welcome":"aws-iot","status":"good"},"reported":{"welcome":"aws-iot","status":"good"}}}'
             lPrint(newStr)
-            #newState = json.loads(newStr)
-            #sample_update_thing_shadow_request(thingName, shadowName, bytes(json.dumps(newState), "utf-8"))
             sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
         else:
             pass
+
         resp["response"] = "discovery complete"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
@@ -407,6 +418,16 @@ def respond(event):
         resp["response"] = "turned off"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
+    elif command == "execute":
+        id = message_from_core["id"]
+        lPrint("Executing JSON/Yaml")
+        nodeId = int(id)
+        actions = message_from_core["actions"]
+        matterDevices.execute(nodeId, actions)
+        resp["response"] = "executed actions"
+        resp["return_code"] = 200
+        resp["txid"] = message_from_core["txid"]
+
     else:
         
         try:
@@ -562,6 +583,17 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
         lPrint("Error update shadow")
         # except ConflictError | UnauthorizedError | ServiceError
 
+def subscribeToTopic(topic, handler):
+    global operation
+    lPrint("Setting up the MQTT Subscription")
+    # Setup the MQTT Subscription
+    qos = QOS.AT_MOST_ONCE
+    request = SubscribeToIoTCoreRequest()
+    request.topic_name = topic
+    request.qos = qos
+    operation = ipc_client.new_subscribe_to_iot_core(handler)
+    future = operation.activate(request)
+    future.result(TIMEOUT)
 
 def main():
     global matterDevices
@@ -615,8 +647,8 @@ def main():
             matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
         lPrint("Finished Discovering commissioned devices")
 
-    discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
-    print(discoveredCommissionableNodes)
+    #discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
+    #print(discoveredCommissionableNodes)
 
     # Keep the main thread alive, or the process will exit.
     x=1
@@ -632,7 +664,6 @@ def main():
         pollForDeviceReports()
 
         #matterDevices.writeNodeLabel(1) 
-
         lPrint('--->run: sleep- {}'.format(sleep_time_in_sec) + " " + REQUEST_TOPIC)
         time.sleep(sleep_time_in_sec)
 

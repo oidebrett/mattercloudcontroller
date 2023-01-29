@@ -12,7 +12,6 @@ import matter_yamltests.parser
 
 class ActionParser:
     def __init__(self, data, pics_file, definitions):
-
         matter_yamltests.parser._check_valid_keys(data, matter_yamltests.parser._TESTS_SECTION)
 
         self.name = matter_yamltests.parser._value_or_none(data, 'name')
@@ -27,4 +26,3 @@ class ActionParser:
 
     def update_config(self, key, value):
         self._parsing_config_variable_storage[key] = value
-
