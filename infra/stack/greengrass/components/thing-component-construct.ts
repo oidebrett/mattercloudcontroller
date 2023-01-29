@@ -42,6 +42,7 @@ export class ThingComponent extends base.BaseConstruct {
 
     private createRecipe(bucket: s3.IBucket, compConfig: any, ruleTopic: string): any {
         const compVersion = compConfig['Version'];
+        const compArgs = compConfig['Args'];
         const bucketKey = this.commonProps.appConfig.Stack.ComponentUpload.BucketPrefix;
 
         const recipe: any = {
@@ -95,7 +96,7 @@ export class ThingComponent extends base.BaseConstruct {
                             "script": `. /home/ubuntu/connectedhomeip/out/python_env/bin/activate\npip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
                         },
                         "Run": {
-                            "script": `. /home/ubuntu/connectedhomeip/out/python_env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py\n`
+                            "script": `. /home/ubuntu/connectedhomeip/out/python_env/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py ${compArgs}\n`
                         },
                     },
                     "Artifacts": [

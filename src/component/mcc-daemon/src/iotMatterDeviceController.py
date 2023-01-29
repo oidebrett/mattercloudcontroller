@@ -46,7 +46,7 @@ from runner import ReplRunner
 import config 
 sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_yamltests/"))
 
-from matter_yamltests.definitions import SpecDefinitionsFromPath
+from matter_yamltests.definitions import SpecDefinitionsFromPaths
 from matter_yamltests.parser import TestParser
 from actionParser import ActionParser
 
@@ -328,6 +328,8 @@ class MatterDeviceController(object):
         """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
         return hexlify(b).decode("utf-8")
 
+    def jsonDumps(self, data):
+        return jsonDumps.jsonDumps(data)
 
     def MatterInit(self, args, debug=True):
 
@@ -356,7 +358,14 @@ class MatterDeviceController(object):
 
         try:
             # Creating Cluster definition.
-            self.clustersDefinitions = SpecDefinitionsFromPath(_CLUSTER_XML_DIRECTORY_PATH + '/*/*.xml')
+            self.clustersDefinitions = SpecDefinitionsFromPaths([
+                _CLUSTER_XML_DIRECTORY_PATH + '/chip/*.xml',
+
+                # Some still-silabs clusters
+                _CLUSTER_XML_DIRECTORY_PATH + '/silabs/ha.xml',  # For fan control
+                _CLUSTER_XML_DIRECTORY_PATH + '/silabs/general.xml',  # For groups cluster
+            ])
+
             # Creating Runner for commands.
             self.runner = ReplRunner(self.clustersDefinitions, self.certificateAuthorityManager, self.devCtrl)
 
