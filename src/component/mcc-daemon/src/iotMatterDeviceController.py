@@ -18,7 +18,6 @@ import time
 from binascii import hexlify, unhexlify
 import bisect 
 import queue
-from dataModelLookup import PreDefinedDataModelLookup
 
 #import chip.CertificateAuthority
 import chip.clusters as Clusters
@@ -177,9 +176,6 @@ class MatterDeviceController(object):
     def writeAttribute(self, node_id: int, endpoint: int, clusterName: str, attributeName: str, value: str):
         # when its commissioned, set the NodeLabel to "node_id"
         self.lPrint(f"WriteAttribute to {attributeName}")
-        #pddml = PreDefinedDataModelLookup()
-        #attributeClass = pddml.get_attribute(clusterName,attributeName)
-        #asyncio.run(self.devCtrl.WriteAttribute(node_id, [(endpoint, attributeClass(value=value))]))
         #time.sleep(2)
 
     def run2(self, node_id: int, data):
