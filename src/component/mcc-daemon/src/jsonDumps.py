@@ -29,6 +29,26 @@ def jsonDumps(dm):
                     "supportsTcp": o.supportsTcp,
                     "vendorId": o.vendorId
                     }
+            if isinstance(o, chip.clusters.Attribute.EventReadResult):
+                return {
+                    "header": o.Header, 
+                    "status": o.Status,
+                    "data": o.Data
+                    }
+            if isinstance(o, chip.clusters.Attribute.EventHeader):
+                return {
+                    "EndpointId": o.EndpointId, 
+                    "ClusterId": o.ClusterId,
+                    "EventId": o.EventId,
+                    "EventNumber": o.EventNumber, 
+                    "Priority": o.Priority,
+                    "Timestamp": o.Timestamp,
+                    "TimestampType": o.TimestampType
+                    }
+            if isinstance(o, chip.clusters.Attribute.EventPriority):
+                return o.value
+            if isinstance(o, chip.clusters.Attribute.EventTimestampType):
+                return o.value
                 
             return o.__dict__ 
 
@@ -59,6 +79,17 @@ def jsonDumps(dm):
 
         return jsonStr
 
+    #chatgpt generated code 
+    def print_list(lst):
+        if len(lst) == 0:
+            return '[]'
+        elif isinstance(lst[0], list):
+            return '[' + print_list(lst[0]) + ',' + print_list(lst[1:])[1:]
+        elif len(lst) == 1:
+            return '[' + json.dumps(lst[0], cls=Base64Encoder) + ']'
+        else:
+            return '[' + json.dumps(lst[0], cls=Base64Encoder) + ',' + print_list(lst[1:])[1:]
+
     def iterator(jsonStr, d):
         if isinstance(d, dict):
             for k, v in d.items():
@@ -72,13 +103,14 @@ def jsonDumps(dm):
                 else:
                     jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=Base64Encoder)) + ","
         elif isinstance(d, list):
-            for item in d:
-                jsonStr = '{"list":[' + iterator(jsonStr, item) + ']}'
-        else: 
+            jsonStr = jsonStr + '"list":' + print_list(d)
+
+        elif isinstance(d, object):
             jsonStr = jsonStr + json.dumps(d, cls=Base64Encoder)
 
         return jsonStr + "},"
 
+    #Code starts here
     jsonStr = ""
     jsonStr = iterator(jsonStr, dm)
     jsonStr = jsonStr.replace(" ", "")
