@@ -265,8 +265,10 @@ class MatterDeviceController(object):
 
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
-        #if we are limited to json document size we could just ask for these
-        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        #if we all of endpoint 0 we could just ask for these
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
+        '''
+        #if we are limited to json document size we could just ask for these specific attributes
         large_read_contents = [
             Clusters.BasicInformation.Attributes.DataModelRevision,
             Clusters.BasicInformation.Attributes.VendorName,
@@ -280,8 +282,10 @@ class MatterDeviceController(object):
         ]
         large_read_paths = [(0, attrib) for attrib in large_read_contents]
         data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, large_read_paths)))
-        '''
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
+        #if we are less limited to json document size we could just ask for these
+        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        #if we all of everything in the node we could just ask for these
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, ['*'])))
         '''
         self.lPrint('End Reading Endpoint0 Attributes')
 
@@ -303,6 +307,22 @@ class MatterDeviceController(object):
         sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=[0],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=False))
         attribute_handler = AttributeChangeAccumulator(name=nodeId, callback=callback, expected_attribute=Clusters.BasicInformation.Attributes.NodeLabel, output=output_queue)
         sub.SetAttributeUpdateCallback(attribute_handler)
+
+        return sub
+
+    def subscribeForEventChange(self, nodeId, callback):
+        # Immediate reporting
+        min_report_interval_sec = 0
+        # 10 minutes max reporting interval --> We don't care about keep-alives per-se and
+        # want to avoid resubscriptions
+        max_report_interval_sec = 60*10
+ 
+        self.lPrint("Establishing event change subscription from controller node %s" % (nodeId))
+
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        sub = asyncio.run(self.devCtrl.ReadEvent(nodeId, [()],reportInterval=(min_report_interval_sec, max_report_interval_sec)))
+        event_handler = EventCatcher(name=nodeId, callback=callback)
+        sub.SetEventUpdateCallback(event_handler)
 
         return sub
 
@@ -402,4 +422,16 @@ class AttributeChangeAccumulator:
     def name(self) -> str:
         return self._name
 
+class EventCatcher:
+    def __init__(self, name, callback):
+        self._name = name
+        self._callback = callback
 
+    def __call__(self, transaction: SubscriptionTransaction, terminationError):
+        eventData = transaction
+        print("Got resubscription on client %s" % self.name)
+        self._callback(self._name, eventData)
+
+    @property
+    def name(self) -> str:
+        return self._name
