@@ -245,8 +245,8 @@ def pollForCommand(file_name: str):
             id = sample["id"]
             lPrint("Executing JSON/Yaml")
             nodeId = int(id)
-            actions = sample["actions"]
-            matterDevices.execute(nodeId, actions)
+            interactions = sample["interactions"]
+            matterDevices.execute(nodeId, interactions)
         elif command == "writeAttribute":
             id = sample["id"]
             lPrint("Writing Attribute / Node Labal")
@@ -630,6 +630,10 @@ def main():
 
     lPrint("Current Working Directory " + os.getcwd())
     matterDevices.MatterInit(args, False)
+
+    #This is just to check the execution of actions
+    #matterDevices.testExecute(1, "")
+    #exit()
 
     if not CLEAN:
         #Discover commissioned devices
