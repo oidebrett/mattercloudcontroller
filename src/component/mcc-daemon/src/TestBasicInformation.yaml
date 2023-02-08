@@ -19,7 +19,7 @@ config:
     cluster: "Basic Information"
     endpoint: 0
 
-tests:
+actions:
     - label: "Wait for the commissioned device to be retrieved"
       cluster: "DelayCommands"
       command: "WaitForCommissionee"

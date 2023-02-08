@@ -39,14 +39,16 @@ import jsonDumps
 #import tempfile
 import yaml
 
-from runner import ReplRunner
 
 #Set the paths up so we are using the parsing in the connectedhomeip repo
 import config 
 sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_yamltests/"))
+sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_idl/"))
+
+from runner import ReplRunner
 
 from matter_yamltests.definitions import SpecDefinitionsFromPaths
-from matter_yamltests.parser import TestParser
+from matter_yamltests.parser import TestParser, TestParserConfig
 from actionParser import ActionParser
 
 
@@ -182,7 +184,8 @@ class MatterDeviceController(object):
         # Parsing YAML test and setting up chip-repl yamltests runner.
         #We need a PICS file just to create the parser but we wont use it
         pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
-        yamlParser = ActionParser(data, pics_file, self.clustersDefinitions)
+        parser_config = TestParserConfig(pics_file, self.clustersDefinitions)
+        yamlParser = ActionParser(data, parser_config)
         self.lPrint(yamlParser)
         for test_step in yamlParser.tests:
             test_action = self.runner.encode(test_step)
@@ -212,14 +215,12 @@ class MatterDeviceController(object):
             decoded_response = self.runner.decode(response)
         return decoded_response
 
-    def execute(self, node_id: int, actionsStr: str):
-        yamlActions = yaml.dump(actionsStr, allow_unicode=True)
-        actions = yaml.safe_load(yamlActions)
-
-        '''
+    #This is just a test function to try to get the parsing work
+    #Eventually we will remove this but we need it while the connectedhomeip repo
+    #is changing how it handles test scriptinh
+    def testExecute(self, node_id: int, actionsStr: str):
         yaml_path = '/home/ivob/Projects/mattercloudcontroller/src/component/mcc-daemon/src/TestBasicInformation.yaml'
         pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
-
 
         with open(yaml_path) as f:
             loader = yaml.FullLoader   
@@ -231,12 +232,22 @@ class MatterDeviceController(object):
         yamlActions = yaml.dump(actions, allow_unicode=True)
         self.lPrint(yamlActions)
 
-        yamlParser = ActionParser(actions, pics_file, self.clustersDefinitions)
-        #yamlParser = TestParser(yaml_path, pics_file, self.clustersDefinitions)
+        self.lPrint("self.clustersDefinitions")
+        self.lPrint(self.clustersDefinitions)
+        parser_config = TestParserConfig(pics_file, self.clustersDefinitions)
+        yamlParser = ActionParser(actions, parser_config)
         self.lPrint(yamlParser)
-        
+        exit()
 
-        exit()        
+        #yamlParser = ActionParser(actions, pics_file, self.clustersDefinitions)
+        self.lPrint(yamlParser)
+
+
+    def execute(self, node_id: int, actionsStr: str):
+        yamlActions = yaml.dump(actionsStr, allow_unicode=True)
+        actions = yaml.safe_load(yamlActions)
+
+        '''
         # more complex as you must watch out for exceptions
         fd, path = tempfile.mkstemp()
         try:
@@ -247,9 +258,10 @@ class MatterDeviceController(object):
             self.lPrint("Error creating a named temporary file..")
 
         tmp.close()
+        #Call the runner
+        decoded_response = self.run(node_id=node_id, yaml_path=path, deleteAfterRead = True)
         '''
         #Call the runner
-#        decoded_response = self.run(node_id=node_id, yaml_path=path, deleteAfterRead = True)
         decoded_response = self.run2(node_id, actions)
         return decoded_response
 
@@ -375,11 +387,7 @@ class MatterDeviceController(object):
         try:
             # Creating Cluster definition.
             self.clustersDefinitions = SpecDefinitionsFromPaths([
-                _CLUSTER_XML_DIRECTORY_PATH + '/chip/*.xml',
-
-                # Some still-silabs clusters
-                _CLUSTER_XML_DIRECTORY_PATH + '/silabs/ha.xml',  # For fan control
-                _CLUSTER_XML_DIRECTORY_PATH + '/silabs/general.xml',  # For groups cluster
+                _CLUSTER_XML_DIRECTORY_PATH + '/chip/*.xml'
             ])
 
             # Creating Runner for commands.
