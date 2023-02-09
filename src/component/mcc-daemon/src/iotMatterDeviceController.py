@@ -278,8 +278,6 @@ class MatterDeviceController(object):
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
         #if we all of endpoint 0 we could just ask for these
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
-        '''
         #if we are limited to json document size we could just ask for these specific attributes
         large_read_contents = [
             Clusters.BasicInformation.Attributes.DataModelRevision,
@@ -294,6 +292,8 @@ class MatterDeviceController(object):
         ]
         large_read_paths = [(0, attrib) for attrib in large_read_contents]
         data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, large_read_paths)))
+        '''
+        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
         #if we are less limited to json document size we could just ask for these
         #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
         #if we all of everything in the node we could just ask for these

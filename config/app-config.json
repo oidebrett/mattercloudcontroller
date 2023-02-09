@@ -58,8 +58,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.106",
-                "CodePath": "src/component/mcc-daemon"
+                "Version": "0.0.128",
+                "CodePath": "src/component/mcc-daemon",
+                "Args": "-d /home/ubuntu/connectedhomeip"
             }
         },
         "ApiGatewayDeployment": {
