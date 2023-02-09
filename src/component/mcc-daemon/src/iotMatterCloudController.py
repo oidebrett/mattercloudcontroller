@@ -45,7 +45,7 @@ import config
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
-parser.add_argument("-d", "--chipdir", help="Path to project matter/chip source folder (default: /home/ivob/Projects/connectedhomeip)", action="store", default="/home/ivob/Projects/connectedhomeip")
+parser.add_argument("-d", "--chipdir", help="Path to project matter/chip source folder (default: /home/ivob/Projects/connectedhomeip)", action="store", default="/home/ubuntu/connectedhomeip")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
 parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=10)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
@@ -422,8 +422,8 @@ def respond(event):
         id = message_from_core["id"]
         lPrint("Executing JSON/Yaml")
         nodeId = int(id)
-        actions = message_from_core["actions"]
-        matterDevices.execute(nodeId, actions)
+        interactions = message_from_core["interactions"]
+        matterDevices.execute(nodeId, interactions)
         resp["response"] = "executed actions"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
