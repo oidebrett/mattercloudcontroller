@@ -2,7 +2,7 @@ from base64 import b64encode, b64decode
 import json
 import chip.native
 import re
-
+from binascii import hexlify, unhexlify
 
 
 def jsonDumps(dm):
@@ -11,6 +11,8 @@ def jsonDumps(dm):
         def default(self, o):
             if isinstance(o, bytes):
                 return b64encode(o).decode() #Note we will be able to get back to bytes using b64decode(o)
+                #return hex_from_bytes(o) #we convert the bytes into hex
+                #return '' #we send back a blank string
             if isinstance(o, chip.ChipDeviceCtrl.CommissionableNode):
                 return {
                     "addresses": o.addresses, 
@@ -29,6 +31,10 @@ def jsonDumps(dm):
                     "supportsTcp": o.supportsTcp,
                     "vendorId": o.vendorId
                     }
+            if isinstance(o, chip.clusters.GeneralDiagnostics.Structs.NetworkInterface): #Added these encoders as the AWS named shadow threw depth issue exceptions
+                return o.ToTLV()
+            if isinstance(o, chip.clusters.AccessControl.Structs.AccessControlEntryStruct): #Added these encoders as the AWS named shadow threw depth issue exceptions
+                return o.ToTLV()
             if isinstance(o, chip.clusters.Attribute.EventReadResult):
                 return {
                     "header": o.Header, 
@@ -89,6 +95,18 @@ def jsonDumps(dm):
             return '[' + json.dumps(lst[0], cls=Base64Encoder) + ']'
         else:
             return '[' + json.dumps(lst[0], cls=Base64Encoder) + ',' + print_list(lst[1:])[1:]
+
+    def bytes_from_hex(hex: str) -> bytes:
+        """Converts any `hex` string representation including `01:ab:cd` to bytes
+        Handles any whitespace including newlines, which are all stripped.
+        """
+        return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
+
+
+    def hex_from_bytes(b: bytes) -> str:
+        """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
+        return hexlify(b).decode("utf-8")
+
 
     def iterator(jsonStr, d):
         if isinstance(d, dict):
