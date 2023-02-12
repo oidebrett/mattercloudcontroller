@@ -15,7 +15,6 @@ from typing import List, Optional, Tuple
 import atexit
 import subprocess
 import time
-from binascii import hexlify, unhexlify
 import bisect 
 import queue
 
@@ -277,7 +276,41 @@ class MatterDeviceController(object):
 
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
+        #if we are less limited to json document size we could just ask for these
+        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.BasicInformation),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [
+            (0, Clusters.BasicInformation),
+            (0, Clusters.Identify),
+            (0, Clusters.GeneralDiagnostics),
+            (0, Clusters.Groups),
+            (0, Clusters.Descriptor),
+            (0, Clusters.Binding),
+            (0, Clusters.AccessControl),
+            (0, Clusters.OtaSoftwareUpdateRequestor),
+#            (0, Clusters.LocalizationConfiguration),
+#            (0, Clusters.TimeFormatLocalization),
+#            (0, Clusters.UnitLocalization),
+            (0, Clusters.PowerSourceConfiguration),
+            (0, Clusters.PowerSource),
+            (0, Clusters.GeneralCommissioning),
+            (0, Clusters.NetworkCommissioning),
+            (0, Clusters.DiagnosticLogs),
+            (0, Clusters.SoftwareDiagnostics),
+            (0, Clusters.ThreadNetworkDiagnostics),
+            (0, Clusters.WiFiNetworkDiagnostics),
+            (0, Clusters.EthernetNetworkDiagnostics),
+            (0, Clusters.AdministratorCommissioning),
+            (0, Clusters.OperationalCredentials),
+            (0, Clusters.GroupKeyManagement),
+            (0, Clusters.FixedLabel),
+            (0, Clusters.UserLabel),
+            (0, Clusters.RelativeHumidityMeasurement),
+            (0, Clusters.ClientMonitoring),
+            (0, Clusters.FaultInjection)
+            ])))
+        '''
         #if we all of endpoint 0 we could just ask for these
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
         #if we are limited to json document size we could just ask for these specific attributes
         large_read_contents = [
             Clusters.BasicInformation.Attributes.DataModelRevision,
@@ -292,17 +325,13 @@ class MatterDeviceController(object):
         ]
         large_read_paths = [(0, attrib) for attrib in large_read_contents]
         data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, large_read_paths)))
-        '''
-        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
-        #if we are less limited to json document size we could just ask for these
-        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.Basic),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
         #if we all of everything in the node we could just ask for these
         data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, ['*'])))
         '''
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = jsonDumps.jsonDumps(data)
-        self.lPrint(jsonStr)
+        #self.lPrint(jsonStr)
         return jsonStr
 
     def subscribeForAttributeChange(self, nodeId, callback):
@@ -344,17 +373,6 @@ class MatterDeviceController(object):
         # So that the all-clusters-app won't boot with stale prior state.
         os.system('rm -rf /tmp/chip_*')
         time.sleep(2)
-
-    def bytes_from_hex(self, hex: str) -> bytes:
-        """Converts any `hex` string representation including `01:ab:cd` to bytes
-        Handles any whitespace including newlines, which are all stripped.
-        """
-        return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
-
-
-    def hex_from_bytes(self, b: bytes) -> str:
-        """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
-        return hexlify(b).decode("utf-8")
 
     def jsonDumps(self, data):
         return jsonDumps.jsonDumps(data)

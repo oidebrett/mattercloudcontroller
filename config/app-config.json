@@ -38,6 +38,7 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
+                                  "errors",
                                   "0",
                                   "1",
                                   "2",
@@ -58,9 +59,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.128",
+                "Version": "0.0.222",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-d /home/ubuntu/connectedhomeip"
+                "Args": "-d /home/ubuntu/connectedhomeip -n mcc-thing-ver01-1"
             }
         },
         "ApiGatewayDeployment": {
