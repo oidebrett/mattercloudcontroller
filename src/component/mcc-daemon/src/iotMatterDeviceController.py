@@ -138,7 +138,7 @@ class MatterDeviceController(object):
                 nodeId = max(self.fabricDevices) + 1
 
         try:
-            time.sleep(5)
+            #time.sleep(5)
             self.lPrint("Commissioning - nodeId " )
             builtins.devCtrl.CommissionIP(ipAddress, 20202021, nodeId)
 
@@ -153,7 +153,7 @@ class MatterDeviceController(object):
 
             #Then add this one to the fabricDevices
             self.fabricDevices.add(nodeId)
-            time.sleep(5)
+            time.sleep(2)
             return nodeId
         except Exception as e:
             self.lPrint("Commission failed: ", e.message)
@@ -278,6 +278,13 @@ class MatterDeviceController(object):
         self.lPrint('Start Reading Endpoint0 Attributes')
         #if we are less limited to json document size we could just ask for these
         #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.BasicInformation),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
+        '''
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [
+            (0, Clusters.BasicInformation),
+            (0, Clusters.GeneralDiagnostics),
+            (0, Clusters.AccessControl)
+            ])))
+        '''
         data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [
             (0, Clusters.BasicInformation),
             (0, Clusters.Identify),
@@ -331,7 +338,7 @@ class MatterDeviceController(object):
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = jsonDumps.jsonDumps(data)
-        #self.lPrint(jsonStr)
+        self.lPrint(jsonStr)
         return jsonStr
 
     def subscribeForAttributeChange(self, nodeId, callback):
@@ -343,9 +350,7 @@ class MatterDeviceController(object):
  
         self.lPrint("Establishing subscription from controller node %s" % (nodeId))
 
-        #sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=[(0, Clusters.BasicInformation.Attributes.NodeLabel)],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=False))
-        #attribute_handler = AttributeChangeAccumulator(name=nodeId, callback=callback, expected_attribute=Clusters.BasicInformation.Attributes.NodeLabel, output=output_queue)
-        sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=[0],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=False))
+        sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=[0],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=True))
         attribute_handler = AttributeChangeAccumulator(name=nodeId, callback=callback, expected_attribute=Clusters.BasicInformation.Attributes.NodeLabel, output=output_queue)
         sub.SetAttributeUpdateCallback(attribute_handler)
 
@@ -361,7 +366,7 @@ class MatterDeviceController(object):
         self.lPrint("Establishing event change subscription from controller node %s" % (nodeId))
 
         asyncio.set_event_loop(asyncio.new_event_loop())
-        sub = asyncio.run(self.devCtrl.ReadEvent(nodeId, [()],reportInterval=(min_report_interval_sec, max_report_interval_sec)))
+        sub = asyncio.run(self.devCtrl.ReadEvent(nodeId, [()],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=True))
         event_handler = EventCatcher(name=nodeId, callback=callback)
         sub.SetEventUpdateCallback(event_handler)
 
