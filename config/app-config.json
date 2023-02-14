@@ -38,8 +38,8 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
-                                  "errors",
-                                  "0",
+                                  "events",
+                                  "commissionables",
                                   "1",
                                   "2",
                                   "3"
@@ -59,7 +59,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.0.222",
+                "Version": "0.1.48",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-d /home/ubuntu/connectedhomeip -n mcc-thing-ver01-1"
             }

@@ -7,12 +7,28 @@ from binascii import hexlify, unhexlify
 
 def jsonDumps(dm):
     class Base64Encoder(json.JSONEncoder):
+
+        def listToStr(self,listObject):
+            if type(listObject) == list:
+                listStr = "["
+                separator = ""
+                for listItem in listObject:
+                    if isinstance(listItem, bytes):
+                        #convert from bytes to hex
+                        listStr += separator + hex_from_bytes(listItem)
+                    elif isinstance(listItem, int):
+                        #convert from int to str
+                        listStr += separator + str(listItem)
+
+                    separator = ","
+                listStr += "]"
+            return listStr
+
         # pylint: disable=method-hidden
         def default(self, o):
             if isinstance(o, bytes):
-                return b64encode(o).decode() #Note we will be able to get back to bytes using b64decode(o)
-                #return hex_from_bytes(o) #we convert the bytes into hex
-                #return '' #we send back a blank string
+                #return b64encode(o).decode() #Note we will be able to get back to bytes using b64decode(o)
+                return hex_from_bytes(o) #we convert the bytes into hex
             if isinstance(o, chip.ChipDeviceCtrl.CommissionableNode):
                 return {
                     "addresses": o.addresses, 
@@ -32,9 +48,33 @@ def jsonDumps(dm):
                     "vendorId": o.vendorId
                     }
             if isinstance(o, chip.clusters.GeneralDiagnostics.Structs.NetworkInterface): #Added these encoders as the AWS named shadow threw depth issue exceptions
-                return o.ToTLV()
+                networkInterfaceObj = {
+                    "name":o.name,
+                    "isOperational":o.isOperational,
+                    "offPremiseServicesReachableIPv4":o.offPremiseServicesReachableIPv4,
+                    "offPremiseServicesReachableIPv6":o.offPremiseServicesReachableIPv6,
+                    "hardwareAddress":o.hardwareAddress,
+                    "IPv4Addresses":o.IPv4Addresses,
+                    "IPv6Addresses":o.IPv6Addresses,
+                    "type":o.type
+                }
+
+                #fix for error with IOT shadow depth exception check bool(dct)
+                networkInterfaceObj['IPv4Addresses'] = self.listToStr(networkInterfaceObj['IPv4Addresses'])
+                networkInterfaceObj['IPv6Addresses'] = self.listToStr(networkInterfaceObj['IPv6Addresses'])
+                return networkInterfaceObj
+
             if isinstance(o, chip.clusters.AccessControl.Structs.AccessControlEntryStruct): #Added these encoders as the AWS named shadow threw depth issue exceptions
-                return o.ToTLV()
+                aclEntryObj = {
+                    "privilege": o.privilege,
+                    "authMode": o.authMode,
+                    "subjects": o.subjects,
+                    "targets": o.targets,
+                    "fabricIndex": o.fabricIndex
+                } 
+                aclEntryObj['subjects'] = self.listToStr(aclEntryObj['subjects'])
+                return aclEntryObj
+
             if isinstance(o, chip.clusters.Attribute.EventReadResult):
                 return {
                     "header": o.Header, 
@@ -109,7 +149,7 @@ def jsonDumps(dm):
 
 
     def iterator(jsonStr, d):
-        if isinstance(d, dict):
+        if isinstance(d, dict):                
             for k, v in d.items():
                 if isinstance(v, dict):
                     if isinstance(k, int):
@@ -120,13 +160,16 @@ def jsonDumps(dm):
                     jsonStr = iterator(jsonStr, v)
                 else:
                     jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=Base64Encoder)) + ","
+
         elif isinstance(d, list):
             jsonStr = jsonStr + '"list":' + print_list(d)
 
         elif isinstance(d, object):
             jsonStr = jsonStr + json.dumps(d, cls=Base64Encoder)
 
-        return jsonStr + "},"
+        jsonStr = jsonStr + "},"
+
+        return jsonStr
 
     #Code starts here
     jsonStr = ""
@@ -140,6 +183,7 @@ def jsonDumps(dm):
     jsonStr = jsonStr.replace("False", "false")
     jsonStr = jsonStr.replace("True", "true")
     jsonStr = jsonStr.replace("Null", "null")
+    jsonStr = jsonStr.replace("{}", "\"\"") #this was added to avoid errors in iot shadow
     jsonStr = jsonStr.replace(",}", "}")
     jsonStr = jsonStr.replace(",]", "]")
     jsonStr = jsonStr.rstrip(',')
@@ -152,6 +196,9 @@ def jsonDumps(dm):
     result = re.search(r"(^{{)(.*?)(}})", jsonStr)
     if (result is not None):
         jsonStr = jsonStr.replace(result.group(0), "{"+result.group(2)+"}")
+
+    #jsonObj = json.loads(jsonStr)
+    #jsonStr = json.dumps(jsonObj)
     return jsonStr
 
 

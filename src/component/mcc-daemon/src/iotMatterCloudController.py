@@ -156,8 +156,8 @@ def OnValueChange(nodeId) -> None:
     changedNodeIds.append(nodeId)
 
 def OnEventChange(nodeId, eventReadResult)-> None:
-    thingName = config.THING_NAME 
     lPrint("Saw event change inside Cloud Controller! for nodeId: "+ str(nodeId))
+    thingName = config.THING_NAME 
     lPrint("thingName: "+ str(thingName))
     newEventStr = matterDevices.jsonDumps(eventReadResult)
     newEventObj = json.loads(newEventStr)
@@ -165,7 +165,7 @@ def OnEventChange(nodeId, eventReadResult)-> None:
     newEventStr = json.dumps(newEventObj)
 
     if not LOCAL_TEST:
-        shadowName = "errors"
+        shadowName = "events"
         #First read the existing events and then add to it
         lPrint("Calling get thing shadow request for events")
 
@@ -190,12 +190,10 @@ def OnEventChange(nodeId, eventReadResult)-> None:
         newList.append(json.loads(newEventStr))
         prevEvents['state']['reported']['list'] = newList
 
-        #lPrint("Calling update thing shadow request for events")
         newStr = json.dumps(prevEvents)
 
-        lPrint( bytes(newStr, "utf-8"))
+        #Calling update thing shadow request for events
         result = sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-        lPrint(result)
 
 
 def pollForDeviceReports():
@@ -209,20 +207,26 @@ def pollForDeviceReports():
     for nodeId in deviceNodeIds:
         changedNodeIds.remove(nodeId) #first remove this nodeId so we dont call it again unless its changed
         #check device to read current state
-        #currentStateStr = matterDevices.readDevAttributesAsJsonStr(nodeId)
         currentStateStr = matterDevices.readEndpointZeroAsJsonStr(nodeId)
         #time.sleep(stabilisation_time_in_sec)
 
-        #just print out the response for now
-        #lPrint(currentStateStr)
 
         if not LOCAL_TEST:
             #set the device shadow for test
             shadowName = str(nodeId)
 
             newStr = '{"state": {"reported": '+currentStateStr+'}}'
-            lPrint( bytes(newStr, "utf-8"))
             lPrint("Udpatign Thing Shadown Now.......")
+
+            lPrint("thingName:")
+            lPrint(thingName)
+
+            lPrint("shadowName:")
+            lPrint(shadowName)
+
+            lPrint("document:")
+            lPrint(bytes(newStr, "utf-8"))
+
             sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
 
@@ -264,15 +268,15 @@ def pollForCommand(file_name: str):
 
             if nodeId > 0: #nodeId will be -1 if commissioning failed
                 changedNodeIds.append(nodeId) #add nodeId to the changedIds
-                time.sleep(stabilisation_time_in_sec)
-
+                
                 #Set up a subscription that will call OnValueChange when ever we get a change
                 lPrint("Settting Up Subscription on nodeId:")
                 matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
-
+                
                 #Set up a subscription that will call OnEventChange when ever we get an event
                 lPrint("Settting Up Event Subscription on nodeId:")
                 matterDevices.subscribeForEventChange(nodeId, OnEventChange)
+                time.sleep(stabilisation_time_in_sec)
 
         if command == "discover": # we always have to update the discoveredCommissionableDevices after we commission
             discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
@@ -280,7 +284,7 @@ def pollForCommand(file_name: str):
             lPrint(commissionableNodesJsonStr)
             if not LOCAL_TEST:
                 #set the device shadow for commissionableNodes
-                shadowName = "0"
+                shadowName = "commissionables"
                 thingName = config.THING_NAME
                 newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
@@ -363,7 +367,6 @@ def respond(event):
             response_op = ipc_client.new_publish_to_iot_core()
             response_op.activate(response)
             lPrint('{} for message: '.format(MSG_MISSING_ATTRIBUTE))
-            #lPrint('for message: '.format(message))
             return
         
         # check for and update optional settings
@@ -391,7 +394,6 @@ def respond(event):
         response.qos = QOS.AT_MOST_ONCE
         response_op = ipc_client.new_publish_to_iot_core()
         response_op.activate(response)        
-#        lPrint(f"{MSG_INVALID_JSON} for message: {message}")
         lPrint(f"{MSG_INVALID_JSON} for message")
         return
     except Exception as e:
@@ -409,15 +411,15 @@ def respond(event):
 
         if nodeId > 0: #nodeId will be -1 if commissioning failed
             changedNodeIds.append(nodeId) #add nodeId to the changedIds
-            time.sleep(stabilisation_time_in_sec)
 
             #Set up a subscription that will call OnValueChange when ever we get a change
-            lPrint("Settting Up Subscription on nodeId:")
+            lPrint("Settting Up Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
 
             #Set up a subscription that will call OnEventChange when ever we get an event
-            lPrint("Settting Up Event Subscription on nodeId:")
+            lPrint("Settting Up Event Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForEventChange(nodeId, OnEventChange)
+            time.sleep(stabilisation_time_in_sec)
 
         resp["response"] = "commissioned"
         resp["return_code"] = 200
@@ -445,11 +447,10 @@ def respond(event):
         lPrint(commissionableNodesJsonStr)
         if not LOCAL_TEST:
             #set the device shadow for test
-            shadowName = "0"
+            shadowName = "commissionables"
             thingName = config.THING_NAME
             newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
-            #newStr = '{"state":{"desired":{"nodes":'+commissionableNodesJsonStr+'},"reported":{"nodes":'+commissionableNodesJsonStr+'}}}'
-            lPrint(newStr)
+            #lPrint(newStr)
             sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
         else:
             pass
@@ -522,6 +523,7 @@ def respond(event):
     response.qos = QOS.AT_MOST_ONCE
     response_op = ipc_client.new_publish_to_iot_core()
     response_op.activate(response)
+
 
 #Start of the code that is not used for local testing
 if not LOCAL_TEST:
@@ -632,7 +634,7 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
         fut = op.get_response()
         
         result = fut.result(TIMEOUT)
-        lPrint(result)
+        #lPrint(result)
         return result.payload
 
     except ConflictError as e:
@@ -645,6 +647,7 @@ def sample_update_thing_shadow_request(thingName, shadowName, payload):
         lPrint("ServiceError: Error update shadow")
         traceback.print_exc()
     except InvalidArgumentsError as e:
+        lPrint(e)
         lPrint("InvalidArgumentsError: Error update shadow")
         traceback.print_exc()
     except Exception as e:
@@ -714,11 +717,12 @@ def main():
             changedNodeIds = matterDevices.discoverFabricDevices(useAvahi = True, stopAtFirstFail = False)
 
         #Recreate the subscriptions so that we can detect the changes
-        for nodeId in changedNodeIds:
+        for nodeId in changedNodeIds:            
             lPrint("Settting Up Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
             lPrint("Settting Up Event Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForEventChange(nodeId, OnEventChange)
+            time.sleep(stabilisation_time_in_sec)
         lPrint("Finished Discovering commissioned devices")
 
     #discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
