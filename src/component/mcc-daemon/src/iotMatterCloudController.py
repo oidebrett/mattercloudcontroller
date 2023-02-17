@@ -74,6 +74,8 @@ def lPrint(msg):
 if not LOCAL_TEST:
     import awsiot.greengrasscoreipc
     import awsiot.greengrasscoreipc.client as client
+    from awsiot.greengrasscoreipc.clientv2 import GreengrassCoreIPCClientV2
+
     from awsiot.greengrasscoreipc.model import (
         IoTCoreMessage,
         QOS,
@@ -193,7 +195,7 @@ def OnEventChange(nodeId, eventReadResult)-> None:
         newStr = json.dumps(prevEvents)
 
         #Calling update thing shadow request for events
-        result = sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+        result = update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
 
 def pollForDeviceReports():
@@ -216,7 +218,7 @@ def pollForDeviceReports():
             shadowName = str(nodeId)
 
             newStr = '{"state": {"reported": '+currentStateStr+'}}'
-            lPrint("Udpatign Thing Shadown Now.......")
+            lPrint("Updating Thing Shadown Now.......")
 
             lPrint("thingName:")
             lPrint(thingName)
@@ -227,7 +229,7 @@ def pollForDeviceReports():
             lPrint("document:")
             lPrint(bytes(newStr, "utf-8"))
 
-            sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
 
 
@@ -288,7 +290,7 @@ def pollForCommand(file_name: str):
                 thingName = config.THING_NAME
                 newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
-                sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+                update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
             else:
                 pass
 
@@ -451,7 +453,7 @@ def respond(event):
             thingName = config.THING_NAME
             newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
             #lPrint(newStr)
-            sample_update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
         else:
             pass
 
@@ -614,6 +616,34 @@ def sample_get_thing_shadow_request(thingName, shadowName):
     except Exception as e:
         lPrint("Error get shadow")
         # except ResourceNotFoundError | UnauthorizedError | ServiceError
+
+#Set the local shadow using the IPC
+def update_thing_shadow_request(thingName, shadowName, payload):
+    lPrint("in update_thing_shadow_request")
+
+    try:
+        # set up IPC client to connect to the IPC server
+        client = GreengrassCoreIPCClientV2()
+        result = client.update_thing_shadow(thing_name=thingName, payload=payload, shadow_name=shadowName)
+        return result.payload
+    except ConflictError as e:
+        lPrint("ConflictError: Error update shadow")
+        traceback.print_exc()
+    except UnauthorizedError as e:
+        lPrint("UnauthorizedError: Error update shadow")
+        traceback.print_exc()
+    except ServiceError as e:
+        lPrint("ServiceError: Error update shadow")
+        traceback.print_exc()
+    except InvalidArgumentsError as e:
+        lPrint(e)
+        lPrint("InvalidArgumentsError: Error update shadow")
+        traceback.print_exc()
+    except Exception as e:
+        lPrint("Error update shadow")
+        traceback.print_exc()
+
+
 
 #Set the local shadow using the IPC
 def sample_update_thing_shadow_request(thingName, shadowName, payload):
