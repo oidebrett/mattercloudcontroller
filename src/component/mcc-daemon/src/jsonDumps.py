@@ -74,7 +74,6 @@ def jsonDumps(dm):
                 } 
                 aclEntryObj['subjects'] = self.listToStr(aclEntryObj['subjects'])
                 return aclEntryObj
-
             if isinstance(o, chip.clusters.Attribute.EventReadResult):
                 return {
                     "header": o.Header, 
