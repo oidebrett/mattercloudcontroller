@@ -28,5 +28,6 @@ cdk deploy *-ThingInstallerStack --require-approval never --profile $PROFILE_NAM
 cdk deploy *-ComponentUploadStack --require-approval never --profile $PROFILE_NAME
 cdk deploy *-ComponentDeploymentStack --require-approval never --profile $PROFILE_NAME
 cdk deploy *-ApiGatewayDeploymentStack --require-approval never --profile $PROFILE_NAME
+cdk deploy *-ThingMonitorStack --require-approval never --profile $PROFILE_NAME
 echo .
 echo .
