@@ -16,6 +16,11 @@
                 "TempSetupRoleName": "InstallerTempRole"
             }
         },
+        "ThingMonitor": {
+            "Name": "ThingMonitorStack",
+            "WebhookUrl": "https://99e1-2a02-8084-81a2-b900-f09b-a29b-2aad-ab41.eu.ngrok.io"
+            
+        },
         "ComponentUpload": {
             "Name": "ComponentUploadStack",
             "BucketName": "gg-comp-upload",
