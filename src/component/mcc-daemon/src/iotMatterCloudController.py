@@ -174,7 +174,7 @@ def OnEventChange(nodeId, eventReadResult)-> None:
         #If we get an Exception its because we dont have an event list already
         newList = []
         try:
-            response = sample_get_thing_shadow_request(thingName, shadowName)
+            response = get_thing_shadow_request(thingName, shadowName)
 
             prevEvents = json.loads(response)
             
@@ -591,7 +591,7 @@ if not LOCAL_TEST:
             pass
 
 #Get the shadow from the local IPC
-def sample_get_thing_shadow_request(thingName, shadowName):
+def get_thing_shadow_request(thingName, shadowName):
     lPrint("getting_thing_shadow_request: "+shadowName)
 
     try:
@@ -626,47 +626,6 @@ def update_thing_shadow_request(thingName, shadowName, payload):
         client = GreengrassCoreIPCClientV2()
         result = client.update_thing_shadow(thing_name=thingName, payload=payload, shadow_name=shadowName)
         return result.payload
-    except ConflictError as e:
-        lPrint("ConflictError: Error update shadow")
-        traceback.print_exc()
-    except UnauthorizedError as e:
-        lPrint("UnauthorizedError: Error update shadow")
-        traceback.print_exc()
-    except ServiceError as e:
-        lPrint("ServiceError: Error update shadow")
-        traceback.print_exc()
-    except InvalidArgumentsError as e:
-        lPrint(e)
-        lPrint("InvalidArgumentsError: Error update shadow")
-        traceback.print_exc()
-    except Exception as e:
-        lPrint("Error update shadow")
-        traceback.print_exc()
-
-
-
-#Set the local shadow using the IPC
-def sample_update_thing_shadow_request(thingName, shadowName, payload):
-    lPrint("in sample_update_thing_shadow_request")
-    try:
-        # set up IPC client to connect to the IPC server
-        ipc_client = awsiot.greengrasscoreipc.connect()
-                
-        # create the UpdateThingShadow request
-        update_thing_shadow_request = UpdateThingShadowRequest()
-        update_thing_shadow_request.thing_name = thingName
-        update_thing_shadow_request.shadow_name = shadowName
-        update_thing_shadow_request.payload = payload
-                        
-        # retrieve the UpdateThingShadow response after sending the request to the IPC server
-        op = ipc_client.new_update_thing_shadow()
-        op.activate(update_thing_shadow_request)
-        fut = op.get_response()
-        
-        result = fut.result(TIMEOUT)
-        #lPrint(result)
-        return result.payload
-
     except ConflictError as e:
         lPrint("ConflictError: Error update shadow")
         traceback.print_exc()
