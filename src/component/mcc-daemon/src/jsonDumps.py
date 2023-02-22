@@ -1,112 +1,116 @@
-from base64 import b64encode, b64decode
 import json
 import chip.native
 import re
 from binascii import hexlify, unhexlify
 
+class MatterJsonEncoder(json.JSONEncoder):
+
+    # pylint: disable=method-hidden
+    def default(self, o):
+        if isinstance(o, bytes):
+            return self.hex_from_bytes(o) #we convert the bytes into hex
+        if isinstance(o, chip.ChipDeviceCtrl.CommissionableNode):
+            return {
+                "addresses": o.addresses, 
+                "commissioningMode": o.commissioningMode,
+                "deviceName": o.deviceName ,
+                "deviceType": o.deviceType,
+                "hostName": o.hostName ,
+                "instanceName": o.instanceName ,
+                "longDiscriminator": o.longDiscriminator ,
+                "mrpRetryIntervalActive": o.mrpRetryIntervalActive ,
+                "mrpRetryIntervalIdle": o.mrpRetryIntervalIdle ,
+                "pairingHint": o.pairingHint ,
+                "pairingInstruction": o.pairingInstruction ,
+                "port": o.port,
+                "productId": o.productId,
+                "supportsTcp": o.supportsTcp,
+                "vendorId": o.vendorId
+                }
+        if isinstance(o, chip.clusters.GeneralDiagnostics.Structs.NetworkInterface): #Added these encoders as the AWS named shadow threw depth issue exceptions
+            networkInterfaceObj = {
+                "name":o.name,
+                "isOperational":o.isOperational,
+                "offPremiseServicesReachableIPv4":o.offPremiseServicesReachableIPv4,
+                "offPremiseServicesReachableIPv6":o.offPremiseServicesReachableIPv6,
+                "hardwareAddress":o.hardwareAddress,
+                "IPv4Addresses":o.IPv4Addresses,
+                "IPv6Addresses":o.IPv6Addresses,
+                "type":o.type
+            }
+
+            #fix for error with IOT shadow depth exception check bool(dct)
+            networkInterfaceObj['IPv4Addresses'] = self.listToStr(networkInterfaceObj['IPv4Addresses'])
+            networkInterfaceObj['IPv6Addresses'] = self.listToStr(networkInterfaceObj['IPv6Addresses'])
+            return networkInterfaceObj
+
+        if isinstance(o, chip.clusters.AccessControl.Structs.AccessControlEntryStruct): #Added these encoders as the AWS named shadow threw depth issue exceptions
+            aclEntryObj = {
+                "privilege": o.privilege,
+                "authMode": o.authMode,
+                "subjects": o.subjects,
+                "targets": o.targets,
+                "fabricIndex": o.fabricIndex
+            } 
+            aclEntryObj['subjects'] = self.listToStr(aclEntryObj['subjects'])
+            return aclEntryObj
+        if isinstance(o, chip.clusters.Attribute.EventReadResult):
+            return {
+                "header": o.Header, 
+                "status": o.Status,
+                "data": o.Data
+                }
+        if isinstance(o, chip.clusters.Attribute.EventHeader):
+            return {
+                "EndpointId": o.EndpointId, 
+                "ClusterId": o.ClusterId,
+                "EventId": o.EventId,
+                "EventNumber": o.EventNumber, 
+                "Priority": o.Priority,
+                "Timestamp": o.Timestamp,
+                "TimestampType": o.TimestampType
+                }
+        if isinstance(o, chip.clusters.Attribute.EventPriority):
+            return o.value
+        if isinstance(o, chip.clusters.Attribute.EventTimestampType):
+            return o.value
+            
+        return o.__dict__ 
+
+    def bytes_from_hex(self, hex: str) -> bytes:
+        """Converts any `hex` string representation including `01:ab:cd` to bytes
+        Handles any whitespace including newlines, which are all stripped.
+        """
+        return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
+
+
+    def hex_from_bytes(self, b: bytes) -> str:
+        """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
+        return hexlify(b).decode("utf-8")
+
+    #This is a short term fix as the depth of the AWS JSON shadow documents are limited
+    #so we need to reduce lists to strings in some cases
+    def listToStr(self,listObject):
+        if type(listObject) == list:
+            listStr = "["
+            separator = ""
+            for listItem in listObject:
+                if isinstance(listItem, bytes):
+                    #convert from bytes to hex
+                    listStr += separator + self.hex_from_bytes(listItem)
+                elif isinstance(listItem, int):
+                    #convert from int to str
+                    listStr += separator + str(listItem)
+
+                separator = ","
+            listStr += "]"
+        return listStr
+
 
 def jsonDumps(dm):
-    class Base64Encoder(json.JSONEncoder):
-
-        def listToStr(self,listObject):
-            if type(listObject) == list:
-                listStr = "["
-                separator = ""
-                for listItem in listObject:
-                    if isinstance(listItem, bytes):
-                        #convert from bytes to hex
-                        listStr += separator + hex_from_bytes(listItem)
-                    elif isinstance(listItem, int):
-                        #convert from int to str
-                        listStr += separator + str(listItem)
-
-                    separator = ","
-                listStr += "]"
-            return listStr
-
-        # pylint: disable=method-hidden
-        def default(self, o):
-            if isinstance(o, bytes):
-                #return b64encode(o).decode() #Note we will be able to get back to bytes using b64decode(o)
-                return hex_from_bytes(o) #we convert the bytes into hex
-            if isinstance(o, chip.ChipDeviceCtrl.CommissionableNode):
-                return {
-                    "addresses": o.addresses, 
-                    "commissioningMode": o.commissioningMode,
-                    "deviceName": o.deviceName ,
-                    "deviceType": o.deviceType,
-                    "hostName": o.hostName ,
-                    "instanceName": o.instanceName ,
-                    "longDiscriminator": o.longDiscriminator ,
-                    "mrpRetryIntervalActive": o.mrpRetryIntervalActive ,
-                    "mrpRetryIntervalIdle": o.mrpRetryIntervalIdle ,
-                    "pairingHint": o.pairingHint ,
-                    "pairingInstruction": o.pairingInstruction ,
-                    "port": o.port,
-                    "productId": o.productId,
-                    "supportsTcp": o.supportsTcp,
-                    "vendorId": o.vendorId
-                    }
-            if isinstance(o, chip.clusters.GeneralDiagnostics.Structs.NetworkInterface): #Added these encoders as the AWS named shadow threw depth issue exceptions
-                networkInterfaceObj = {
-                    "name":o.name,
-                    "isOperational":o.isOperational,
-                    "offPremiseServicesReachableIPv4":o.offPremiseServicesReachableIPv4,
-                    "offPremiseServicesReachableIPv6":o.offPremiseServicesReachableIPv6,
-                    "hardwareAddress":o.hardwareAddress,
-                    "IPv4Addresses":o.IPv4Addresses,
-                    "IPv6Addresses":o.IPv6Addresses,
-                    "type":o.type
-                }
-
-                #fix for error with IOT shadow depth exception check bool(dct)
-                networkInterfaceObj['IPv4Addresses'] = self.listToStr(networkInterfaceObj['IPv4Addresses'])
-                networkInterfaceObj['IPv6Addresses'] = self.listToStr(networkInterfaceObj['IPv6Addresses'])
-                return networkInterfaceObj
-
-            if isinstance(o, chip.clusters.AccessControl.Structs.AccessControlEntryStruct): #Added these encoders as the AWS named shadow threw depth issue exceptions
-                aclEntryObj = {
-                    "privilege": o.privilege,
-                    "authMode": o.authMode,
-                    "subjects": o.subjects,
-                    "targets": o.targets,
-                    "fabricIndex": o.fabricIndex
-                } 
-                aclEntryObj['subjects'] = self.listToStr(aclEntryObj['subjects'])
-                return aclEntryObj
-            if isinstance(o, chip.clusters.Attribute.EventReadResult):
-                return {
-                    "header": o.Header, 
-                    "status": o.Status,
-                    "data": o.Data
-                    }
-            if isinstance(o, chip.clusters.Attribute.EventHeader):
-                return {
-                    "EndpointId": o.EndpointId, 
-                    "ClusterId": o.ClusterId,
-                    "EventId": o.EventId,
-                    "EventNumber": o.EventNumber, 
-                    "Priority": o.Priority,
-                    "Timestamp": o.Timestamp,
-                    "TimestampType": o.TimestampType
-                    }
-            if isinstance(o, chip.clusters.Attribute.EventPriority):
-                return o.value
-            if isinstance(o, chip.clusters.Attribute.EventTimestampType):
-                return o.value
-                
-            return o.__dict__ 
 
     def cleanUpClassNames(jsonStr):
         #to handle the extra classname we will remove now
-        #First we need to make the Dataversion unique - otherwise the AWS device shadow complains
-        #result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-        #while (result is not None):
-        #    newDataVersionClassName= f"<class'chip.clusters.Attribute.{result.group(1)}.DataVersion'>"
-        #    newStr = "<class\'chip.clusters.Objects."+result.group(1)+"\'>:{"+newDataVersionClassName
-        #    jsonStr = jsonStr.replace(result.group(0), newStr)
-        #    result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>:{<class\'chip.clusters.Attribute.DataVersion\'>", jsonStr)
-
         result = re.search(r"<class\'chip.clusters.Objects.([^.]*)\'>", jsonStr)
         while (result is not None):
             jsonStr = jsonStr.replace(result.group(0), '"'+result.group(1)+'"')
@@ -124,27 +128,16 @@ def jsonDumps(dm):
 
         return jsonStr
 
-    #chatgpt generated code 
-    def print_list(lst):
+    #turn list in a string and use the custom encoder in the process 
+    def listToStr(lst):
         if len(lst) == 0:
             return '[]'
         elif isinstance(lst[0], list):
-            return '[' + print_list(lst[0]) + ',' + print_list(lst[1:])[1:]
+            return '[' + listToStr(lst[0]) + ',' + listToStr(lst[1:])[1:]
         elif len(lst) == 1:
-            return '[' + json.dumps(lst[0], cls=Base64Encoder) + ']'
+            return '[' + json.dumps(lst[0], cls=MatterJsonEncoder) + ']'
         else:
-            return '[' + json.dumps(lst[0], cls=Base64Encoder) + ',' + print_list(lst[1:])[1:]
-
-    def bytes_from_hex(hex: str) -> bytes:
-        """Converts any `hex` string representation including `01:ab:cd` to bytes
-        Handles any whitespace including newlines, which are all stripped.
-        """
-        return unhexlify("".join(hex.replace(":", "").replace(" ", "").split()))
-
-
-    def hex_from_bytes(b: bytes) -> str:
-        """Converts a bytes object `b` into a hex string (reverse of bytes_from_hex)"""
-        return hexlify(b).decode("utf-8")
+            return '[' + json.dumps(lst[0], cls=MatterJsonEncoder) + ',' + listToStr(lst[1:])[1:]
 
 
     def iterator(jsonStr, d):
@@ -158,13 +151,11 @@ def jsonDumps(dm):
 
                     jsonStr = iterator(jsonStr, v)
                 else:
-                    jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=Base64Encoder)) + ","
-
+                    jsonStr = jsonStr + "{0} : {1}".format(k, json.dumps(v, cls=MatterJsonEncoder)) + ","
         elif isinstance(d, list):
-            jsonStr = jsonStr + '"list":' + print_list(d)
-
+            jsonStr = jsonStr + '"list":' + listToStr(d)
         elif isinstance(d, object):
-            jsonStr = jsonStr + json.dumps(d, cls=Base64Encoder)
+            jsonStr = jsonStr + json.dumps(d, cls=MatterJsonEncoder)
 
         jsonStr = jsonStr + "},"
 
@@ -172,7 +163,7 @@ def jsonDumps(dm):
 
     #Code starts here
     jsonStr = ""
-    jsonStr = iterator(jsonStr, dm)
+    jsonStr = iterator(jsonStr, dm) # iterate over the object and do any custom encoding that is required
     jsonStr = jsonStr.replace(" ", "")
     jsonStr = jsonStr.replace("\n", "")
 
@@ -196,8 +187,6 @@ def jsonDumps(dm):
     if (result is not None):
         jsonStr = jsonStr.replace(result.group(0), "{"+result.group(2)+"}")
 
-    #jsonObj = json.loads(jsonStr)
-    #jsonStr = json.dumps(jsonObj)
     return jsonStr
 
 
