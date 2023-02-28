@@ -1,3 +1,8 @@
+#!/bin/sh
+
+set -e
+set +m 
+
 #This file both works for local install and for use with docker compose
 #When used with docker compose the config file WILL NOT BE present
 #and the information will be held in the ENVIRONMENT variables
