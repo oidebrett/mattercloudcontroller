@@ -18,7 +18,7 @@
         },
         "ThingMonitor": {
             "Name": "ThingMonitorStack",
-            "WebhookUrl": ""
+            "WebhookUrl": "https://1eb4-2a02-8084-81a2-b900-d776-5f69-efc0-ea43.eu.ngrok.io"
             
         },
         "ComponentUpload": {
@@ -64,9 +64,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.55",
+                "Version": "0.1.56",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-d /home/ubuntu/connectedhomeip -n mcc-thing-ver01-1"
+                "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1"
             }
         },
         "ApiGatewayDeployment": {
