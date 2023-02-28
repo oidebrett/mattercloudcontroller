@@ -7,6 +7,9 @@ set +m
 #When used with docker compose the config file WILL NOT BE present
 #and the information will be held in the ENVIRONMENT variables
 
+echo $CONFIG
+exit 0
+
 sudo apt-get install jq -y
 
 #Check if there are arguments which means its being runnning locally and given a json file
@@ -60,6 +63,13 @@ else
   export AWS_SESSION_TOKEN=$(cat $CONFIG_FILE | jq -r '.Credentials.SessionToken')
 
 fi
+
+echo $THING_NAME
+echo $THING_GROUP
+echo $ROLE_NAME
+echo $ROLE_ALIAS_NAME
+
+exit 0
 
 #Set up the packages that we need
 python3 -m pip install awsiotsdk
