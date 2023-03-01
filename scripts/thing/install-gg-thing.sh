@@ -39,6 +39,9 @@ then
   export AWS_SESSION_TOKEN=$(echo $CONFIG | jq -r '.Credentials.SessionToken')
   
   SETUPSYSTEMSERVICE=false
+
+  #Activate the correct environment for python
+  source "/home/ggc_user/connectedhomeip/out/python_lib/python-venv/bin/activate"
   
 else
   # In this case we may need to install jq as we arent running from a docker buiklt image
