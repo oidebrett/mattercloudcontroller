@@ -15,6 +15,8 @@ if [ $# -eq 0 ]
 then 
   echo "No arguments - lets try for a config environment variable..."
 
+  export PATH=/home/ggc_user/connectedhomeip/out/python_lib/python-venv/bin:$PATH
+
   PROJECT_PREFIX=$(echo $CONFIG | jq -r '.ProjectPrefix')
 
   JQ_ARG='.["'$PROJECT_PREFIX'-ThingInstallerStack"].OutputThingNamePrefix'
