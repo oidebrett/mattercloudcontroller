@@ -71,8 +71,6 @@ echo $THING_GROUP
 echo $ROLE_NAME
 echo $ROLE_ALIAS_NAME
 
-exit 0
-
 #Set up the packages that we need
 python3 -m pip install awsiotsdk
 pip3 install boto3
