@@ -8,9 +8,6 @@ set +m
 #and the information will be held in the ENVIRONMENT variables
 
 echo $CONFIG
-exit 0
-
-sudo apt-get install jq -y
 
 #Check if there are arguments which means its being runnning locally and given a json file
 #Otherwise we assume the CONFIG environment variable contains the JSON
@@ -40,6 +37,11 @@ then
   export AWS_SESSION_TOKEN=$(echo $CONFIG | jq -r '.Credentials.SessionToken')
 
 else
+  # In this case we may need to install jq as we arent running from a docker buiklt image
+  # that had jq install at image build time.
+
+  sudo apt-get install jq -y
+
   CONFIG_FILE=$1
   PROJECT_PREFIX=$(cat $CONFIG_FILE | jq -r '.ProjectPrefix')
 
