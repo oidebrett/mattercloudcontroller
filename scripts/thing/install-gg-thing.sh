@@ -35,7 +35,9 @@ then
   export AWS_ACCESS_KEY_ID=$(echo $CONFIG | jq -r '.Credentials.AccessKeyId')
   export AWS_SECRET_ACCESS_KEY=$(echo $CONFIG | jq -r '.Credentials.SecretAccessKey')
   export AWS_SESSION_TOKEN=$(echo $CONFIG | jq -r '.Credentials.SessionToken')
-
+  
+  SETUPSYSTEMSERVICE=false
+  
 else
   # In this case we may need to install jq as we arent running from a docker buiklt image
   # that had jq install at image build time.
@@ -64,6 +66,7 @@ else
   export AWS_SECRET_ACCESS_KEY=$(cat $CONFIG_FILE | jq -r '.Credentials.SecretAccessKey')
   export AWS_SESSION_TOKEN=$(cat $CONFIG_FILE | jq -r '.Credentials.SessionToken')
 
+  SETUPSYSTEMSERVICE=true
 fi
 
 echo $THING_NAME
@@ -97,14 +100,32 @@ echo $ROLE_ALIAS_NAME
 
 GREENGRASS_ROOT=/greengrass/v2
 GREENGRASS_JAR=./GreengrassCore/lib/Greengrass.jar
-sudo -E java -Droot=$GREENGRASS_ROOT \
-  -Dlog.store=FILE \
-  -jar $GREENGRASS_JAR \
-  --aws-region $REGION \
-  --thing-name $THING_NAME \
-  --thing-group-name $THING_GROUP \
-  --tes-role-name $ROLE_NAME \
-  --tes-role-alias-name $ROLE_ALIAS_NAME \
-  --component-default-user ggc_user:ggc_group \
-  --provision true \
-  --setup-system-service true
+
+
+# If we have not already installed Greengrass
+if [ ! -d $GGC_ROOT_PATH/alts/current/distro ]; then
+  sudo -E java -Droot=$GREENGRASS_ROOT \
+    -Dlog.store=FILE \
+    -jar $GREENGRASS_JAR \
+    --aws-region $REGION \
+    --thing-name $THING_NAME \
+    --thing-group-name $THING_GROUP \
+    --tes-role-name $ROLE_NAME \
+    --tes-role-alias-name $ROLE_ALIAS_NAME \
+    --component-default-user ggc_user:ggc_group \
+    --provision true \
+    --setup-system-service $SETUPSYSTEMSERVICE
+else
+	echo "Reusing existing Greengrass installation..."
+fi
+
+if [ ! $SETUPSYSTEMSERVICE ]; then
+  #Make loader script executable
+  echo "Making loader script executable..."
+  chmod +x $GGC_ROOT_PATH/alts/current/distro/bin/loader
+
+  echo "Starting Greengrass..."
+
+  # Start greengrass kernel via the loader script and register container as a thing
+  exec $GGC_ROOT_PATH/alts/current/distro/bin/loader
+fi
