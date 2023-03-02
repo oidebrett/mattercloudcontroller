@@ -39,18 +39,6 @@ import jsonDumps
 import yaml
 
 
-#Set the paths up so we are using the parsing in the connectedhomeip repo
-import config 
-sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_yamltests/"))
-sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_idl/"))
-
-from runner import ReplRunner
-
-from matter_yamltests.definitions import SpecDefinitionsFromPaths
-from matter_yamltests.parser import TestParser, TestParserConfig
-from actionParser import ActionParser
-
-
 # TODO: Add utility to commission a device if needed
 # TODO: Add utilities to keep track of controllers/fabrics
 
@@ -63,7 +51,7 @@ class MatterDeviceController(object):
     args = None
     commissionableDevices = set()
     fabricDevices = set()
-    MAX_DEVICES = config.MAX_DEVICES
+    MAX_DEVICES = None
     devCtrl = None
     caList = None
     chipStack = None
@@ -383,6 +371,19 @@ class MatterDeviceController(object):
         return jsonDumps.jsonDumps(data)
 
     def MatterInit(self, args, debug=True):
+
+        #Set the paths up so we are using the parsing in the connectedhomeip repo
+        sys.path.append(os.path.abspath(args.chipdir+"/scripts/py_matter_yamltests/"))
+        sys.path.append(os.path.abspath(args.chipdir+"/scripts/py_matter_idl/"))
+
+        from runner import ReplRunner
+
+        from matter_yamltests.definitions import SpecDefinitionsFromPaths
+        from matter_yamltests.parser import TestParser, TestParserConfig
+        from actionParser import ActionParser
+
+        # Set Up Max Devices from Args
+        MAX_DEVICES = args.maxdevices
 
         chip.native.Init()
 
