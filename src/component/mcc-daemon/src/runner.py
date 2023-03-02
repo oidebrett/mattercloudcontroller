@@ -13,10 +13,10 @@ import os
 import sys
 
 #Set the paths up so we are using the parsing in the connectedhomeip repo
-import config 
-sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_idl/"))
+#import config 
+#sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_idl/"))
 
-sys.path.append(os.path.abspath(config.chipDir+"/src/controller/python/chip/yaml/"))
+#sys.path.append(os.path.abspath(config.chipDir+"/src/controller/python/chip/yaml/"))
 
 from chip.yaml.runner import ReplTestRunner
 

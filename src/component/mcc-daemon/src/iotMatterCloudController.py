@@ -96,12 +96,10 @@ if not LOCAL_TEST:
 
 if not LOCAL_TEST:
     lPrint("not LOCAL_TEST")
-    workingDir = "/home/ubuntu/connectedhomeip"
     workingDir = args.chipdir
     ipc_client = awsiot.greengrasscoreipc.connect()
 else:
     lPrint("is LOCAL_TEST")
-    workingDir = "/home/ivob/Projects/sdk-connectedhomeip"
     workingDir = args.chipdir
     _sample_file_name = 'sample_data.json'
 
@@ -159,7 +157,7 @@ def OnValueChange(nodeId) -> None:
 
 def OnEventChange(nodeId, eventReadResult)-> None:
     lPrint("Saw event change inside Cloud Controller! for nodeId: "+ str(nodeId))
-    thingName = config.THING_NAME 
+    thingName = args.name 
     lPrint("thingName: "+ str(thingName))
     newEventStr = matterDevices.jsonDumps(eventReadResult)
     newEventObj = json.loads(newEventStr)
@@ -199,7 +197,7 @@ def OnEventChange(nodeId, eventReadResult)-> None:
 
 
 def pollForDeviceReports():
-    thingName = config.THING_NAME 
+    thingName = args.name 
     lPrint("pollForDeviceReports.........")
     
     #deviceNodeIds = matterDevices.getCommissionedDevices()
@@ -287,7 +285,7 @@ def pollForCommand(file_name: str):
             if not LOCAL_TEST:
                 #set the device shadow for commissionableNodes
                 shadowName = "commissionables"
-                thingName = config.THING_NAME
+                thingName = args.name
                 newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
                 #lPrint(newStr)
                 update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
@@ -428,7 +426,7 @@ def respond(event):
         resp["txid"] = message_from_core["txid"]
 
         #set up subscription of device shadow update deltas
-        subscribeShadowDeltaTopic = "$aws/things/"+config.THING_NAME+"/shadow/name/"+str(nodeId)+"/update/delta"
+        subscribeShadowDeltaTopic = "$aws/things/"+args.name+"/shadow/name/"+str(nodeId)+"/update/delta"
 
         '''
         #We dont need to subscribe on the subscription as we now use interactions to change
@@ -450,7 +448,7 @@ def respond(event):
         if not LOCAL_TEST:
             #set the device shadow for test
             shadowName = "commissionables"
-            thingName = config.THING_NAME
+            thingName = args.name
             newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
             #lPrint(newStr)
             update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))

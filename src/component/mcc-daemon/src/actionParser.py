@@ -6,8 +6,8 @@ import sys
 import os
 
 #Set the paths up so we are using the parsing in the connectedhomeip repo
-import config 
-sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_yamltests/"))
+#import config 
+#sys.path.append(os.path.abspath(config.chipDir+"/scripts/py_matter_yamltests/"))
 
 from matter_yamltests.definitions import SpecDefinitions
 from matter_yamltests.parser import TestParserConfig
