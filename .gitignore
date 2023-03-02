@@ -19,5 +19,7 @@ src/layer/python**/python
 
 # Install Generated Config
 scripts/thing/install-gg-config-*.json
+scripts/thing/install-gg-config-MCCDev.json
 scripts/thing/output-thing-installer-stack-*.json
 scripts/thing/install-gg-config-MCCDev.json
+integrations/docker/docker-compose.yml
