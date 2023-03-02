@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  greengrass:
+    init: false
+    container_name: aws-iot-greengrass
+    image: greengrassv2included 
+    network_mode: "host"
+    environment:
+      - CONFIG={"MCCDev-ThingInstallerStack":{"OutputThingNamePrefix":"mcc-thing-ver01-1","OutputIoTTokenRoleAlias":"MCCDev-GreengrassV2TokenExchangeRoleAlias","OutputInstallerTempRoleARN":"arn:aws:iam::305050752393:role/MCCDev-InstallerTempRole","OutputThingGroupName":"mcc-thing","OutputIoTTokenRole":"MCCDev-GreengrassV2TokenExchangeRole","OutputProjectRegion":"eu-west-1","OutputProjectPrefix":"MCCDev"},"Credentials":{"AccessKeyId":"***REMOVED***","SecretAccessKey":"***REMOVED***","SessionToken":"***REMOVED***","Expiration":"2023-03-01 18:29:35+00:00"},"ProjectPrefix":"MCCDev"}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
