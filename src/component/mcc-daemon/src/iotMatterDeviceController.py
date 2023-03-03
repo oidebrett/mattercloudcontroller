@@ -35,7 +35,6 @@ from mobly import base_test, logger, signals, utils
 from mobly.config_parser import ENV_MOBLY_LOGPATH, TestRunConfig
 from mobly.test_runner import TestRunner
 import jsonDumps
-#import tempfile
 import yaml
 
 
@@ -224,7 +223,7 @@ class MatterDeviceController(object):
         parser_config = TestParserConfig(pics_file, self.clustersDefinitions)
         yamlParser = ActionParser(actions, parser_config)
         self.lPrint(yamlParser)
-        exit()
+        return
 
         #yamlParser = ActionParser(actions, pics_file, self.clustersDefinitions)
         self.lPrint(yamlParser)
@@ -372,15 +371,33 @@ class MatterDeviceController(object):
 
     def MatterInit(self, args, debug=True):
 
-        #Set the paths up so we are using the parsing in the connectedhomeip repo
-        sys.path.append(os.path.abspath(args.chipdir+"/scripts/py_matter_yamltests/"))
-        sys.path.append(os.path.abspath(args.chipdir+"/scripts/py_matter_idl/"))
+        global matter_idl_types, SpecDefinitionsFromPaths, TestParser, TestParserConfig, ReplRunner, ActionParser
+
+        # ensure matter IDL is availale for import, otherwise set relative paths
+        try:
+            from matter_idl import matter_idl_types
+            from matter_yamltests.definitions import SpecDefinitionsFromPaths
+            from matter_yamltests.parser import TestParser, TestParserConfig
+        except:
+            #Set the paths up so we are using the parsing in the connectedhomeip repo
+            SCRIPT_PATH = args.chipdir+"/scripts/"
+            CONTROLLER_PATH = args.chipdir+"/src/controller/"
+            import sys
+
+            sys.path.append(os.path.join(SCRIPT_PATH, 'py_matter_idl'))
+            sys.path.append(os.path.join(SCRIPT_PATH, 'py_matter_yamltests'))
+            sys.path.append(os.path.join(CONTROLLER_PATH, 'python/chip/yaml'))
+
+            print(os.path.join(SCRIPT_PATH, 'py_matter_idl'))
+            from matter_idl import matter_idl_types
+            from matter_yamltests.definitions import SpecDefinitionsFromPaths
+            from matter_yamltests.parser import TestParser, TestParserConfig
+
 
         from runner import ReplRunner
-
-        from matter_yamltests.definitions import SpecDefinitionsFromPaths
-        from matter_yamltests.parser import TestParser, TestParserConfig
         from actionParser import ActionParser
+
+
 
         # Set Up Max Devices from Args
         MAX_DEVICES = args.maxdevices
