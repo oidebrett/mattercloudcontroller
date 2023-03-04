@@ -3,7 +3,7 @@ FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM="linux/amd64"
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
 ARG COMMITHASH=cd51a2076c89144fd4cdf0360c99c9b2980f5c29
-ARG MCCCOMMITHASH=d4d7b6faeb61ae8e1854f509b4a858213afa9a1c
+ARG MCCCOMMITHASH=a00603c94a9e964733426ac66ee733180e6556d5
 
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
@@ -274,7 +274,9 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/con
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/scripts connectedhomeip/scripts
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/.environment connectedhomeip/.environment
 
-RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/chip*.whl
+#RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/chip*.whl
+
+RUN source connectedhomeip/out/python_lib/python-venv/bin/activate && connectedhomeip/scripts/build_python.sh -m platform -d true -i separate
 
 # Stage 4: Set Up Matter Cloud Controller.
 #COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/scripts/thing mattercloudcontroller/scripts/thing
