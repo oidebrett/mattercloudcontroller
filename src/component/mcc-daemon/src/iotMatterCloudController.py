@@ -285,28 +285,17 @@ def pollForCommand(file_name: str):
             else:
                 pass
 
-        elif command == "write":
+        elif command == "writeNodeLabel":
             id = sample["id"]
             lPrint("Writing Attribute / Node Labal")
             nodeId = int(id)
             matterDevices.writeNodeLabel(nodeId)
-        elif command == "run":
-            id = sample["id"]
-            lPrint("Running Yaml")
-            nodeId = int(id)
-            yaml_path = '/home/ivob/Projects/mattercloudcontroller/src/component/mcc-daemon/src/TestBasicInformation.yaml'
-            matterDevices.run(nodeId, yaml_path, deleteAfterRead = False)
         elif command == "execute":
             id = sample["id"]
             lPrint("Executing JSON/Yaml")
             nodeId = int(id)
             interactions = sample["interactions"]
             matterDevices.execute(nodeId, interactions)
-        elif command == "writeAttribute":
-            id = sample["id"]
-            lPrint("Writing Attribute / Node Labal")
-            nodeId = int(id)
-            matterDevices.writeAttribute(1,0,"BasicInformation","NodeLabel","TestingGood")
         elif command == "on":
             id = sample["id"]
             lPrint("Turning On")

@@ -57,6 +57,7 @@ class MatterDeviceController(object):
     certificateAuthorityManager = None
     runner = None
     clustersDefinitions = None
+    chipDir = None
 
     def __init__(self,args):    
         self.args = args
@@ -143,7 +144,8 @@ class MatterDeviceController(object):
             time.sleep(2)
             return nodeId
         except Exception as e:
-            self.lPrint("Commission failed: ", e.message)
+            self.lPrint("Commission failed: ")
+            self.lPrint(e)
             return -1
 
     def getCommissionedDevices(self):
@@ -166,7 +168,7 @@ class MatterDeviceController(object):
         self.lPrint(f"WriteAttribute to {attributeName}")
         #time.sleep(2)
 
-    def run2(self, node_id: int, data):
+    def runActions(self, node_id: int, data):
         # Parsing YAML test and setting up chip-repl yamltests runner.
         #We need a PICS file just to create the parser but we wont use it
         pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
@@ -183,29 +185,11 @@ class MatterDeviceController(object):
             decoded_response = self.runner.decode(response)
         return decoded_response
 
-    def run(self, node_id: int, yaml_path: str, deleteAfterRead = True):
-        # Parsing YAML test and setting up chip-repl yamltests runner.
-        #We need a PICS file just to create the parser but we wont use it
-        pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
-        yaml = TestParser(yaml_path, pics_file, self.clustersDefinitions)
-        if deleteAfterRead:
-            os.remove(yaml_path)
-
-        for test_step in yaml.tests:
-            test_action = self.runner.encode(test_step)
-            self.lPrint(test_action)
-            if test_action is None:
-                self.lPrint(f'Failed to encode test step {test_step.label}')
-                raise Exception(f'Failed to encode test step {test_step.label}')
-            response = self.runner.execute(test_action)
-            decoded_response = self.runner.decode(response)
-        return decoded_response
-
     #This is just a test function to try to get the parsing work
     #Eventually we will remove this but we need it while the connectedhomeip repo
-    #is changing how it handles test scriptinh
+    #is changing how it handles test scripting
     def testExecute(self, node_id: int, actionsStr: str):
-        yaml_path = '/home/ivob/Projects/mattercloudcontroller/src/component/mcc-daemon/src/TestBasicInformation.yaml'
+        yaml_path = os.path.abspath(os.path.dirname(__file__))+'/TestBasicInformation.yaml'
         pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
 
         with open(yaml_path) as f:
@@ -225,30 +209,13 @@ class MatterDeviceController(object):
         self.lPrint(yamlParser)
         return
 
-        #yamlParser = ActionParser(actions, pics_file, self.clustersDefinitions)
-        self.lPrint(yamlParser)
-
 
     def execute(self, node_id: int, actionsStr: str):
         yamlActions = yaml.dump(actionsStr, allow_unicode=True)
         actions = yaml.safe_load(yamlActions)
 
-        '''
-        # more complex as you must watch out for exceptions
-        fd, path = tempfile.mkstemp()
-        try:
-            with os.fdopen(fd, 'w') as tmp:
-                # write yaml actions to the temp file
-                tmp.write(yamlActions)
-        except:
-            self.lPrint("Error creating a named temporary file..")
-
-        tmp.close()
         #Call the runner
-        decoded_response = self.run(node_id=node_id, yaml_path=path, deleteAfterRead = True)
-        '''
-        #Call the runner
-        decoded_response = self.run2(node_id, actions)
+        decoded_response = self.runActions(node_id, actions)
         return decoded_response
 
     def devOn(self, nodeId):
@@ -370,6 +337,10 @@ class MatterDeviceController(object):
         return jsonDumps.jsonDumps(data)
 
     def MatterInit(self, args, debug=True):
+        # Set Up Chip Rep Directory from Args
+        self.chipDir = args.chipdir
+        # Set Up Max Devices from Args
+        self.MAX_DEVICES = args.maxdevices
 
         global matter_idl_types, SpecDefinitionsFromPaths, TestParser, TestParserConfig, ReplRunner, ActionParser
 
@@ -380,15 +351,14 @@ class MatterDeviceController(object):
             from matter_yamltests.parser import TestParser, TestParserConfig
         except:
             #Set the paths up so we are using the parsing in the connectedhomeip repo
-            SCRIPT_PATH = args.chipdir+"/scripts/"
-            CONTROLLER_PATH = args.chipdir+"/src/controller/"
+            SCRIPT_PATH = self.chipDir+"/scripts/"
+            CONTROLLER_PATH = self.chipDir+"/src/controller/"
             import sys
 
             sys.path.append(os.path.join(SCRIPT_PATH, 'py_matter_idl'))
             sys.path.append(os.path.join(SCRIPT_PATH, 'py_matter_yamltests'))
             sys.path.append(os.path.join(CONTROLLER_PATH, 'python/chip/yaml'))
 
-            print(os.path.join(SCRIPT_PATH, 'py_matter_idl'))
             from matter_idl import matter_idl_types
             from matter_yamltests.definitions import SpecDefinitionsFromPaths
             from matter_yamltests.parser import TestParser, TestParserConfig
@@ -396,11 +366,6 @@ class MatterDeviceController(object):
 
         from runner import ReplRunner
         from actionParser import ActionParser
-
-
-
-        # Set Up Max Devices from Args
-        MAX_DEVICES = args.maxdevices
 
         chip.native.Init()
 
