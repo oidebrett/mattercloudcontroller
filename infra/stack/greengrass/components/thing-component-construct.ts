@@ -93,10 +93,10 @@ export class ThingComponent extends base.BaseConstruct {
                             "FUNCTION_VERION": `${this.compName}:${compVersion}`,
                         },
                         "Install": {
-                            "script": `. /home/ggc_user/connectedhomeip/out/python_lib/python-venv/bin/activate\npip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
+                            "script": `pip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
                         },
                         "Run": {
-                            "script": `. /home/ggc_user/connectedhomeip/out/python_lib/python-venv/bin/activate\npython3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py ${compArgs}\n`
+                            "script": `python3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py ${compArgs}\n`
                         },
                     },
                     "Artifacts": [
