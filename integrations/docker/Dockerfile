@@ -145,58 +145,7 @@ RUN set -x \
     && rm -rf gn \
     && : # last line
 
-# Install bloat comparison tools
-#RUN set -x \
-#    && git clone https://github.com/google/bloaty.git \
-#    && mkdir -p bloaty/build \
-#    && cd bloaty/build \
-#    && cmake ../ \
-#    && make -j8 \
-#    && make install \
-#    && cd ../.. \
-#    && rm -rf bloaty \
-#    && : # last line
-
-# NodeJS: install a newer version than what apt-get would read
-# This installs the latest LTS version of nodejs
-RUN case ${TARGETPLATFORM} in \
-        "linux/amd64") \
-            set -x \
-            && mkdir node_js \
-            && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-x64.tar.xz \
-            && mv node-v12.22.12-linux-x64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-x64 /opt/node \
-            && ln -s /opt/node/bin/* /usr/bin \
-            && cd .. \
-            && rm -rf node_js \
-            ;; \
-        "linux/arm64")\
-            set -x \
-            && mkdir node_js \
-            && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-arm64.tar.xz \
-            && mv node-v12.22.12-linux-arm64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-arm64 /opt/node \
-            && ln -s /opt/node/bin/* /usr/bin \
-            && cd .. \
-            && rm -rf node_js \
-            ;; \
-        *) ;; \
-    esac
-
-RUN set -x \
-    && mkdir -p /opt/zap-${ZAP_VERSION} \
-    && git clone https://github.com/project-chip/zap.git /opt/zap-${ZAP_VERSION} \
-    && cd /opt/zap-${ZAP_VERSION} \
-    && git checkout ${ZAP_VERSION} \
-    && npm config set user 0 \
-    && npm ci
-ENV ZAP_DEVELOPMENT_PATH=/opt/zap-${ZAP_VERSION}
-
-# Stage 1.5: Bootstrap Matter.
+# Stage 2: Bootstrap Matter.
 RUN mkdir /home/ggc_user
 RUN mkdir /home/ggc_user/connectedhomeip
 RUN git clone https://github.com/project-chip/connectedhomeip.git /home/ggc_user/connectedhomeip
@@ -204,15 +153,14 @@ WORKDIR /home/ggc_user/connectedhomeip/
 RUN git checkout ${COMMITHASH}
 RUN ./scripts/checkout_submodules.py --shallow --platform linux
 RUN scripts/build/gn_bootstrap.sh
-SHELL ["/bin/bash", "-c"]
-RUN set -x && \
-    source scripts/activate.sh \
-    && gn gen out/debug --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false' \
-    && ninja -C out/debug
 
 from chip-build-cert as chip-build-cert-bins
 
 SHELL ["/bin/bash", "-c"]
+RUN set -x && \
+    source scripts/activate.sh \
+    && gn gen out --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false' \
+    && ninja -C out
 
 # Records Matter SDK commit hash to include in the image.
 RUN git rev-parse HEAD > /home/ggc_user/.sdk-sha-version
@@ -221,13 +169,10 @@ RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i
 
 # Set Up Matter Cloud Controller.
 RUN mkdir /home/ggc_user/mattercloudcontroller
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN git clone https://github.com/oidebrett/mattercloudcontroller.git /home/ggc_user/mattercloudcontroller
-#ARG MCCCOMMITHASH=d69694783bbfff4222f0c3d9312a539f3ab48c3a
 WORKDIR /home/ggc_user/mattercloudcontroller/
 RUN git rev-parse HEAD > /home/ggc_user/.matter-sha-version
 RUN git checkout ${MCCCOMMITHASH}
-#RUN git checkout main 
 
 
 # Stage 3: Copy relevant cert bins to a minimal image to reduce size.
@@ -265,21 +210,15 @@ RUN groupmod --new-name $GROUPNAME $USERNAME
 WORKDIR /home/$USERNAME/
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/.sdk-sha-version .sdk-sha-version
 
-# Stage 3.1 Setup the Matter Python environment
-#COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip connectedhomeip
-
+# Stage 3: Setup the Matter Python environment
 #Below is the right fine-grained copys that we need - we will make a note for now
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/credentials connectedhomeip/credentials
-COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out connectedhomeip/out
+COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/python_lib/controller/python connectedhomeip/out/python_lib/controller/python
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/scripts connectedhomeip/scripts
-COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/.environment connectedhomeip/.environment
 
-#RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/chip*.whl
+RUN python3 -m pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/chip*.whl
 
-RUN source connectedhomeip/out/python_lib/python-venv/bin/activate && connectedhomeip/scripts/build_python.sh -m platform -d true -i separate
-
-# Stage 4: Set Up Matter Cloud Controller.
-#COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/scripts/thing mattercloudcontroller/scripts/thing
+# Stage 4: Copy over Matter Cloud Controller.
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller mattercloudcontroller 
 
 #Stage 5: Set up the Greengrass v2 environment
