@@ -1,9 +1,11 @@
 # Stage 1: Setup dependencies (based on chip-build).
 FROM ubuntu:22.04 as chip-build-cert
-ARG TARGETPLATFORM="linux/amd64"
+# We can build fpr the raspberry pi architecture on the main system by using this command
+# docker buildx build --platform linux/arm64 --output "dest=/full/path/to/dest/mccontrollersbins.tar,type=docker" .
+ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
 ARG COMMITHASH=cd51a2076c89144fd4cdf0360c99c9b2980f5c29
-ARG MCCCOMMITHASH=a00603c94a9e964733426ac66ee733180e6556d5
+ARG MCCCOMMITHASH=2f3e9b2ead264bdb03a0a37f920d2418d28def14
 
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
@@ -144,6 +146,45 @@ RUN set -x \
     && cd .. \
     && rm -rf gn \
     && : # last line
+
+# NodeJS: install a newer version than what apt-get would read
+# This installs the latest LTS version of nodejs
+RUN case ${TARGETPLATFORM} in \
+        "linux/amd64") \
+            set -x \
+            && mkdir node_js \
+            && cd node_js \
+            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz \
+            && tar xfvJ node-v12.22.12-linux-x64.tar.xz \
+            && mv node-v12.22.12-linux-x64 /opt/ \
+            && ln -s /opt/node-v12.22.12-linux-x64 /opt/node \
+            && ln -s /opt/node/bin/* /usr/bin \
+            && cd .. \
+            && rm -rf node_js \
+            ;; \
+        "linux/arm64")\
+            set -x \
+            && mkdir node_js \
+            && cd node_js \
+            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz \
+            && tar xfvJ node-v12.22.12-linux-arm64.tar.xz \
+            && mv node-v12.22.12-linux-arm64 /opt/ \
+            && ln -s /opt/node-v12.22.12-linux-arm64 /opt/node \
+            && ln -s /opt/node/bin/* /usr/bin \
+            && cd .. \
+            && rm -rf node_js \
+            ;; \
+        *) ;; \
+    esac
+
+RUN set -x \
+    && mkdir -p /opt/zap-${ZAP_VERSION} \
+    && git clone https://github.com/project-chip/zap.git /opt/zap-${ZAP_VERSION} \
+    && cd /opt/zap-${ZAP_VERSION} \
+    && git checkout ${ZAP_VERSION} \
+    && npm config set user 0 \
+    && npm ci
+ENV ZAP_DEVELOPMENT_PATH=/opt/zap-${ZAP_VERSION}
 
 # Stage 2: Bootstrap Matter.
 RUN mkdir /home/ggc_user

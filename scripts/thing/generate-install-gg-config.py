@@ -45,6 +45,6 @@ if __name__ == '__main__':
 
     with open(target_file, 'w') as f:
         json.dump(thing, f, default = convert_datetime)
-        print('Config', json.dumps(thing, default = convert_datetime))
+        print('Config', json.dumps(thing, default = convert_datetime, separators=(',', ':')))
 
     print('--->Finish<---')

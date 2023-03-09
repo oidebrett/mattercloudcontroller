@@ -6,8 +6,15 @@ services:
     container_name: aws-iot-greengrass
     image: greengrassv2included 
     network_mode: "host"
+    ports:
+      - 443:443
+      - 8883:8883
+    ipc: "host"
     environment:
+      - AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengrass/v2/ipc.socket
+      - GGC_ROOT_PATH=/greengrass/v2
       - CONFIG={}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
+      - /greengrass/v2:/greengrass/v2

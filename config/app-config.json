@@ -64,7 +64,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.57",
+                "Version": "0.1.61",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1"
             }
