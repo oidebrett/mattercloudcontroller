@@ -10,7 +10,7 @@ ARG MCCCOMMITHASH=2f3e9b2ead264bdb03a0a37f920d2418d28def14
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
 # specified SHA
-ARG ZAP_VERSION=v2023.02.16-nightly
+ARG ZAP_VERSION=v2023.03.06-nightly
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
