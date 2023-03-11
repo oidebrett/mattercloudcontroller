@@ -4,11 +4,9 @@ services:
   greengrass:
     init: false
     container_name: aws-iot-greengrass
-    image: greengrassv2included 
+    privileged: true
+    image: oideibrett/mattercloudcontroller-arm64:2f3e9b2ead264bdb03a0a37f920d2418d28def14
     network_mode: "host"
-    ports:
-      - 443:443
-      - 8883:8883
     ipc: "host"
     environment:
       - AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengrass/v2/ipc.socket
