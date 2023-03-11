@@ -58,6 +58,7 @@ class MatterDeviceController(object):
     runner = None
     clustersDefinitions = None
     chipDir = None
+    storagePath = None
 
     def __init__(self,args):    
         self.args = args
@@ -327,8 +328,8 @@ class MatterDeviceController(object):
         return sub
 
     def cleanStart(self):
-        if os.path.isfile('/tmp/repl-storage.json'):
-            os.remove('/tmp/repl-storage.json')
+        if os.path.isfile(self.storagePath):
+            os.remove(self.storagePath)
         # So that the all-clusters-app won't boot with stale prior state.
         os.system('rm -rf /tmp/chip_*')
         time.sleep(2)
@@ -341,6 +342,8 @@ class MatterDeviceController(object):
         self.chipDir = args.chipdir
         # Set Up Max Devices from Args
         self.MAX_DEVICES = args.maxdevices
+        # Set Up the persistent storage path
+        self.storagePath = args.storagepath
 
         global matter_idl_types, SpecDefinitionsFromPaths, TestParser, TestParserConfig, ReplRunner, ActionParser
 

@@ -43,7 +43,7 @@ from rich.console import Console
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--storagepath", help="Path to persistent storage configuration file (default: /tmp/repl-storage.json)", action="store", default="/tmp/repl-storage.json")
-parser.add_argument("-d", "--chipdir", help="Path to project matter/chip source folder (default: /home/ubuntu/connectedhomeip)", action="store", default="/home/ubuntu/connectedhomeip")
+parser.add_argument("-d", "--chipdir", help="Path to project matter/chip source folder (default: /home/ggc_user/connectedhomeip)", action="store", default="/home/ggc_user/connectedhomeip")
 parser.add_argument("-n", "--name", help="Name of the IOT thing (default: mcc-thing-ver01-1)", action="store", default="mcc-thing-ver01-1")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
 parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=10)
