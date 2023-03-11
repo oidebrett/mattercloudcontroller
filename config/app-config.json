@@ -64,9 +64,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.63",
+                "Version": "0.1.66",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1 -p /home/ggc_user/persistent-storage.txt"
+                "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1"
             }
         },
         "ApiGatewayDeployment": {

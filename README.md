@@ -588,3 +588,17 @@ sudo out/python_env/bin/chip-repl
 '''
 
 
+# Preventing Raspberry Pi docker image from overwriting the persistent storage
+By default the persistent storage (containing info on all commissioned devices) is stored in /tmp/repl-storage.txt. 
+When the docker image is restarted the tmp directory is cleared
+To avoid this we have pervented the tmp directory being cleared on the host raspberry pi by following these steps:
+1. Copied /usr/lib/tmpfiles.d/tmp.conf to /etc/tmpfiles.d/tmp.conf
+2. Edited /etc/tmpfiles.d/tmp.conf
+
+changed
+D /tmp 1777 root root -
+to
+d /tmp 1777 root root -
+
+Then we have mounted the \tmp as a volume in the docker compose so that the host and the image container share the same \tmp file
+This ensures that 1) the tmp isnt cleared when the raspberry pi is restarted and 2) that the docker image picks up the persisted info on commissioned devices
