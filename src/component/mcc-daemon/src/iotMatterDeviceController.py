@@ -1,3 +1,18 @@
+#
+# Copyright (c) 2023 Matter Cloud Controller Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 import argparse
 import asyncio
 import builtins
@@ -18,12 +33,9 @@ import time
 import bisect 
 import queue
 
-#import chip.CertificateAuthority
 import chip.clusters as Clusters
-#import chip.FabricAdmin
 import chip.logging
 import chip.native
-#import click
 from chip import ChipDeviceCtrl
 from chip.ChipStack import *
 from chip.storage import PersistentStorage
@@ -366,9 +378,9 @@ class MatterDeviceController(object):
             from matter_yamltests.definitions import SpecDefinitionsFromPaths
             from matter_yamltests.parser import TestParser, TestParserConfig
 
-
-        from runner import ReplRunner
-        from actionParser import ActionParser
+        from iotMatterInteractions import ReplRunner, ActionParser
+        #from runner import ReplRunner
+        #from actionParser import ActionParser
 
         chip.native.Init()
 
