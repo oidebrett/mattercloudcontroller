@@ -1,604 +1,102 @@
-# Matter Cloud Controller (Python)
+# Matter Cloud Controller
 
-The Matter Cloud Controller is a python based tool that allows you to commission a Matter device (via the cloud) into the network and to communicate with it using the Zigbee Cluster Library (ZCL) messages.
-
-# Control Device Setup
-
-1. On raspberry pi 4 (4GB). Download Ubuntu Server 21.10 using RPI imager on a 64 GB micro SD card. Note 21.04 is no longer available.
-
-2. Follow build instructions "Building Matter" from GitHub.com/NRFConnect/sdk-connectedhomeip
-Note: ensure that the versions are aligned between nrf app and chip controller
-e.g. if nrf version is v1.9.0 then git checkout v1.9.0 of sdk-connectedhomeip
-
-2.1 In order to speed up the compilation and reduce risk of pi hanging you might consider adding 4GB as swap as per https://www.linuxtut.com/en/71e3874cb83ed12ec405/
-
-3. Ensure router advertising is enabled on raspberry pi controller
-```
-sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
-sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
-```
-4. If having difficulties try these steps:
-
-Remove temp files
-```
-sudo rm -rf /tmp/chip*
-```
-
-Clear out MDNS cache on OTBR
-```
-sudo systemctl restart mdns.service 
-```
-
-Clear out avahi MDNS cache on Raspberry Pi
-```
-sudo systemctl restart avahi-daemon.socket 
-```
-
-# The stack provisioning is loosely based on "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk
+The Matter Cloud Controller provides a REST based API that allows you to commission Matter devices into a matter network and to communicate with these endpoints using the Matter Interaction model and associated messages via secure cloud communication. Note, this is currently a project in development and should not be considered suitable for immediate production deployment.
 
 ## Solution Architecture
 
-- Thing Installer: provide Greengrass ver2 Installer with a customized IAM Role(output-thing-installer-stack-MCCDev.json)
-- Component Upload/Deployments: deploy component's logic(sampl)
+The solution consists of 2 key parts. The **AWS Cloud** subsystem provides the secure communication channels that are required for the security of this project and the **IoT device** hosts the matter cloud controller.
 
 ![solution-arcitecture](docs/asset/solution-architecture.png)
-<<<<<<< HEAD
-=======
 
-## CDK-Project Build & Deploy
+The solution consists of the following:
+- Matter endpoints locally communicate with the Matter Cloud Controller on the **IoT Device** over a local IPv4/IPv6 or Thread based networks.
+- The Matter Cloud controller is a python based program hosted on a AWS greengrass v2 IoT thing that leverages the [Project CHIP](https://github.com/project-chip/connectedhomeip) chip python libraries to act as a controller.
+- The Matter Cloud Controller component will listen for MQTT messages that are sent via the AWS API gateway and transfered over the AWS IOT Core secure environment. These MQTT messages orginate from the REST API clients and contain CHIP type interaction messages such as "discover" and "commission" to discover and commission Matter devices onto the Matter Cloud Controllers fabric. 
+- The Matter Cloud Controller will maintain the state of each Matter endpoint in a "digital twin" as an AWS named shadow in the AWS IOT code environment.
+- When a Matter endpoint is commssioned the Matter Cloud Controller subscribes to changes on this commissioned endpoint. This reduces the need to poll  for state changes which would be problematic for power constrained devices that could be "sleepy mode".
+- When changes are made on a matter endpoints (e.g. light turned on), the Matter Cloud Controller will receive a subscription event. This will result in the controller reading the state of the matter endpoint and updating the state of its "digital twin" (i.e. AWS named shadow) 
+- The REST API client can retrieve the state of each commissioned matter endpoint by calling a REST API to get the state in a JSON document.
+- To prevent the need for the REST API client to poll for changes, an AWS IoT rule listens for changes to the named shadow state and will then invoke the Subscriptipn Notificatoon Service to call a Webhook API in the REST client. This webhook will be called everytime the state of a named shadow is changed.
+- The AWS API gateway provides secure REST API endpoints. Securing the AWS API Gateway is done using AWS IAM roles, API keys and signed/authenticated requests/responses.
 
-To efficiently define and provision aws cloud resources, [AWS Cloud Development Kit(CDK)](https://aws.amazon.com/cdk) which is an open source software development framework to define your cloud application resources using familiar programming languages is utilized.
+One advantage of using AWS named shadows as "Digital Twins" for real matter endpoints is that this allows the solution to be robust and reliable for intermittent network conditions between the cloud and the Matter enviroment. For example, if matter endpoints are in a environment that is susceptible to network dropouts or network connectivity loss such as a boat or remote location this solution will provide the last known state to the REST API clients and when network connectivity is restored the recent state changes will be propogated to the AWS IoT Core. 
 
+## Automated Provisioning 
 ![AWSCDKIntro](docs/asset/aws_cdk_intro.png)
 
-Because this solusion is implemented in CDK, we can deploy these cloud resources using CDK CLI. Among the various languages supported, this solution used typescript. Because the types of **typescript** are very strict, with the help of auto-completion, typescrip offers a very nice combination with AWS CDK.
-
-***Caution***: This solution contains not-free tier AWS services. So be careful about the possible costs.
-
-### **Prerequisites**
-
-First of all, AWS Account and IAM User is required. And then the following modules must be installed.
-
-- AWS CLI: aws configure --profile [profile name]
-- Node.js: node --version
-- AWS CDK: cdk --version
-- [jq](https://stedolan.github.io/jq/): jq --version
-- boto3
-
-```bash
-pip install -r ./requirements_dev.txt
-```
-
-if not installed you can use the command:
-
-Please refer to the kind guide in [CDK Workshop](https://cdkworkshop.com/15-prerequisites.html).
-
-### ***Configure AWS Credential***
-
-```bash
-aws configure --profile [your-profile] 
-AWS Access Key ID [None]: xxxxxx
-AWS Secret Access Key [None]:yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-Default region name [None]: eu-west-1 
-Default output format [None]: json
-    
-aws sts get-caller-identity --profile [your-profile]
-...
-...
-{
-    "UserId": ".............",
-    "Account": "75157*******",
-    "Arn": "arn:aws:iam::75157*******:user/[your IAM User ID]"
-}
-```
-
-### ***Check cdk project's default launch config***
-
-The `cdk.json` file tells CDK Toolkit how to execute your app.
-
-### ***Set up deploy config***
-
-The `config/app-config.json` files tell how to configure deploy condition & stack condition. First of all, change project configurations(Account, Profile are essential) in ```config/app-config.json```.
-
-```json
-{
-    "Project": {
-        "Name": "MCC",
-        "Stage": "Dev",
-        "Account": "75157*******",
-        "Region": "eu-west-1",
-        "Profile": "ggcuser"
-    },
-    ...
-    ...
-}
-```
-
-And then set the path of the configuration file through an environment variable.
-Note: You must be in the aws-cdk directory. You only need to run this script when setting up the environment
-
-```bash
-export APP_CONFIG=config/app-config.json
-```
-
-### ***Install dependecies & Bootstrap***
-
-```bash
-sh ./scripts/setup_initial.sh config/app-config.json
-```
-
-### ***Pack IoT Greengrass components***
-
-```bash
-sh ./scripts/pack_components.sh config/app-config.json
-```
-
-Check whether ***zip*** directory and file are created in ***src/component/sample***.
-
-### ***Deploy stacks(1st provisioning)***
-
-Before deployment, check whether all configurations are ready. Please execute the following command.
-
-```bash
-cdk list
-...
-...
-==> CDK App-Config File is config/app-config.json, which is from Environment-Variable.
-==> Repository Selection:  CodeCommit
-MatterControllerDev-ComponentDeploymentStack
-MatterControllerDev-ComponentUploadStack
-MatterControllerDev-MccInstallerStack
-
-```
-
-Check if you can see the list of stacks as shown above.
-
-If there is no problem, finally run the following command.
-
-```bash
-sh ./scripts/deploy_stacks.sh config/app-config.json
-```
-
-You can check the deployment results as shown in the following picture.
-![cloudformation-stacks](docs/asset/cloudformation-stacks.png)
-
-
-### ***Destroy stacks***
-
-Execute the following command, which will destroy all resources except S3 Buckets. So destroy these resources in AWS web console manually.
-
-```bash
-sh ./scripts/destroy_stacks.sh config/app-config.json
-```
-
-### ***CDK Useful commands***
-
-* `npm install`     install dependencies
-* `cdk list`        list up stacks
-* `cdk deploy`      deploy this stack to your default AWS account/region
-* `cdk diff`        compare deployed stack with current state
-* `cdk synth`       emits the synthesized CloudFormation template
-
-## How to install thing
-
-### Generate `install-gg-config-[ProjectPrefix].json`
-
-Please prepare `install-gg-config-[ProjectPrefix]`.json file, where ***[ProjectPrefix]*** is "Project Name" + "Project Stage" in ***app-config.json***. For example, ***MCCDev*** is [ProjectPrefix] in this default ***app-config.json***.
-
-```bash
-sh ./scripts/deploy_stacks.sh config/app-config.json # generated-> ./scripts/thing/output-thing-installer-stack-[ProjectPrefix].json
-python3 ./scripts/thing/generate-install-gg-config.py -a config/app-config.json -t ./scripts/thing/output-thing-installer-stack-[ProjectPrefix].json # generated-> ./scripts/thing/install-gg-config-[ProjectPrefix].json
-
-#Do this the first time when run to update the iot policy to allow iot shadow interactions
-python3 ./scripts/thing/update_iot_policy.py -a config/app-config.json -p '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["iot:GetThingShadow","iot:UpdateThingShadow","iot:DeleteThingShadow","iot:Connect","iot:Publish","iot:Subscribe","iot:Receive","greengrass:*"],"Resource": "*"}]}' 
-
-```
-
-![install-script](docs/asset/install-script.png)
-
-Check whether ***install-gg-config-[ProjectPrefix].json*** is created in ***./scripts/thing*** directory.
-
-### Transfer a config file into target device and execute a script in target devices
-
-* ```./scripts/thing/install-gg-config-[ProjectPrefix].json```
-* ```./scripts/thing/install-gg-thing.sh```
-
-### Install Greengrass
-
-1. Update a unique thing name in ***install-gg-config-[ProjectPrefix].json***
-
-```bash
-{
-    "MCCDev-ThingInstallerStack": {
-        "OutputThingNamePrefix": "demo-thing-ver01-001", <--- append a extra & unique suffix thing name !!
-        "OutputIoTTokenRoleAlias": "MCCDev-GreengrassV2TokenExchangeRoleAlias",
-        "OutputInstallerTempRoleARN": "arn:aws:iam::75157*******:role/MCCDev-InstallerTempRole",
-        "OutputThingGroupName": "demo-thing",
-        "OutputIoTTokenRole": "MCCDev-GreengrassV2TokenExchangeRole",
-        "OutputProjectRegion": "eu-west-1",
-        "OutputProjectPrefix": "MCCDev"
-    },
-    "Credentials": {
-        "AccessKeyId": "******************",
-        "SecretAccessKey": "88888888888888888888888888888888",
-        "SessionToken": "FwoGZXIvYXdzELn//////////wEaDDiSD0li77wnn+e1NiK/Ae7CoclJAt4dV0diah/AjCwUUeRf44dtGVWFw7ZQDkBj732rFTcc5/FLL3+GcEDlAw4VUso5tG6dI/JVwzWBWnKDk9UWF4QBnCVYxSp9Jpcup06eJ44NYhuMMA8KTSY+Ea9Kf2JAVvG4hVKGEteJwU+lC5tUkuhcLtKaAuTdxefc6jyH9qfmIJcUfjpeDNm9+3OHOhsQrTWE+4a4VYgTP5PR7w7ouWNktlE5X/1z3L+sQ7D8rmtcZdgLef4h3+E2KMOQ0IQGMi2UR6B/e4Pj4ybeLdXk62+p3alCLzPNWo/Nh2N9nbak9FTb2TRk70WiFGT5jJ0=",
-        "Expiration": "2021-05-06 16:16:19+00:00"
-    },
-    "ProjectPrefix": "MCCDev"
-}
-```
-
-2. Install a Open JDK (headless Java JDK) on raspberry pi and confirm the installation
-```
-sudo apt install default-jdk-headless
-java -version
-```
-
-3. Run the following commands
-
-First, if not already done so, create some directories, the python virtual env
-
-```
-mkdir -p /home/ubuntu/mattercloudcontroller/scripts/thing
-cd /home/ubuntu/mattercloudcontroller/scripts/thing
-wget https://raw.githubusercontent.com/oidebrett/mattercloudcontroller/main/scripts/thing/install-gg-thing.sh .
-```
-
-then activate the python virtual env
-```bash
-source /home/ubuntu/connectedhomeip/out/python_env/bin/activate
-
-```
-
-4. Copy over the config details from your installation PC and store the contents in a new file install-gg-config-[ProjectPrefix].json
-
-
-4. Then Run the following commands
-
-```bash
-sh ./install-gg-thing.sh install-gg-config-[ProjectPrefix].json
-```
-
-5. Make sure your main user account is add to the ggc_group:
-
-```bash
-sudo usermod -a -G ggc_group ubuntu
-```
-
-and that the ubuntu directory has grouped permissions set
-
-```bash
-sudo chown -R ubuntu:ggc_group /home/ubuntu/
-```
-
-```bash
-sudo systemctl restart greengrass
-```
-
-Result of install-script
-![result-install-script](docs/asset/result-install-script.png)
-
-Result of Greengrass-installation
-![greengrass-installation](docs/asset/greengrass-installation.png)
-
-Result of Greengrass-deployment
-![result-deployment1](docs/asset/result-deployment1.png)
-![result-deployment2](docs/asset/result-deployment2.png)
-
-### Check greengrass system-service
-
-```bash
-sudo systemctl status greengrass
-```
-
-Result of Greengrass-service
-![result-service-status](docs/asset/result-service-status.png)
-
-### Check greengass log
-
-```bash
-sudo tail -f /greengrass/v2/logs/greengrass.log
-sudo tail -f /greengrass/v2/logs/MCCDev-mcc-daemon.log
-```
-
-Result of Greengrass-log
-![result-greengrass-log](docs/asset/result-greengrass-log.png)
-![result-component-log](docs/asset/result-component-log.png)
-
-Note that when code changes are made, be sure to increase component's version in ```config/app-config.json``` and then re-create the zip file in ```src/component/sample/zip``` using the following command.
-
-```bash
-sh ./script/pack_components.sh config/app-config.json
-```
-
-After updating your logic, just git push the changes! And then CICD pipeline will automatically deploy that through Github Action & Greengrass deployments.
-
-Or you can directly deploy those in local-dev PC using AWS CDK CLI like this.
-
-```bash
-sh ./script/deploy_stacks.sh config/app-config-demo.json
-```
-
-## Building and installing the local python matter controller
-
-Before you can use the Matter cloud controller, you must install the connected home over ip library
-
-To build and run the Matter Cloud controller:
-
-1. Build and install the Python CHIP repl tool :
-
-    ```
-    [Follow the instructions for CHIP Repl Tool](https://github.com/project-chip/connectedhomeip/blob/interop_testing_te9/docs/guides/python_chip_controller_building.md#building)
-    ```
-
-<hr>
-
-  
-## Testing using the API
-
-1. Find the IOT Endpoint using
-
-    ```
-    aws iot describe-endpoint --endpoint-type iot:Data-ATS
-    ```
-
-2. Execute API call using CURL
-
-    ```
-    curl -XPOST https://XXXXX.execute-api.eu-west-1.amazonaws.com/prod/message/chip-tool/request -H "x-api-key: XXXXX" -H "Content-Type: application/json" -d '{"txid": "123","command":"help"}'
-    ```
-
-3. Testing in Postman - Install Postman and import the Curl command above. You will need to set up Postman to generate AWS signature in the Curl requests. You can following this guide: https://blog.knoldus.com/how-to-generate-aws-signature-with-postman/
-Note: the APIGateway URL and API key can be parameterised and made as a variable.
-
-
-## Testing during developement
-
-navigate to the directory above the matter controller
-
-Avahi keeps a cache of old results. To reset the cache, kill the daemon. It will auto-restart.
-
-    ```
-sudo avahi-daemon --kill
-    ```
-
-or restart each service
-
-    ```
-    sudo systemctl restart mdns.service
-    sudo systemctl restart avahi-daemon.socket 
-    ```
-
-Remove the temporary files (dont do this if checking persistance)
-
-    ```
-    sudo rm -rf /tmp/chip_*
-    sudo rm -rf /tmp/repl-storage.json 
-    ```
-Run the controller locally (using the -t flag)
-
-    ```
-    python3 mattercloudcontroller/src/component/mcc-daemon/src/iotMatterCloudController.py -t True
-    ```
-
-Send commands to the matter controller by saving the following to the sample_data.json file
-
-Command message structure (JSON):
-
-    ```
-    {
-        "command": "commission",
-        "txid": "12345ABC"
-    }
-    ```
-
-## Testing using a local all clusters app
-    ```
-    sudo sysctl -w net.ipv6.conf.wlo1.accept_ra=2
-    sudo sysctl -w net.ipv6.conf.wlan0.accept_ra=2
-    sudo sysctl -w net.ipv6.conf.wlan0.accept_ra_rt_info_max_plen=64
-    cd connectedhomeip/
-    cd examples/all-clusters-app/linux/
-    sudo rm -rf /tmp/ch*
-    sudo rm -rf /tmp/repl-storage.json
-    avahi-browse -rt _matter._tcp
-    sudo out/debug/chip-all-clusters-app
-    sudo rm -rf /tmp/ch*
-    avahi-browse -rt _matter._tcp
-    sudo rm -rf /tmp/repl-storage.json
-    avahi-browse -rt _matter._tcp
-    sudo systemctl restart mdns.service
-    avahi-browse -rt _matter._tcp
-    sudo systemctl restart avahi-daemon.socket
-    avahi-browse -rt _matter._tcp
-    avahi-browse -rt _matterc._udp
-    sudo out/debug/chip-all-clusters-app
-    sudo rm -rf /tmp/repl-storage.json
-    sudo rm -rf /tmp/ch*
-    sudo systemctl restart avahi-daemon.socket
-    avahi-browse -rt _matter._tcp
-    sudo out/debug/chip-all-clusters-app
-    sudo rm -rf /tmp/repl-storage.json
-    sudo rm -rf /tmp/ch*
-    sudo systemctl restart avahi-daemon.socket 
-   ```
- 
->>>>>>> 126415e5cded80f6a1aed49bc19ea64d9fba8e16
-
-# Testing the OTA requestor / Provider
-
-##Terminal 1 (run esp2 ota requestor app)
-```
-cd connectedhomeip/examples/ota-requestor-app/esp32
-idf.py menuconfig #here I set the wifi access point ssid and password
-idf.py build
-idf.py -p /dev/ttyUSB1 flash monitor
-```
-
-##Terminal 2 (run the linux OTA provider)
-I create an ota image from the esp32 lighting app and start the linux OTA provider
-
-```
-./src/app/ota_image_tool.py create -v 0xDEAD -p 0xBEEF -vn 1 -vs "1.0" -da sha256 examples/lighting-app/esp32/build/ota_data_initial.bin /tmp/esp2-image.bin
-./src/app/ota_image_tool.py show /tmp/esp2-image.bin
-out/chip-ota-provider-app --discriminator 22 --secured-device-port 5565 --KVS /tmp/chip_kvs_provider --filepath /tmp/esp2-image.bin 
-
-```
-
-##Terminal 3 (run the chip tool)
-I join the esp32 OTA-requestor to the fabric and then I join the OTA-provider to the same fabric
-I set the appropriate ACL on the OTA provider
-I then initiate the sw update on the OTA requestor
-
-```
-examples/chip-tool/out/debug/chip-tool pairing onnetwork-long 0x1234567890 20202021 3840
-examples/chip-tool/out/debug/chip-tool pairing onnetwork-long 0xDEADBEEF 20202021 22
-examples/chip-tool/out/debug/chip-tool accesscontrol write acl '[{"fabricIndex": 1, "privilege": 5, "authMode": 2, "subjects": [112233], "targets": null}, {"fabricIndex": 1, "privilege": 3, "authMode": 2, "subjects": null, "targets": [{"cluster": 41, "endpoint": null, "deviceType": null}]}]' 0xDEADBEEF 0
-examples/chip-tool/out/debug/chip-tool otasoftwareupdaterequestor announce-ota-provider 0xDEADBEEF 0 0 0 0x1234567890 0
-```
-
-
-This results in
-OTA Provider receiveing QueryImage
-Generating an updateToken
-Generating an URI: bdx://00000000DEADBEEF//tmp/esp2-image.bin
-Sending the response message
-
-However, the esp32 ota-requestor app receives a response but does not show any logging for updating the image or compatible software version
-
-```
-chip[DMG]: Received Command Response Data, Endpoint=0 Cluster=0x0000_0029 Command=0x0000_0001
-echo-devicecallbacks: PostAttributeChangeCallback - Cluster ID: '0x0000_002A', EndPoint ID: '0x00', Attribute ID: '0x0000_0002'
-echo-devicecallbacks: Unhandled cluster ID: 0x0000_002A
-```
-
-# Testing on the local linux server using chip-repl and the matter controller code
-
-```
-import time, os
-import subprocess
-import sys
-import re
-import asyncio
-import json
-
-sys.path.append(os.path.abspath("/home/ivob/Projects/mattercloudcontroller/src/component/mcc-daemon/src"))
-import iotMatterDeviceController
-matterDevices = iotMatterDeviceController.MatterDeviceController(args)
-
-devices = devCtrl.DiscoverCommissionableNodes(filterType=chip.discovery.FilterType.LONG_DISCRIMINATOR, filter=3840, stopOnFirst=True, timeoutSecond=2)
-devices[0].Commission(2, 20202021)
-
-nodeId = 2
-data = (asyncio.run(devCtrl.ReadAttribute(nodeId, [0, Clusters.Identify])))
-
-jsonStr = matterDevices.jsonDumps(data)
-
-#If you have changed the code base in the DeviceController you can reload it this way
-
-del sys.modules['iotMatterDeviceController']src/component/mcc-daemon/src/iotMatterCloudController.py
-import iotMatterDeviceController
-matterDevices = iotMatterDeviceController.MatterDeviceController(args)
-
-```
-
-# Testing lightswitch binging to light bulb using chip-repl and the ESP32 (running light bulb) and NRF52840 (running light switch) as per https://github.com/project-chip/connectedhomeip/tree/master/examples/light-switch-app/nrfconnect
-
-```
-devices = devCtrl.DiscoverCommissionableNodes(filterType=chip.discovery.FilterType.LONG_DISCRIMINATOR, filter=3840, stopOnFirst=True, timeoutSecond=2)
-
-devices[0].Commission(1, 20202021)
-
-await devCtrl.SendCommand(1, 1, Clusters.OnOff.Commands.On())
-
-devCtrl.CommissionThread(3840, 20202021, 2, bytes.fromhex("0e080000000000010000000300000f35060004001fffe0020811111111222222220708fdac0186760ae20c051000112233445566778899aabbccddeeff030e4f70656e54687265616444656d6f010212340410445f2b5ca6f2a93a55ce570a70efeecb0c0402a0f7f8"))
-
-await devCtrl.ReadAttribute(2, [(0, Clusters.Basic)])
-
-acl = [ Clusters.AccessControl.Structs.AccessControlEntry(
-            fabricIndex = 1,
-            privilege = Clusters.AccessControl.Enums.Privilege.kAdminister,
-            authMode = Clusters.AccessControl.Enums.AuthMode.kCase,
-            subjects = [112233] )
-            ]
-
-acl.append(Clusters.AccessControl.Structs.AccessControlEntry(
-            fabricIndex = 1,
-            privilege = Clusters.AccessControl.Enums.Privilege.kAdminister,
-            authMode = Clusters.AccessControl.Enums.AuthMode.kCase,
-            subjects = [2],
-            targets = [
-                Clusters.AccessControl.Structs.Target(
-                    cluster=6,
-                    endpoint = 1,
-                ),
-                Clusters.AccessControl.Structs.Target(
-                    cluster=8,
-                    endpoint =1
-                )
-            ]
-        )
-    )
-
-await devCtrl.WriteAttribute(1, [ (0, Clusters.AccessControl.Attributes.Acl( acl ) ) ] )
-
-targets = [Clusters.Binding.Structs.TargetStruct(
-    fabricIndex = 1,
-    node=1,
-    endpoint=1,
-    cluster=6),
-    Clusters.Binding.Structs.TargetStruct(
-        fabricIndex = 1,
-        node=1,
-        endpoint=1,
-        cluster=8) ]
-
-await devCtrl.WriteAttribute(2, [ (1, Clusters.Binding.Attributes.Binding( targets ) ) ] )
-
-```
-
-
-## How to setup the ubuntu environment properly for the matter cloud controller pi
-
-after you have cloned the repo and installed the submodules then
-
-'''
-scripts/build_python.sh -m platform -i separate
-'''
-
-then on a seperate laptop build the all clusters app variant that has only ipv6 (this is to simulate what will be the most probably interface for all devices post commissioning by other fabric)
-
-'''
-./scripts/run_in_build_env.sh "./scripts/build/build_examples.py --target linux-x64-all-clusters-no-ble-asan-clang build"
-
-'''
-
-then we have to 
-
-Activate the Python virtual environment:
-
-'''
-source out/python_env/bin/activate
-'''
-
-Verify the install by Launching the REPL.
-
-'''
-sudo out/python_env/bin/chip-repl
-'''
-
-
-# Preventing Raspberry Pi docker image from overwriting the persistent storage
-By default the persistent storage (containing info on all commissioned devices) is stored in /tmp/repl-storage.txt. 
-When the docker image is restarted the tmp directory is cleared
-To avoid this we have pervented the tmp directory being cleared on the host raspberry pi by following these steps:
-1. Copied /usr/lib/tmpfiles.d/tmp.conf to /etc/tmpfiles.d/tmp.conf
-2. Edited /etc/tmpfiles.d/tmp.conf
-
-changed
-D /tmp 1777 root root -
-to
-d /tmp 1777 root root -
-
-Then we have mounted the \tmp as a volume in the docker compose so that the host and the image container share the same \tmp file
-This ensures that 1) the tmp isnt cleared when the raspberry pi is restarted and 2) that the docker image picks up the persisted info on commissioned devices
+The remainder of the solution architecture provides automatic provisioning of the cloud infrastructure necessary for the solution. This is refered to Infrastructure As Code (IaC). This efficiently defines and provisions aws cloud resources using [AWS Cloud Development Kit(CDK)](https://aws.amazon.com/cdk) which is an open source software development framework to define cloud application resources. The benefit of this approach is that the cloud infrastructure can be provisioned and deprovisioned with confidence and repeatability. The required cloud resources are defined in code based "constructs" which are part of this project repository. The CDK API from AWS provides that functionality to "Synthesize" these constructs into Cloud Formation templates which can then be deployed to create the required AWS resources.
+
+The solution components for deployment and provisioning are:
+- Thing Installer: provides Greengrass ver2 Installer with a customized IAM Role(output-thing-installer-stack-MCCDev.json)
+- Thing Monitor: observe IoT thing lifecycle events(created, deleted, updated) and triggers Subscription Notifications resulting in Webhook calls.
+- Component Upload/Deployments: deploys component (matter cloud controller)
+- S3 Buckets: stores deployment component code
+- IoT certificate: A secure digital certificate based encrypted channels is created between the AWS IoT Core environment and the IoT device that hosts the Matter Cloud Controller. This is important to provide security that is required for a cloud based solution.
+
+The stack provisioning for this project is loosely based on "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" example from Amazon Web Services https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk
+
+## Building the Environment
+Follow this guide to [Building the AWS Environment](./docs/BUILDING.md)
+
+## Testing the Matter Cloud Controller
+Follow this guide to [Testing the Matter Cloud Controller](./docs/TESTING.md)
+
+#
+
+# Current Status of the Matter Cloud Controller
+
+The overall goal of this project is to provide an open source project that can
+further advance the functionality of the Matter technology environment and, in 
+doing so, further improve the benefits of Matter to consumers and manufacturers.
+The Matter Cloud Controller design and technology is currently aligned to the
+technology provided by Amazon Web Services. This should not be seen as an
+exclusive choice of cloud environment. In future releases, other cloud
+environments will be supported where possible. The current functionality provides
+basic matter interactions suchh as discovery, commissioning and interactions. As 
+the standard develops further functionality will be incorporated. A design decision 
+was made early in the development of this project to leverage the Project CHIP python 
+libraries and this should mean that additional functionality should be easily ported 
+into this solution as the Project chip feature set grows. Testing of this project has 
+been done locally using a limited but wide set of matter platforms such as Nordic Semi's
+NRF52840-DK and Espressif's ESP32 platforms. More testing of consumer matter products 
+will be required as these devices become available and when multi-admin is made available
+by the main smart home eco-systems. Also more automated testing will be required as
+the project progresses.
+
+# How to Contribute
+
+We welcome your contributions to the Matter Cloud Controller. Read our contribution guidelines
+[here](./CONTRIBUTING.md).
+
+# Building and Developing the Matter Cloud Controllers
+
+Instructions about how to build the Matter Cloud Controllers can be found [here](./docs/BUILDING.md) .
+
+# Directory Structure
+
+The Matter Cloud Controller repository is structured as follows:
+
+| File/Folder        | Content                                                            |
+| ------------------ | ------------------------------------------------------------------ |
+| cdk.out            | generated output directory for Cloud Formation Templates           |
+| config             | Project configurations                                             |
+| credentials        | Development and test credentials                                   |
+| docs               | Documentation, including guides                                    |
+| infra              | Construct code in Typescript that defines the infrastructure       |
+| integrations       | integrations - mainly containing docker integration files          |
+| lib                | Library of provided construct code to help to build infra          |
+| logs               | Local logging location used during development and test            |
+| scripts            | Scripts needed to work with the environment                        |
+| src                | Implementation of Matter Cloud Controller Component                |
+| test               | Tests (to be done)                                                 |
+| cdk.json           | Config for the CDK CLI                                             |
+| CODE_OF_CONDUCT.md | Code of conduct for this project and contribution to it            |
+| CONTRIBUTING.md    | Guidelines for contributing to this project                        |
+| LICENSE            | Matter Cloud Controller license file                               |
+| REVIEWERS.md       | PR reviewers                                                       |
+| requirements.txt   | Python library requirement (also file for dev).                    |
+| README.md          | This File                                                          |
+
+# License
+
+Matter Cloud Contoller is released under the [Apache 2.0 license](./LICENSE).
