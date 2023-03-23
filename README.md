@@ -33,7 +33,7 @@ The solution components for deployment and provisioning are:
 - S3 Buckets: stores deployment component code
 - IoT certificate: A secure digital certificate based encrypted channels is created between the AWS IoT Core environment and the IoT device that hosts the Matter Cloud Controller. This is important to provide security that is required for a cloud based solution.
 
-The stack provisioning for this project is loosely based on "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" example from Amazon Web Services https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk
+Inspiration for the stack provisioning for this project came from the "AWS IoT Greengrass OnBoarding and Data Logging using AWS CDK" example from Amazon Web Services https://github.com/aws-samples/aws-iot-greengrass-v2-using-aws-cdk. Full credit to the Amazon team for providing such an excellent example to base this solution on.
 
 ## Building the Environment
 Follow this guide to [Building the AWS Environment](./docs/BUILDING.md)
