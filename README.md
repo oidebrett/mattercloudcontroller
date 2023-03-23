@@ -1,6 +1,6 @@
 # Matter Cloud Controller
 
-The Matter Cloud Controller provides a REST based API that allows you to commission Matter devices into a matter network and to communicate with these endpoints using the Matter Interaction model and associated messages via secure cloud communication. Note, this is currently a project in development and should not be considered suitable for immediate production deployment.
+The Matter Cloud Controller provides a REST based API that allows you to commission Matter devices into a matter network and to communicate with these nodes using the Matter Interaction model and associated messages via secure cloud communication. Note, this is currently a project in development and should not be considered suitable for immediate production deployment.
 
 ## Solution Architecture
 
@@ -9,17 +9,17 @@ The solution consists of 2 key subsystems. The **AWS Cloud** subsystem provides 
 ![solution-arcitecture](docs/asset/solution-architecture.png)
 
 The solution consists of the following:
-- Matter endpoints locally communicate with the Matter Cloud Controller on the **IoT Device** over a local IPv4/IPv6 or Thread based networks.
+- Matter nodes locally communicate with the Matter Cloud Controller on the **IoT Device** over a local IPv4/IPv6 or Thread based networks.
 - The Matter Cloud controller is a python based program hosted on a AWS greengrass v2 IoT thing that leverages the [Project CHIP](https://github.com/project-chip/connectedhomeip) chip python libraries to act as a controller.
 - The Matter Cloud Controller component will listen for MQTT messages that are sent via the AWS API gateway and transferred over the AWS IOT Core secure environment. These MQTT messages originate from the REST API clients and contain CHIP type interaction messages such as "discover" and "commission" to discover and commission Matter devices onto the Matter Cloud Controllers fabric. 
-- The Matter Cloud Controller will maintain the state of each Matter endpoint in a "digital twin" as an AWS named shadow in the AWS IOT code environment.
-- When a Matter endpoint is commissioned the Matter Cloud Controller subscribes to changes on this commissioned endpoint. This reduces the need to poll  for state changes which would be problematic for power constrained devices that could be "sleepy mode".
-- When changes are made on a matter endpoint (e.g. change of ACL), the Matter Cloud Controller will receive a subscription event. This will result in the controller reading the state of the matter endpoint and updating the state of its "digital twin" (i.e. AWS named shadow) 
-- The REST API client can retrieve the state of each commissioned matter endpoint by calling a REST API to get the state in a JSON document.
-- To prevent the need for the REST API client to poll for changes, an AWS IoT rule listens for changes to the named shadow state and will then invoke the Subscriptipn Notificatoon Service to call a Webhook API in the REST client. This webhook will be called every time the state of a named shadow is changed.
+- The Matter Cloud Controller will maintain the state of each Matter node in a "digital twin" as an AWS named shadow in the AWS IOT code environment.
+- When a Matter node is commissioned the Matter Cloud Controller subscribes to changes on this commissioned node. This reduces the need to poll for state changes which would be problematic for power constrained devices that could be "sleepy mode".
+- When changes are made on a matter endpoint (e.g. change of ACL), the Matter Cloud Controller will receive a subscription event. This will result in the controller reading the state of the matter node endpoint and updating the state of its "digital twin" (i.e. AWS named shadow) 
+- The REST API client can retrieve the state of each commissioned matter node by calling a REST API to get the state in a JSON document.
+- To prevent the need for the REST API client to poll for changes, an AWS IoT rule listens for changes to the named shadow state and will then invoke the Subscriptipn Notification Service (SNS) to call a Webhook API in the REST client. This webhook will be called every time the state of a named shadow is changed.
 - The AWS API gateway provides secure REST API endpoints. Securing the AWS API Gateway is done using AWS IAM roles, API keys and signed/authenticated requests/responses.
 
-One advantage of using AWS named shadows as "Digital Twins" for real matter endpoints is that this allows the solution to be robust and reliable for intermittent network conditions between the cloud and the Matter environment. For example, if matter endpoints are in a environment that is susceptible to network dropouts or network connectivity loss (e.g. a transport vehicle or remote locations) this solution will provide the last known state to the REST API clients and when network connectivity is restored the recent state changes will be propagated to the AWS IoT Core. 
+One advantage of using AWS named shadows as "Digital Twins" for real matter nodes is that this allows the solution to be robust and reliable for intermittent network conditions between the cloud and the Matter network. For example, if matter nodes are in a environment that is susceptible to network dropouts or network connectivity loss (e.g. a transport vehicle or remote locations) this solution will provide the last known state to the REST API clients and when network connectivity is restored the recent state changes will be propagated to the AWS IoT Core. 
 
 Another significant advantage of using AWS IoT Core and a AWS greengrass v2 based solution is that software and device firmware updates can be easily made to the Matter Cloud Controller and, in turn, to the Matter devices. This could provide a solution to secure cloud originated Device Firmware Updates (DFU) using the Matter OTA standard.
 
@@ -55,8 +55,8 @@ technology provided by Amazon Web Services. This should not be seen as an
 exclusive choice of cloud environment. In future releases, other cloud
 environments will be supported where possible. The current functionality provides
 basic matter interactions such as discovery, commissioning and interactions. 
-The current matter cloud controller focuses on endpoint 0 of the device to monitor
-and manage adminstration cluster type information for devices. The project will be 
+The current matter cloud controller focuses on endpoint 0 of the device nodes to monitor
+and manage adminstration type information for devices. The project will be 
 extended to support clusers outside of endpoint 0 in future releases. A decision 
 was made early in the development of this project to leverage the Project CHIP python 
 libraries and this should mean that additional functionality should be easily ported 
