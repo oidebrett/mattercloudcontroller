@@ -21,7 +21,7 @@ The solution consists of the following:
 
 One advantage of using AWS named shadows as "Digital Twins" for real matter endpoints is that this allows the solution to be robust and reliable for intermittent network conditions between the cloud and the Matter environment. For example, if matter endpoints are in a environment that is susceptible to network dropouts or network connectivity loss such as a boat or remote location this solution will provide the last known state to the REST API clients and when network connectivity is restored the recent state changes will be propagated to the AWS IoT Core. 
 
-Another significant advantage of using AWS IoT Core and a AWS greengrass v2 based solution is that software and device firmware updates can be easily masde to the Matter Cloud Controller and, in turn, to the Matter devices. This could provide a solution to secure cloud originated Device Firmware Updates (DFU) using the Matter OTA standard.
+Another significant advantage of using AWS IoT Core and a AWS greengrass v2 based solution is that software and device firmware updates can be easily made to the Matter Cloud Controller and, in turn, to the Matter devices. This could provide a solution to secure cloud originated Device Firmware Updates (DFU) using the Matter OTA standard.
 
 ## Automated Provisioning 
 ![AWSCDKIntro](docs/asset/aws_cdk_intro.png)
