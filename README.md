@@ -4,7 +4,7 @@ The Matter Cloud Controller provides a REST based API that allows you to commiss
 
 ## Solution Architecture
 
-The solution consists of 2 key parts. The **AWS Cloud** subsystem provides the secure communication channels that are required for the security of this project and the **IoT device** hosts the matter cloud controller.
+The solution consists of 2 key subsystems. The **AWS Cloud** subsystem provides the secure communication channels that are required for the security of this project and the **IoT device** hosts the matter cloud controller. The **IoT device** is currently designed to be hosted on a low cost Raspberry Pi 4 Model B which is a popular platform for building Internet of Things (IoT) projects.
 
 ![solution-arcitecture](docs/asset/solution-architecture.png)
 
