@@ -84,7 +84,6 @@ The Matter Cloud Controller repository is structured as follows:
 | ------------------ | ------------------------------------------------------------------ |
 | cdk.out            | generated output directory for Cloud Formation Templates           |
 | config             | Project configurations                                             |
-| credentials        | Development and test credentials                                   |
 | docs               | Documentation, including guides                                    |
 | infra              | Construct code in Typescript that defines the infrastructure       |
 | integrations       | integrations - mainly containing docker integration files          |
