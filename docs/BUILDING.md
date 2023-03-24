@@ -2,6 +2,27 @@
 
 # Building the Matter Cloud Controller
 
+## Introduction and Prerequisites
+The following guide explains how to build and deploy the Matter Cloud Controller using an automated deployment model. To follow this guide you will need the following tools/setup/knowledge:
+
+- AWS Account with admin privileges. If you don't have an AWS Account, follow the instructions to get a [free AWS account](https://aws.amazon.com/free/)
+- Recent Modern Browser (Latest Firefox or Chrome)
+- Basic Linux knowledge
+- Basic Programming understanding
+
+Cleanup
+You will find instructions to remove the deployed resources in the section [Destory Stacks](./BUILDING.md#destroy-stacks). Please ensure to perform the cleanup steps if you want to avoid potentially unwanted costs.
+
+Target Audience
+This workshop is for developers, solutions architects, and technical decision makers.
+
+Time to complete
+This guide should take approximately 170 minutes (equates to 2.5 hrs) to complete
+
+## Development Environment
+You will need a development environment to clone the repo to and to run the CDK deployment script processes. There are 2 choices for Development Environments:
+- Your own local Ubuntu environment (Ubuntu 22.04 is recommended)
+- Using AWS Cloud9 instance as your development environment - please follow [this guide](./AWSCloud9.md) to set up your AWS Cloud9 IDE
 
 ## CDK-Project Build & Deploy
 
@@ -15,7 +36,9 @@ Because this solusion is implemented in CDK, we can deploy these cloud resources
 
 ### **Prerequisites**
 
-First of all, AWS Account and IAM User is required. And then the following modules must be installed.
+First of all, AWS Account and IAM User is required. See [this guide](./AWSCredentials.md) to set up an IAM User with administrator privileges. During a production deployment it is recommended to reduce the IAM users privileges to only the necessary for deployment of the required resources.
+
+Then the following modules must be installed.
 
 - AWS CLI: aws configure --profile [profile name]
 - Node.js: node --version
@@ -24,15 +47,19 @@ First of all, AWS Account and IAM User is required. And then the following modul
 - boto3
 
 ```bash
-pip install -r ./requirements_dev.txt
+python3 -m pip install -r ./requirements_dev.txt
 ```
 
-if not installed you can use the command:
+if jq is not installed you can use the command:
+```bash
+sudo apt install jq
+```
 
 Please refer to the kind guide in [CDK Workshop](https://cdkworkshop.com/15-prerequisites.html).
 
 ### ***Configure AWS Credential***
 
+We recommend you use **ggc_user** as your AWS profile name
 ```bash
 aws configure --profile [your-profile] 
 AWS Access Key ID [None]: xxxxxx
@@ -50,13 +77,35 @@ aws sts get-caller-identity --profile [your-profile]
 }
 ```
 
+### ***Clone the Matter Cloud Controller***
+
+The first thing to do is to clone the Matter Cloud Controller code to your ubuntu development environment:
+
+```
+git clone https://github.com/oidebrett/mattercloudcontroller.git
+cd mattercloudcontroller
+```
+
 ### ***Check cdk project's default launch config***
 
 The `cdk.json` file tells CDK Toolkit how to execute your app.
 
+### ***Find your AWS accounts IOT endpoint***
+
+The AWS IoT Core - data plane endpoints are specific to each AWS account and AWS Region. The IoT endpoint is required to connect the AWS API gateway to the IoT Core. To find your AWS IoT Core - data plane endpoint run this command. Change the profile name if you used a different profile name when creating your AWS credentials.
+
+```bash
+aws iot describe-endpoint --endpoint-type iot:Data-ATS --profile ggc_user
+...
+...
+{
+    "endpointAddress": "a2mfqulpofetfu-ats.iot.eu-west-1.amazonaws.com"
+}
+```
+
 ### ***Set up deploy config***
 
-The `config/app-config.json` files tell how to configure deploy condition & stack condition. First of all, change project configurations(Account, Profile are essential) in ```config/app-config.json```.
+The `config/app-config.json` files tell how to configure deploy condition & stack condition. First of all, change project configurations(Account, Profile, IOT endpoint address are essential) in ```config/app-config.json```.
 
 ```json
 {
@@ -65,12 +114,17 @@ The `config/app-config.json` files tell how to configure deploy condition & stac
         "Stage": "Dev",
         "Account": "75157*******",
         "Region": "eu-west-1",
-        "Profile": "ggcuser"
+        "Profile": "ggc_user"
     },
     ...
     ...
+    "ApiGatewayDeployment": {
+        "Name": "ApiGatewayDeploymentStack",
+        "IotEndpointAddress": "a2mfqulpofetfu-ats"
+    }
 }
 ```
+replace **a2mfqulpofetfu-ats** with the IoT data endpoint you retrieved in the previous step.
 
 And then set the path of the configuration file through an environment variable.
 Note: You must be in the aws-cdk directory. You only need to run this script when setting up the environment
@@ -102,10 +156,11 @@ cdk list
 ...
 ...
 ==> CDK App-Config File is config/app-config.json, which is from Environment-Variable.
-==> Repository Selection:  CodeCommit
-MatterControllerDev-ComponentDeploymentStack
-MatterControllerDev-ComponentUploadStack
-MatterControllerDev-MccInstallerStack
+MCCDev-ApiGatewayDeploymentStack
+MCCDev-ComponentDeploymentStack
+MCCDev-ComponentUploadStack
+MCCDev-ThingInstallerStack
+MCCDev-ThingMonitorStack
 
 ```
 
@@ -120,6 +175,12 @@ sh ./scripts/deploy_stacks.sh config/app-config.json
 You can check the deployment results as shown in the following picture.
 ![cloudformation-stacks](./asset/cloudformation-stacks.png)
 
+When the deployment is finished you should look for the API gateway URL which is output. You will need this to access the REST API endpoints.
+
+```bash
+Outputs:
+MCCDev-ApiGatewayDeploymentStack.ApiGatewayToIotPatternRestApiEndpoint3A675D8F = https://6jdm51ivoa.execute-api.eu-west-1.amazonaws.com/prod/
+```
 
 ### ***Destroy stacks***
 
@@ -128,6 +189,14 @@ Execute the following command, which will destroy all resources except S3 Bucket
 ```bash
 sh ./scripts/destroy_stacks.sh config/app-config.json
 ```
+
+You will have to manually delete the Cloudformation Stack "CDKToolkit" as this is not removed during the destroy script.
+
+You should also empty and delete the S3 buckets that were created. One was for the CDK bootstrap and another was for the Component Upload. Look for these S3 buckets and delete them:
+- cdk-*******-assets-************-eu-west-1	
+- mccdev-gg-comp-upload-eu-west-1-30505
+
+If you were using AWS Cloud 9 and you want to complete remove the instance then you can remove the Cloudformation stack associated with your Cloud9 IDE.
 
 ### ***CDK Useful commands***
 
@@ -168,10 +237,10 @@ Check whether ***install-gg-config-[ProjectPrefix].json*** is created in ***./sc
 ```bash
 {
     "MCCDev-ThingInstallerStack": {
-        "OutputThingNamePrefix": "demo-thing-ver01-001", <--- append a extra & unique suffix thing name !!
+        "OutputThingNamePrefix": "mcc-thing-ver01-001", <--- append a extra & unique suffix thing name !!
         "OutputIoTTokenRoleAlias": "MCCDev-GreengrassV2TokenExchangeRoleAlias",
         "OutputInstallerTempRoleARN": "arn:aws:iam::75157*******:role/MCCDev-InstallerTempRole",
-        "OutputThingGroupName": "demo-thing",
+        "OutputThingGroupName": "mcc-thing",
         "OutputIoTTokenRole": "MCCDev-GreengrassV2TokenExchangeRole",
         "OutputProjectRegion": "eu-west-1",
         "OutputProjectPrefix": "MCCDev"

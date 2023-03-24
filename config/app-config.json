@@ -4,7 +4,7 @@
         "Stage": "Dev",
         "Account": "305050752393",
         "Region": "eu-west-1",
-        "Profile": "ggcuser"
+        "Profile": "ggc_user"
     },
 
     "Stack": {
@@ -64,7 +64,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.67",
+                "Version": "0.1.69",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1 -p /var/tmp/admin-storage.json"
             }
