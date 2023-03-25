@@ -12,7 +12,16 @@ The project requires the following major dependencies:
 - [gsutil](https://cloud.google.com/storage/docs/gsutil_install)
 - [claat](https://github.com/googlecodelabs/tools/tree/master/claat#install)
 
-With Node installed, run `npm install` in the root of the `site` (this folder):
+With Node (v12.16.2 recommended) installed, run `npm install` in the root of the `site` (this folder):
+
+If Node is not at the recommended version use:
+
+```text
+$ nvm install 12.16.2
+$ nvm use 12.16.2
+node --version
+```
+node version should be 12.16.2
 
 ```text
 $ npm install
@@ -49,7 +58,13 @@ You can also serve the completely compiled and minified (prod) version with the
 replica of what will appear on staging/production.
 
 ```text
-$ gulp serve:dist
+$ gulp serve:dist --codelabs-dir=codelabs
+```
+
+If you want just to minify the code and create the dist folder then use
+
+```text
+$ gulp dist --codelabs-dir=codelabs
 ```
 
 ### Views
@@ -214,7 +229,7 @@ local copy), specify `--delete-missing` on the publish command.
 1. Compile and minify the build:
 
     ```text
-    $ gulp dist
+    $ gulp dist --codelabs-dir=codelabs
     ```
 
 1. Deploy views to the staging bucket:
@@ -369,6 +384,18 @@ $ gulp serve
 $ open http://localhost:8000/app/js/all_tests.html
 ```
 
+## Writing new codelabs
+
+To write new codelabs you need to create new md files in the codelabs directory. The article [Publish Technical Tutorials In Google Codelab](https://medium.com/@zarinlo/publish-technical-tutorials-in-google-codelab-format-b07ef76972cd)
+
+Firstly you need to make sure you have downloaded the claat executable for your environment. We recommend you place this executable in the **~/go/bin** directory and change the file permissions to make it executable
+
+Then you will create a new md file in the codelab directory and execute the following command to encode the article as a codelab
+
+```bash
+cd codelabs
+~/go/bin/claat export how-to-write-a-codelab.md
+```
 
 ## Help
 
@@ -383,3 +410,12 @@ If gulp startup times are really slow, try removing `node_modules/` or running
 ```text
 $ npm dedupe
 ```
+
+## Ignore files/folders in Github
+
+Please note that this github repository has ignore the following files and folders:
+- node_modules folder (this will be reinstalled when npm i is called in the site directory)
+- build folder (this is only for local testing - the packaged file will be in ./dist folder)
+- package-lock.json
+
+These will be created for you when you follow the installation instructions above.

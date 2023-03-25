@@ -1,7 +1,7 @@
 summary: How to Write a Codelab
 id: how-to-write-a-codelab
 categories: Sample
-tags: medium
+tags: test
 status: Published 
 authors: Zarin
 Feedback Link: https://zarin.io
