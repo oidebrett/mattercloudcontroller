@@ -3,7 +3,7 @@ id: how-to-write-another-codelab
 categories: Web
 tags: medium
 status: Published 
-authors: Zarin
+authors: Oide
 Feedback Link: https://zarin.io
 
 # How to Write a Codelab
@@ -20,7 +20,7 @@ Duration: 100 mins
 
 <!-- ------------------------ -->
 ## Setting Duration
-Duration: 2
+Duration: 200mins
 
 To indicate how long each slide will take to go through, set the `Duration` under each Heading 2 (i.e. `##`) to an integer. 
 The integers refer to minutes. If you set `Duration: 4` then a particular slide will take 4 minutes to complete. 

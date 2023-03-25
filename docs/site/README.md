@@ -36,12 +36,6 @@ $ export PATH="./node_modules/.bin/:$PATH"
 
 This does pose a mild security risk, so please do so at your own risk.
 
-## Deploying
-
-# Solace Codelabs landing page
-[The Solace Codelabs](https://codelabs.solace.dev/) landing page that is based on the [Google Codelabs tool](https://github.com/googlecodelabs/tools)
-Note: This is the codelabs.solace.dev landing page itself; individual codelabs are kept separately here https://github.com/SolaceDev/solace-dev-codelabs
-
 ## Run locally
 1. Clone the repo and initialize all submodules recursively `git clone --recursive https://github.com/oidebrett/mattercloudcontroller.git`
 1. Navigate to the `/docs/site` directory
