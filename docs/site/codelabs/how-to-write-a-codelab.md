@@ -20,7 +20,7 @@ Duration: 120mins
 
 <!-- ------------------------ -->
 ## Setting Duration
-Duration: 250mins
+Duration: 250
 
 To indicate how long each slide will take to go through, set the `Duration` under each Heading 2 (i.e. `##`) to an integer. 
 The integers refer to minutes. If you set `Duration: 4` then a particular slide will take 4 minutes to complete. 
