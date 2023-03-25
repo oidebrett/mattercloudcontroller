@@ -27,5 +27,4 @@ integrations/docker/docker-compose.yml
 #Ignore the documentation site build and node files
 docs/site/package-lock.json
 docs/site/node_modules/
-docs/site/build/
 
