@@ -9,7 +9,7 @@ Feedback Link: https://zarin.io
 # How to Write a Codelab
 <!-- ------------------------ -->
 ## Overview 
-Duration: 1
+Duration: 120mins
 
 ### What You’ll Learn 
 - how to set the amount of time each slide will take to finish 
