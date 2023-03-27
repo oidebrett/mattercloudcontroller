@@ -360,8 +360,9 @@ To build and run the Matter Cloud controller:
 
 <hr>
 
-# Control Device Setup
+# Control IoT Device Setup
 
+## Manually install the Matter Cloud Controller IOT Device using NRFConnect SDK 
 1. On raspberry pi 4 (4GB). Download Ubuntu Server 21.10 using RPI imager on a 64 GB micro SD card. Note 21.04 is no longer available.
 
 2. Follow build instructions "Building Matter" from GitHub.com/NRFConnect/sdk-connectedhomeip
@@ -393,8 +394,7 @@ sudo systemctl restart avahi-daemon.socket
 ```
 
   
-
-## How to setup the ubuntu environment properly for the matter cloud controller pi
+## Manually install the Matter Cloud Controller IOT Device natively in ubuntu environment 
 
 after you have cloned the repo and installed the submodules then
 
@@ -423,6 +423,25 @@ Verify the install by Launching the REPL.
 sudo out/python_env/bin/chip-repl
 '''
 
+# Running the Matter Cloud Controller as a Docker Container
+Log in as ggc_user
+
+The following docker command will start up the docker container using the AWS credential details.
+You will need to modify the docker_compose.yml file with the Config information from the install 
+section above. This command will start up the greengrass v2 daemon and will start listening for IoT
+MQTT messages. 
+
+```bash
+cd ~/mattercloudcontroller/integrations/docker
+docker compose up
+```
+
+Alternatively, you can start the docker container without starting greengrass v2 daemon. This may
+be useful if you want to run a shell and review the code in the container
+
+```bash
+docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
+```
 
 # Preventing  docker image from overwriting the persistent storage
 
@@ -449,3 +468,56 @@ This ensures that 1) the tmp isnt cleared when the raspberry pi is restarted and
 
 Option 2:
 We specify the persistent storage as a command argument in the python script for the greengrasss component
+
+# Running the Open Thread Border Router on the IoT Device
+It is also possible to run the Open Thread Border router on the same IoT Device that runs the matter cloud controller.
+The OTBR is required to allow an IP network to communication with matter devices on the Thread network. For example,
+matter applications running on Nordics NRF52840 will run in a thread network and an OTBR is required to join that 
+application into a IP based matter network.
+
+You should follow the instruction from Nordic on (setting up a OTBR using docker)[https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/protocols/thread/tools.html#running-otbr-using-docker]
+
+You will need to replace the run command with the following command to allow the mDNS serive discovery to work externally to the Docker container
+
+```bash
+sudo modprobe ip6table_filter
+sudo docker run -it --rm --privileged --name otbr --network otbr -p 8080:80 \
+--sysctl "net.ipv6.conf.all.disable_ipv6=0 net.ipv4.conf.all.forwarding=1 net.ipv6.conf.all.forwarding=1" \
+--volume /dev/ttyACM0:/dev/radio nrfconnect/otbr:a892bf7 \
+--volume /var/run/docker.sock:/var/run/docker.sock \
+--volume /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket \
+--radio-url spinel+hdlc+uart:///dev/radio?uart-baudrate=1000000
+```
+
+In a separate terminal, you can check the status of the OTBR by using these commands:
+
+```bash
+sudo docker exec -it otbr sh -c "sudo service otbr-agent status"
+```
+
+If the previous command is working correctly you will need to form a thread network
+
+1st create a new dataset:
+
+```bash
+sudo docker exec -it otbr sh -c "sudo ot-ctl dataset init new"
+sudo docker exec -it otbr sh -c "sudo ot-ctl dataset commit active"
+sudo docker exec -it otbr sh -c "sudo ot-ctl ifconfig up"
+sudo docker exec -it otbr sh -c "sudo ot-ctl thread start"
+```
+
+
+Check the status of the Thread node running inside the Docker:
+
+```bash
+sudo docker exec -it otbr sh -c "sudo ot-ctl state"
+```
+
+If all is working correctly you will need the dataset hex code for commissioning the Thread device into the Matter fabric:
+
+```bash
+sudo docker exec -it otbr sh -c "sudo ot-ctl dataset active -x"
+```
+
+
+
