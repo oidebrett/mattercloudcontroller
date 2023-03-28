@@ -249,7 +249,7 @@ RUN case ${TARGETPLATFORM} in \
     esac
 
 RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i no
-RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i separate
+#RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i separate
 
 # Set Up Matter Cloud Controller.
 RUN mkdir /home/ggc_user/mattercloudcontroller
