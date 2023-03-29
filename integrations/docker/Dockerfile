@@ -322,7 +322,7 @@ RUN apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
 ## Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  jq unzip && \
+  jq unzip bluez && \
   apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
 ## Install greengrassv2 dependencies
