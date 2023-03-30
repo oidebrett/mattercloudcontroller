@@ -32,6 +32,7 @@ import subprocess
 import time
 import bisect 
 import queue
+import uuid
 
 import chip.clusters as Clusters
 import chip.logging
@@ -42,6 +43,7 @@ from chip.storage import PersistentStorage
 from chip.utils import CommissioningBuildingBlocks
 from chip import discovery, exceptions
 from chip.clusters.Attribute import SubscriptionTransaction, TypedAttributePath
+from chip.ChipBluezMgr import BluezManager as BleManager
 
 from mobly import base_test, logger, signals, utils
 from mobly.config_parser import ENV_MOBLY_LOGPATH, TestRunConfig
@@ -82,6 +84,66 @@ class MatterDeviceController(object):
 
     def getFabricId(self):
         return self.devCtrl.GetCompressedFabricId()
+
+    def discoverBleDevices(self, timeoutInSecs):
+        found = False
+
+        chip_service = uuid.UUID("0000FFF6-0000-1000-8000-00805F9B34FB")
+        chip_service_short = uuid.UUID("0000FFF6-0000-0000-0000-000000000000")
+        chromecast_setup_service = uuid.UUID("0000FEA0-0000-1000-8000-00805F9B34FB")
+        chromecast_setup_service_short = uuid.UUID("0000FEA0-0000-0000-0000-000000000000")
+
+        bleMgr = BleManager(self.devCtrl)
+        bleMgr.ble_adapter_select()
+        bleMgr.adapter.adapter_bg_scan(True)
+        bleChipDevices = []
+
+        timeout = timeoutInSecs + time.time()
+
+        while time.time() < timeout:
+            scanned_peripheral_list = bleMgr.adapter.find_devices(
+                [
+                        chip_service,
+                        chip_service_short,
+                        chromecast_setup_service,
+                        chromecast_setup_service_short,
+                ]
+                )
+            for device in scanned_peripheral_list:
+                try:
+                    devIdInfo = bleMgr.get_peripheral_devIdInfo(device)
+                    if not devIdInfo:
+                        # Not a chip device
+                        print("Not a chip device")
+                        continue
+                    else:
+
+                        bleChipDevice = {
+                            "name": device.Name,
+                            #"id": str(device.device_id),
+                            "rssi": device.RSSI,
+                            "address": device.Address,
+                            "pairingState": devIdInfo.pairingState,
+                            "discriminator": devIdInfo.discriminator,
+                            "vendorId": devIdInfo.vendorId,
+                            "productId": devIdInfo.productId
+                        }
+                        if bleChipDevice not in bleChipDevices:
+                            bleChipDevices.append(bleChipDevice)
+                            found = True
+                            break
+                        else:
+                            #We have already recorded this one
+                            pass
+
+                except Exception:
+                    self.lPrint("error in discoverBleDevices")
+        #    if found:
+        #        break
+
+        bleMgr.adapter.adapter_bg_scan(False)
+
+        return bleChipDevices
 
     def discoverFabricDevices(self, useAvahi = False, stopAtFirstFail = False):
         # Discovery happens through mdns, which means we need to wait for responses to come back.

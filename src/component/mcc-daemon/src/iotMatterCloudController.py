@@ -301,6 +301,21 @@ def pollForCommand(file_name: str):
             else:
                 pass
 
+        elif command == "ble":
+            timeout = sample["timeout"]
+            bleNodes = matterDevices.discoverBleDevices(timeout)
+            bleNodesJsonStr = json.dumps(bleNodes)
+            lPrint(bleNodesJsonStr)
+            if not LOCAL_TEST:
+                #set the device shadow for test
+                shadowName = "bleNodes"
+                thingName = args.name
+                newStr = '{"state": {"reported": '+bleNodesJsonStr+'}}'
+                #lPrint(newStr)
+                update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+            else:
+                pass
+
         elif command == "writeNodeLabel":
             id = sample["id"]
             lPrint("Writing Attribute / Node Labal")
@@ -454,6 +469,25 @@ def respond(event):
             pass
 
         resp["response"] = "discovery complete"
+        resp["return_code"] = 200
+        resp["txid"] = message_from_core["txid"]
+
+    elif command == "ble":
+        timeout = message_from_core["timeout"]
+        bleNodes = matterDevices.discoverBleDevices(timeout)
+        bleNodesJsonStr = json.dumps(bleNodes)
+        lPrint(bleNodesJsonStr)
+        if not LOCAL_TEST:
+            #set the device shadow for test
+            shadowName = "bleNodes"
+            thingName = args.name
+            newStr = '{"state": {"reported": '+bleNodesJsonStr+'}}'
+            #lPrint(newStr)
+            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+        else:
+            pass
+
+        resp["response"] = "ble discovery complete"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
 
