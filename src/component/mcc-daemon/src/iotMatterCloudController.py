@@ -301,8 +301,12 @@ def pollForCommand(file_name: str):
             else:
                 pass
 
-        elif command == "ble":
-            timeout = sample["timeout"]
+        elif command == "blescan":
+            try:
+                timeout = sample["timeout"]
+            except:
+                timeout = TIMEOUT
+
             bleNodes = matterDevices.discoverBleDevices(timeout)
             bleNodesJsonStr = json.dumps(bleNodes)
             lPrint(bleNodesJsonStr)
@@ -472,8 +476,12 @@ def respond(event):
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
 
-    elif command == "ble":
-        timeout = message_from_core["timeout"]
+    elif command == "blescan":
+        try:
+            timeout = message_from_core["timeout"]
+        except:
+            timeout = TIMEOUT
+        
         bleNodes = matterDevices.discoverBleDevices(timeout)
         bleNodesJsonStr = json.dumps(bleNodes)
         lPrint(bleNodesJsonStr)

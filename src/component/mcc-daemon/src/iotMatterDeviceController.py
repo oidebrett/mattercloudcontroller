@@ -128,7 +128,7 @@ class MatterDeviceController(object):
                             "vendorId": devIdInfo.vendorId,
                             "productId": devIdInfo.productId
                         }
-                        if bleChipDevice not in bleChipDevices:
+                        if (bleChipDevice not in bleChipDevices):
                             bleChipDevices.append(bleChipDevice)
                             found = True
                             break
