@@ -263,6 +263,50 @@ def loadAndCleanSampleData(file_name: str):
     clearSampleData(file_name)
     return sample
 
+def doCommission(ipaddress):
+    lPrint("Calling commissionDevice function")
+    nodeId = matterDevices.commissionDevice(ipaddress, nodeId=None, allocatedNodeIds = None)
+
+    if nodeId > 0: #nodeId will be -1 if commissioning failed
+        changedNodeIds.append(nodeId) #add nodeId to the changedIds
+        
+        #Set up a subscription that will call OnValueChange when ever we get a change
+        lPrint("Settting Up Subscription on nodeId:")
+        matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
+        
+        #Set up a subscription that will call OnEventChange when ever we get an event
+        lPrint("Settting Up Event Subscription on nodeId:")
+        matterDevices.subscribeForEventChange(nodeId, OnEventChange)
+        time.sleep(stabilisation_time_in_sec)            
+
+def doDiscover():
+    discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
+    commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
+    lPrint(commissionableNodesJsonStr)
+    if not LOCAL_TEST:
+        #set the device shadow for commissionableNodes
+        shadowName = "commissionables"
+        thingName = args.name
+        newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
+        #lPrint(newStr)
+        update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+    else:
+        pass
+
+def doBlescan(timeout):
+    bleNodes = matterDevices.discoverBleDevices(timeout)
+    bleNodesJsonStr = json.dumps(bleNodes)
+    lPrint(bleNodesJsonStr)
+    if not LOCAL_TEST:
+        #set the device shadow for test
+        shadowName = "bleNodes"
+        thingName = args.name
+        newStr = '{"state": {"reported": '+bleNodesJsonStr+'}}'
+        #lPrint(newStr)
+        update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+    else:
+        pass
+
 def pollForCommand(file_name: str):
     sample = loadAndCleanSampleData(file_name)
     lPrint(sample)
@@ -272,34 +316,10 @@ def pollForCommand(file_name: str):
         lPrint(command)
         if command == "commission":
             ipaddress = sample["id"]
-            lPrint("Calling commissionDevice function")
-            nodeId = matterDevices.commissionDevice(ipaddress, nodeId=None, allocatedNodeIds = None)
-
-            if nodeId > 0: #nodeId will be -1 if commissioning failed
-                changedNodeIds.append(nodeId) #add nodeId to the changedIds
-                
-                #Set up a subscription that will call OnValueChange when ever we get a change
-                lPrint("Settting Up Subscription on nodeId:")
-                matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
-                
-                #Set up a subscription that will call OnEventChange when ever we get an event
-                lPrint("Settting Up Event Subscription on nodeId:")
-                matterDevices.subscribeForEventChange(nodeId, OnEventChange)
-                time.sleep(stabilisation_time_in_sec)
+            doCommission(ipaddress)
 
         if command == "discover": # we always have to update the discoveredCommissionableDevices after we commission
-            discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
-            commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
-            lPrint(commissionableNodesJsonStr)
-            if not LOCAL_TEST:
-                #set the device shadow for commissionableNodes
-                shadowName = "commissionables"
-                thingName = args.name
-                newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
-                #lPrint(newStr)
-                update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-            else:
-                pass
+            doDiscover()
 
         elif command == "blescan":
             try:
@@ -307,18 +327,7 @@ def pollForCommand(file_name: str):
             except:
                 timeout = TIMEOUT
 
-            bleNodes = matterDevices.discoverBleDevices(timeout)
-            bleNodesJsonStr = json.dumps(bleNodes)
-            lPrint(bleNodesJsonStr)
-            if not LOCAL_TEST:
-                #set the device shadow for test
-                shadowName = "bleNodes"
-                thingName = args.name
-                newStr = '{"state": {"reported": '+bleNodesJsonStr+'}}'
-                #lPrint(newStr)
-                update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-            else:
-                pass
+            doBlescan(timeout)
 
         elif command == "writeNodeLabel":
             id = sample["id"]
@@ -423,20 +432,7 @@ def respond(event):
     nodeId = None
     if command == "commission":
         ipaddress = message_from_core["id"]
-        lPrint("Calling commissionDevice function")
-        nodeId = matterDevices.commissionDevice(ipaddress, nodeId=None, allocatedNodeIds = None)
-
-        if nodeId > 0: #nodeId will be -1 if commissioning failed
-            changedNodeIds.append(nodeId) #add nodeId to the changedIds
-
-            #Set up a subscription that will call OnValueChange when ever we get a change
-            lPrint("Settting Up Subscription on nodeId:"+str(nodeId))
-            matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
-
-            #Set up a subscription that will call OnEventChange when ever we get an event
-            lPrint("Settting Up Event Subscription on nodeId:"+str(nodeId))
-            matterDevices.subscribeForEventChange(nodeId, OnEventChange)
-            time.sleep(stabilisation_time_in_sec)
+        doCommission(ipaddress)
 
         resp["response"] = "commissioned"
         resp["return_code"] = 200
@@ -447,6 +443,7 @@ def respond(event):
 
         '''
         #We dont need to subscribe on the subscription as we now use interactions to change
+        #But we will leave this here in case we want to do something when the shadow changes
         lPrint("Setting up the Shadow Subscription")
         # Setup the Shadow Subscription
         request = SubscribeToTopicRequest()
@@ -459,18 +456,7 @@ def respond(event):
         '''
 
     elif command == "discover":
-        discoveredCommissionableNodes = matterDevices.discoverCommissionableDevices()
-        commissionableNodesJsonStr = matterDevices.jsonDumps(discoveredCommissionableNodes)
-        lPrint(commissionableNodesJsonStr)
-        if not LOCAL_TEST:
-            #set the device shadow for test
-            shadowName = "commissionables"
-            thingName = args.name
-            newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
-            #lPrint(newStr)
-            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-        else:
-            pass
+        doDiscover()
 
         resp["response"] = "discovery complete"
         resp["return_code"] = 200
@@ -482,20 +468,9 @@ def respond(event):
         except:
             timeout = TIMEOUT
         
-        bleNodes = matterDevices.discoverBleDevices(timeout)
-        bleNodesJsonStr = json.dumps(bleNodes)
-        lPrint(bleNodesJsonStr)
-        if not LOCAL_TEST:
-            #set the device shadow for test
-            shadowName = "bleNodes"
-            thingName = args.name
-            newStr = '{"state": {"reported": '+bleNodesJsonStr+'}}'
-            #lPrint(newStr)
-            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-        else:
-            pass
+        doBlescan(timeout)
 
-        resp["response"] = "ble discovery complete"
+        resp["response"] = "blescan complete"
         resp["return_code"] = 200
         resp["txid"] = message_from_core["txid"]
 
