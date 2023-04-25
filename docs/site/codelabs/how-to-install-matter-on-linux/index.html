@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
   <meta name="theme-color" content="#4F7DC9">
   <meta charset="UTF-8">
-  <title>How to Install Matter</title>
+  <title>How to Install Matter on Linux</title>
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
   <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -22,8 +22,8 @@
 <body>
   <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
   <google-codelab codelab-gaid=""
-                  id="how-to-install-matter"
-                  title="How to Install Matter"
+                  id="how-to-install-matter-on-linux"
+                  title="How to Install Matter on Linux"
                   environment="web"
                   feedback-link="https://mattercoder.com">
     
@@ -37,7 +37,7 @@
 </ul>
 <h2 is-upgraded>Architecture</h2>
 <p class="image-container"><img alt="alt-architecture-here" src="img/c3589ada84e9712b.png"></p>
-<p>Typically a Matter Access will not be connected to the same Wifi or Thread network as the Matter Controller and a process of &#34;commissioning&#34; over Bluetooth Low Energy will take place. However, in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linuix Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission over BLE.</p>
+<p>Typically a Matter Access will not be connected to the same Wifi or Thread network as the Matter Controller and a process of &#34;commissioning&#34; over Bluetooth Low Energy will take place. However, in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linux Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission over BLE.</p>
 <h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
 <ul class="checklist">
 <li>What you will need (Pre-requisities)</li>
@@ -56,6 +56,8 @@
 <p>You will need</p>
 <ul>
 <li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
 </ul>
 <p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
 
@@ -196,16 +198,112 @@ ninja -C out/debug
 <pre><code language="language-shell" class="language-shell">cd out/
 ls -al
 </code></pre>
-<p>Note: if you run the <code>chip-all-clusters-app</code> ensure that you clean up some of the temporary files  using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every run.</p>
+<p>Note: if you run the <code>chip-all-clusters-app</code> ensure that you clean up some of the temporary files using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every time you test.</p>
 
 
       </google-codelab-step>
     
       <google-codelab-step label="Basic testing with sample app and chip-tool" duration="10">
-        <h2 is-upgraded>Hyperlinking</h2>
-<p><a href="https://www.youtube.com/user/iamhalsey/playlists" target="_blank">Youtube - Halsey Playlists</a></p>
-<h2 is-upgraded>Images</h2>
-<p class="image-container"><img alt="alt-text-here" src="img/d3c5d591bebacd50.jpg"></p>
+        <p>In this section we will run a sample matter accessory application (all-clusters-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+<h2 is-upgraded>Running the CHIP Tool</h2>
+<p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool
+</code></pre>
+<p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
+<h2 is-upgraded>Using the CHIP Tool</h2>
+<ol type="1">
+<li>Clean the initialization of state using the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+<ol type="1" start="2">
+<li>In a shell window, start the Matter accessory device:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-all-clusters-app
+</code></pre>
+<p>You should see output logs and you should pay close attention to the details containing the device information</p>
+<pre><code language="language-shell" class="language-shell">[1682444491.725740][4142:4142] CHIP:DL: Device Configuration:
+[1682444491.725840][4142:4142] CHIP:DL:   Serial Number: TEST_SN
+[1682444491.725885][4142:4142] CHIP:DL:   Vendor Id: 65521 (0xFFF1)
+[1682444491.725901][4142:4142] CHIP:DL:   Product Id: 32769 (0x8001)
+[1682444491.725909][4142:4142] CHIP:DL:   Product Name: TEST_PRODUCT
+[1682444491.725923][4142:4142] CHIP:DL:   Hardware Version: 0
+[1682444491.725931][4142:4142] CHIP:DL:   Setup Pin Code (0 for UNKNOWN/ERROR): 20202021
+[1682444491.725940][4142:4142] CHIP:DL:   Setup Discriminator (0xFFFF for UNKNOWN/ERROR): 3840 (0xF00)
+[1682444491.725953][4142:4142] CHIP:DL:   Manufacturing Date: (not set)
+[1682444491.725960][4142:4142] CHIP:DL:   Device Type: 65535 (0xFFFF)
+[1682444491.725979][4142:4142] CHIP:SVR: SetupQRCode: [MT:-24J042C00KA0648G00]
+[1682444491.725992][4142:4142] CHIP:SVR: Copy/paste the below URL in a browser to see the QR Code:
+[1682444491.726000][4142:4142] CHIP:SVR: https://project-chip.github.io/connectedhomeip/qrcode.html?data=MT%3A-24J042C00KA0648G00
+[1682444491.730420][4142:4142] CHIP:SVR: Manual pairing code: [34970112332]
+</code></pre>
+<ol type="1" start="3">
+<li>In a second shell window, try to discover the matter accessory using the the CHIP Tool:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool discover commissionables
+</code></pre>
+<p>If everything is working you should see output logs and you should see the device information above is successfully discovered by the matter controller</p>
+<pre><code language="language-shell" class="language-shell">[1682445006.638403][4913:4915] CHIP:DIS: Discovered node:
+[1682445006.638461][4913:4915] CHIP:DIS:        Hostname: 2A78BBC523530000
+[1682445006.638470][4913:4915] CHIP:DIS:        IP Address #1: fe80::215:5dff:feb1:bd80
+[1682445006.638474][4913:4915] CHIP:DIS:        Port: 5540
+[1682445006.638507][4913:4915] CHIP:DIS:        Mrp Interval idle: not present
+[1682445006.638516][4913:4915] CHIP:DIS:        Mrp Interval active: not present
+[1682445006.638523][4913:4915] CHIP:DIS:        TCP Supported: 1
+[1682445006.638530][4913:4915] CHIP:DIS:        Vendor ID: 65521
+[1682445006.638568][4913:4915] CHIP:DIS:        Product ID: 32769
+[1682445006.638576][4913:4915] CHIP:DIS:        Device Type: 65535
+[1682445006.638610][4913:4915] CHIP:DIS:        Long Discriminator: 3840
+[1682445006.638618][4913:4915] CHIP:DIS:        Pairing Hint: 33
+[1682445006.638625][4913:4915] CHIP:DIS:        Instance Name: F7C553DE411295F0
+[1682445006.638663][4913:4915] CHIP:DIS:        Commissioning Mode: 1
+[1682445006.638950][4913:4913] CHIP:CTL: Shutting down the commissioner
+</code></pre>
+<ol type="1" start="4">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (chip-all-clusters-app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool pairing onnetwork-long 1 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1682445590.030746][4983:4985] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1682445590.030773][4983:4985] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="5">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions/</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read vendor-name 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+<ol type="1" start="6">
+<li>We can read other information using these commands:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read product-name 1 0
+./out/chip-tool basicinformation read software-version 1 0
+</code></pre>
+<p>We are using the Basic Information <code>cluster</code>. Clusters are logical groupings of Matter functionality.</p>
+<ol type="1" start="7">
+<li>We can read other information from another using these commands:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool generaldiagnostics read up-time 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
+</code></pre>
+<ol type="1" start="8">
+<li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool 
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the chip-all-clusters-app process by using Ctrl-C in the first shell window.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
 
 
       </google-codelab-step>
