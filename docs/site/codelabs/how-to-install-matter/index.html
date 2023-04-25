@@ -1,0 +1,228 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Install Matter</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-install-matter"
+                  title="How to Install Matter"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="100">
+        <p>In this codelab we will show you how to build and install a Matter controller and sample app on a Linux based OS.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Build a sample Matter Application that supports much of the standard matter capabilities (clusters) of a Matter Accessory</li>
+<li>Build a management tool that will act as a Matter controller.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/c3589ada84e9712b.png"></p>
+<p>Typically a Matter Access will not be connected to the same Wifi or Thread network as the Matter Controller and a process of &#34;commissioning&#34; over Bluetooth Low Energy will take place. However, in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linuix Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission over BLE.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>Where to get the latest version of Matter</li>
+<li>How to install prerequisites on Linux</li>
+<li>What is and how to install the ZAP tool</li>
+<li>How to build a sample matter app and the matter controller (chip-tool)</li>
+<li>Basic testing with sample app and chip-tool</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="10">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+<p>You will need</p>
+<ul>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Where to get the latest version of Matter" duration="5">
+        <p>The official matter github repo is the <a href="https://github.com/project-chip/connectedhomeip" target="_blank">ConnectedHomeIP repo from Project Chip</a></p>
+<ol type="1">
+<li>First thing we will do is create a new folder so that we can clone the code</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">mkdir ~/Projects
+cd ~/Projects
+</code></pre>
+<ol type="1" start="2">
+<li>Next we will clone the github repo</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">git clone https://github.com/project-chip/connectedhomeip.git
+cd connectedhomeip
+</code></pre>
+<ol type="1" start="3">
+<li>Matter relies on a substantial number of submodules. So next we will synchronize these submodules</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">#git submodule update --init
+./scripts/checkout_submodules.py --shallow --platform linux
+</code></pre>
+<p>Note: this process can take a while the very 1st time you install matter.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to install prerequisites on Linux" duration="5">
+        <p>Before building our Matter controller and sample app, we need to install a few OS specific dependencies.</p>
+<ol type="1">
+<li>If using Ubuntu 22.04, the following dependencies are needed:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
+     libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev \
+     python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev
+</code></pre>
+<p>Note: this process can take a while the very 1st time when you install matter.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What is and how to install the ZAP tool" duration="5">
+        <p>When working with Matter you will need to use the ZAP tool. The ZAP tool is an open source tool provided by Project-CHIP. The ZAP tool is a tool that is used to help in the generation of code for each Matter application. Meta data associated with each matter application, such as clusers and attributes that are supported, can be defined in Zap files. These Zap files are then transposed to the specific code for the underlying system architectures.</p>
+<p>Before building our Matter sample apps, we need to install the ZAP tool.</p>
+<ol type="1">
+<li>Download the latest ZAP version to the latest version. At the time of writing its v2023.04.21-nightly</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects
+mkdir zap-linux
+cd zap-linux
+export ZAP_VERSION=v2023.04.21-nightly
+wget https://github.com/project-chip/zap/releases/download/${ZAP_VERSION}/zap-linux.zip
+</code></pre>
+<p>Note: please check the latest version of the Zap tool on the <a href="https://github.com/project-chip/zap/releases" target="_blank">Releases page from the Project Chip Zap repo</a></p>
+<ol type="1" start="2">
+<li>Unzip the zap-cli tool</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">unzip zap-linux.zip &amp;&amp; rm zap-linux.zip
+</code></pre>
+<ol type="1" start="3">
+<li>Confirm that the zap-cli tool is installed and working</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./zap-cli
+</code></pre>
+<p>if working correctly you should see something like the following:</p>
+<pre><code language="language-javascript" class="language-javascript">🔧 Using state directory: /home/____________/.zap
+{
+  url: &#39;http://localhost:9070&#39;,
+  version: &#39;2023.4.21&#39;,
+  featureLevel: 96,
+  hash: &#39;01XXXXXXXX1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX4&#39;,
+  timestamp: 1682083603,
+  date: &#39;2023-04-21T13:26:43.000Z&#39;,
+  exe: &#39;./zap-cli&#39;
+}
+-- JSON START --
+{&#34;url&#34;:&#34;http://localhost:9070&#34;,&#34;version&#34;:&#34;2023.4.21&#34;,&#34;featureLevel&#34;:96,&#34;hash&#34;:&#34;01XXXXXXXX1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX4&#34;,&#34;timestamp&#34;:1682083603,&#34;date&#34;:&#34;2023-04-21T13:26:43.000Z&#34;,&#34;exe&#34;:&#34;./zap-cli&#34;}
+-- JSON END --
+</code></pre>
+<p>hit Ctrl-C to exit the tool.</p>
+<ol type="1" start="4">
+<li>Finally, add the zap-cli path to your path environment variable</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">export PATH=$PATH:$(pwd)
+</code></pre>
+<p>Note: you should add ~/Projects/zap-linux to your path in your .bashrc file if you want to permanently have the zap-cli tool in your path.</p>
+<ol type="1" start="4">
+<li>Lastly, check that the zap-cli path is working</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
+zap-cli
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to build a sample matter app and the matter controller (chip-tool)" duration="10">
+        <p>In this section we will build a sample matter app that we can use for testing and experiementing. We will use the <code>Linux all-clusters-app</code> which has all the main capabilities of a matter end device.</p>
+<p>We will also build the matter controller tool that is provided by Project-Chip. The chip-tool is an example application that uses Matter to send messages to a Matter server. It is very useful for experimenting with Matter devices and can help us understand how Matter works.</p>
+<ol type="1">
+<li>Before building any matter app or controller we will need to create and initialise the environment</li>
+</ol>
+<p>Run the following commands</p>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
+source scripts/activate.sh
+</code></pre>
+<p>If everything has gone ok with the environment setup you should see:</p>
+<pre><code language="language-shell" class="language-shell">Checking the environment:
+
+20230423 16:49:39 INF Environment passes all checks!
+
+Environment looks good, you are ready to go!
+</code></pre>
+<ol type="1" start="2">
+<li>We then need to build the underlying core chip libraries</li>
+</ol>
+<p>Run the following commands</p>
+<pre><code language="language-shell" class="language-shell">gn gen out/debug --args=&#39;chip_mdns=&#34;platform&#34; chip_inet_config_enable_ipv4=false&#39;
+ninja -C out/debug
+</code></pre>
+<ol type="1" start="3">
+<li>We then can build the required sample apps using the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./scripts/build/build_examples.py \
+  --target linux-x64-all-clusters-ipv6only \
+  --target linux-x64-chip-tool-ipv6only \
+  build \
+  &amp;&amp; mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
+  &amp;&amp; mv out/linux-x64-chip-tool-ipv6only/chip-tool out/chip-tool 
+</code></pre>
+<ol type="1" start="4">
+<li>If everything worked OK you should see an executable called <code>chip-all-clusters-app</code> and <code>chip-tool</code>in the <code>out/</code> directory</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd out/
+ls -al
+</code></pre>
+<p>Note: if you run the <code>chip-all-clusters-app</code> ensure that you clean up some of the temporary files  using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every run.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Basic testing with sample app and chip-tool" duration="10">
+        <h2 is-upgraded>Hyperlinking</h2>
+<p><a href="https://www.youtube.com/user/iamhalsey/playlists" target="_blank">Youtube - Halsey Playlists</a></p>
+<h2 is-upgraded>Images</h2>
+<p class="image-container"><img alt="alt-text-here" src="img/d3c5d591bebacd50.jpg"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation here: <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

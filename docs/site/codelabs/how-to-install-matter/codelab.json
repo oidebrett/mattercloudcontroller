@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-25T11:39:21+01:00",
+  "id": "how-to-install-matter",
+  "duration": 146,
+  "title": "How to Install Matter",
+  "authors": "MatterCoder",
+  "summary": "How to Install Matter",
+  "source": "how-to-install-matter.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "setup"
+  ],
+  "tags": [
+    "medium"
+  ],
+  "feedback": "https://mattercoder.com",
+  "url": "how-to-install-matter"
+}
