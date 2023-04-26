@@ -1,6 +1,6 @@
 summary: How to Install Matter on Linux
 id: how-to-install-matter-on-linux
-categories: Setup
+categories: Sample
 tags: medium
 status: Published 
 authors: MatterCoder
@@ -72,7 +72,6 @@ cd connectedhomeip
 3. Matter relies on a substantial number of submodules. So next we will synchronize these submodules
 
 ```shell
-#git submodule update --init
 ./scripts/checkout_submodules.py --shallow --platform linux
 ```
 
