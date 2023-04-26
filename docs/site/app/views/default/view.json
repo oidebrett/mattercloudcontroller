@@ -1,6 +1,6 @@
 {
-  "title": "Codelabs",
-  "description": "Codelabs provide a guided, tutorial, hands-on coding experience. Most codelabs will step you through the process of building a small application, or adding a new feature to an existing application.",
+  "title": "MatterCoder",
+  "description": "MatterCoder provide a guided, tutorial, hands-on coding experience. Most codelabs will step you through the process of building a small Matter application, or adding a new feature to an existing application.",
   "tags": [],
   "categories": [],
   "exclude": [

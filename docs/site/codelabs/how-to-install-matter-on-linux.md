@@ -21,11 +21,8 @@ In this codelab, you will:
 ### Architecture
 ![alt-architecture-here](assets/matter_localnetwork_setup.png)
 
-Typically a Matter Access will not be connected to the same Wifi or Thread network as the Matter Controller and a process of "commissioning" over Bluetooth Low Energy will take place. However,
-in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linux Host.
-This will allow us to create a simple Matter Network very quickly. In further codelabs, we will
-learn how to commission over BLE.
-
+Typically, a Matter Accessory will be added to a Wifi or Thread network as the Matter Controller as part of the "commissioning" process over Bluetooth Low Energy (BLE). However,
+in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linux Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission Matter devices over BLE.
 
 
 ### What You’ll Learn 
