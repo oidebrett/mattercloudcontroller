@@ -117,22 +117,20 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <div class="site-width">
         {% if view.id == 'default' %}
         <h2 class="banner-title">Welcome to MatterCoder!</h2>
-        <div class="banner-description"
+        <div class="banner-description wrap"
              data-filter-selected$="{% raw %}[[_toBoolean(selectedFilter)]]{% endraw %}">
           <p class="banner-info">
+            <a href="https://youtu.be/SKwJb4ysZS8" target="_blank" rel="noopener noreferrer">
+              <img class="right small" src="/images/youtubeplay.png" alt="Video thumbnail" />
+            </a>  
             MatterCoder provides a guided, tutorial, hands-on
             coding experience for the Matter Protocol. Most codelabs will step you through 
             the process of building a small matter application, or adding a new feature to an
             existing application.
-            <br>
-            <br>
-            These resources and videos are available for free and will be updated regularly
-            as the Matter protocol and the Open source SDK changes.
-            <br>
-            <br>
-            <div class="video-thumbnail">
-              <img src="/images/youtubedefault.jpg" alt="Video thumbnail" />
-            </div>            
+            <br/>
+            <br/>
+            Select a codelab from the list below. Check back regularly as new codelabs will be 
+            added as the Matter protocol develops and further code samples become available.
             <!--
               <a href="https://github.com/googlecodelabs/tools">Codelab tools on GitHub</a>
             -->
@@ -163,7 +161,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
         {% if view.id == 'default' && views|length > 1 %}
         <paper-dropdown-menu
-          label="Choose an event"
+          label="Choose a category"
           class="dropdown-filter"
           no-label-float
           noink no-animations
