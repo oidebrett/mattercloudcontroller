@@ -35,7 +35,7 @@ in this CodeLab we will run the Matter Accessory and the Matter Controller on th
 
 <!-- ------------------------ -->
 ## What you will need (Pre-requisities)
-Duration: 10
+Duration: 2
 
 This set of Codelabs will use `Ubuntu 22.04` on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the [Matter repo](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md)
 
@@ -48,7 +48,7 @@ The total codelab will take approximately a `Duration of 30 minuates` to complet
 
 <!-- ------------------------ -->
 ## Where to get the latest version of Matter 
-Duration: 5
+Duration: 2
 
 The official matter github repo is the [ConnectedHomeIP repo from Project Chip](https://github.com/project-chip/connectedhomeip)
 
@@ -64,6 +64,7 @@ cd ~/Projects
 ```shell
 git clone https://github.com/project-chip/connectedhomeip.git
 cd connectedhomeip
+#git checkout XXXXXXXX #use if you want to check out a particular commit hash
 ```
 
 3. Matter relies on a substantial number of submodules. So next we will synchronize these submodules
