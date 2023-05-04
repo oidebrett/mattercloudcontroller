@@ -77,7 +77,7 @@ Note: this process can take a while the very 1st time you install matter.
 
 <!-- ------------------------ -->
 ## How to install prerequisites on Linux 
-Duration: 5
+Duration: 2
 
 Before building our Matter controller and sample app, we need to install a few OS specific dependencies.
 
