@@ -9,7 +9,7 @@ Feedback Link: https://mattercoder.com
 # How to Install Matter on Linux
 <!-- ------------------------ -->
 ## Overview 
-Duration: 100
+Duration: 25
 
 In this codelab we will show you how to build and install a Matter controller and sample app on a Linux based OS.
 
@@ -28,8 +28,6 @@ in this CodeLab we will run the Matter Accessory and the Matter Controller on th
 ### What You’ll Learn 
 - What you will need (Pre-requisities)
 - Where to get the latest version of Matter 
-- How to install prerequisites on Linux 
-- What is and how to install the ZAP tool
 - How to build a sample matter app and the matter controller (chip-tool)
 - Basic testing with sample app and chip-tool
 
@@ -70,104 +68,29 @@ cd connectedhomeip
 3. Matter relies on a substantial number of submodules. So next we will synchronize these submodules
 
 ```shell
-./scripts/checkout_submodules.py --shallow --platform linux
+./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
 ```
 
 Note: this process can take a while the very 1st time you install matter.
 
-<!-- ------------------------ -->
-## How to install prerequisites on Linux 
-Duration: 2
-
 Before building our Matter controller and sample app, we need to install a few OS specific dependencies.
 
-1. If using Ubuntu 22.04, the following dependencies are needed:
+4. If using Ubuntu 22.04, the following dependencies are needed:
 
 ```shell
 sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
      libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev \
-     python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev
+     python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev 
 ```
 
 Note: this process can take a while the very 1st time when you install matter.
-
-<!-- ------------------------ -->
-## What is and how to install the ZAP tool 
-Duration: 5
-
-When working with Matter you will need to use the ZAP tool. The ZAP tool is an open source 
-tool provided by Project-CHIP. The ZAP tool is a tool that is used to help in the generation 
-of code for each Matter application. Meta data associated with each matter application, such
-as clusers and attributes that are supported, can be defined in Zap files. These Zap files 
-are then transposed to the specific code for the underlying system architectures.
-
-Before building our Matter sample apps, we need to install the ZAP tool.
-
-1. Download the latest ZAP version to the latest version. At the time of writing its v2023.04.21-nightly
-
-```shell
-cd ~/Projects
-mkdir zap-linux
-cd zap-linux
-export ZAP_VERSION=v2023.04.21-nightly
-wget https://github.com/project-chip/zap/releases/download/${ZAP_VERSION}/zap-linux.zip
-```
-
-Note: please check the latest version of the Zap tool on the [Releases page from the Project Chip Zap repo](https://github.com/project-chip/zap/releases)
-
-2. Unzip the zap-cli tool 
-
-```shell
-unzip zap-linux.zip && rm zap-linux.zip
-```
-
-3. Confirm that the zap-cli tool is installed and working
-
-```shell
-./zap-cli
-```
-
-if working correctly you should see something like the following:
-```javascript
-🔧 Using state directory: /home/____________/.zap
-{
-  url: 'http://localhost:9070',
-  version: '2023.4.21',
-  featureLevel: 96,
-  hash: '01XXXXXXXX1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX4',
-  timestamp: 1682083603,
-  date: '2023-04-21T13:26:43.000Z',
-  exe: './zap-cli'
-}
--- JSON START --
-{"url":"http://localhost:9070","version":"2023.4.21","featureLevel":96,"hash":"01XXXXXXXX1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX4","timestamp":1682083603,"date":"2023-04-21T13:26:43.000Z","exe":"./zap-cli"}
--- JSON END --
-```
-
-hit Ctrl-C to exit the tool.
-
-4. Finally, add the zap-cli path to your path environment variable
-
-```shell
-export PATH=$PATH:$(pwd)
-```
-
-Note: you should add ~/Projects/zap-linux to your path in your .bashrc file if you want to permanently 
-have the zap-cli tool in your path.
-
-4. Lastly, check that the zap-cli path is working
-
-```shell
-cd ~/Projects/connectedhomeip
-zap-cli
-```
 
 <!-- ------------------------ -->
 ## How to build a sample matter app and the matter controller (chip-tool)
 Duration: 10
 
 In this section we will build a sample matter app that we can use for testing and 
-experiementing. We will use the `Linux all-clusters-app` which has all the main
+experimenting. We will use the `Linux all-clusters-app` which has all the main
 capabilities of a matter end device. 
 
 We will also build the matter controller tool that is provided by Project-Chip.
@@ -320,7 +243,7 @@ In the same shell window, we will read the vendor-name of the Matter accessory u
 ./out/chip-tool basicinformation read vendor-name 1 0
 ```
 
-In the output logs, you should see that the Vendor Name
+In the output logs, you should see the Vendor Name
 
 ```shell
 [1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
@@ -339,7 +262,7 @@ We are using the Basic Information `cluster`. Clusters are logical groupings of 
 ./out/chip-tool generaldiagnostics read up-time 1 0
 ```
 
-In the output logs, you should see that the Vendor Name
+In the output logs, you should see the UpTime
 
 ```shell
 [1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
