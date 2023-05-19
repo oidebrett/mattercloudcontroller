@@ -1,0 +1,333 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Install Matter on RPi</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-install-matter-on-rpi"
+                  title="How to Install Matter on RPi"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to build and install the Matter Controller on a Raspberry Pi.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Build the chip-tool as a Matter controller on a Raspberry Pi.</li>
+<li>Learn about the concept of Matter Fabrics</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/32c2b8bdaa9f3ec7.png"></p>
+<p>in this CodeLab we will build the Matter Controller on a Raspberry Pi and we use this to controller a Matter Accessory that we set up previously on our Linux Host. This will allow us to create a multi admin Matter Network and we will learn how Matter fabrics work.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to set up a headless Raspberry Pi</li>
+<li>What prerequisites are required for the Raspberry Pi</li>
+<li>How to build the matter controller on the Raspberry Pi</li>
+<li>What is a Matter fabric and how to control a sample app using the chip-tool</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+<p>You will need</p>
+<ul>
+<li>a Raspberry Pi 4 (or Raspberry Pi 3)</li>
+<li>a SD card at least 16GB to install Ubuntu 22.04 OS</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code></li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to set up a headless Raspberry Pi" duration="5">
+        <p>We will be using the RPImager tool which is available on the <a href="https://www.raspberrypi.com/software/" target="_blank">Raspberry Pi Software Page</a></p>
+<p class="image-container"><img alt="alt-RPIImager-here" src="img/9dcc930068e89e25.png"></p>
+<ol type="1">
+<li>First thing we will do is insert your SD card into the SD card reader on your laptop</li>
+<li>Next we will do is select the Ubuntu OS version 22.04 64bit (server edition)</li>
+</ol>
+<p class="image-container"><img alt="alt-RPIImager-Select-Ubuntu-here" src="img/d5fb43c56013daff.png"></p>
+<ol type="1" start="3">
+<li>Then select the <code>settings cog</code> to open the advanced settings</li>
+</ol>
+<p class="image-container"><img alt="alt-RPIImager-Advanced-Settings-here" src="img/d286ec4b53e27045.png"></p>
+<p>You can use whatever settings to meet your requirements, however, you will need to remember the hostname so please write this down and make sure its unique on your network.</p>
+<p>Also, in future codelabs we will be making us of the user account that you create so I recommend that you set</p>
+<ul>
+<li>the hostane name to <code>mattercontroller.local</code></li>
+<li>the account name to <code>ggc_user</code>.</li>
+</ul>
+<p>You can use whatever password matches your security needs.</p>
+<p>Enter your wifi network credentials. These should be for the same wifi network that you Linux host that you set up in a previous codelab that is running the Matter Sample app.</p>
+<ol type="1" start="2">
+<li>Flash the SD card, Insert and Power up</li>
+</ol>
+<p>After the SD card has been written, transfer it to your Raspberry Pi and power up your Pi</p>
+<ol type="1" start="3">
+<li>Try to discover and log into your RPi</li>
+</ol>
+<p>You should be able to discover your RPi using its hostname</p>
+<pre><code language="language-shell" class="language-shell">ssh ggc_user@mattercontroller.local
+</code></pre>
+<p>If, like me, you are using Windows Subsystem for Linux or for some reason your router is blocking mDNS broadcast you can find the IP address of your RPi using nmap on your local network ip subnet <code>sudo nmap -p 22 192.168.0.0/24</code></p>
+<pre><code language="language-shell" class="language-shell">ssh ggc_user@IPADDRESSHERE
+</code></pre>
+<ol type="1" start="4">
+<li>Always good practice to upgrade to latest release:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo apt-get update
+sudo apt-get upgrade
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to Add Swap Space on Ubuntu 22.04 (optional for RPi 3)" duration="5">
+        <p>If you are using a Raspberry Pi 3 (RPI 4s are hard to come by!) then you may want to add some swap space as the code compilation required to build the matter library may push the RPI3 to its limits. The RPI 3 is limited in RAM space so having some Swap space may help prevent the dreaded hanging!</p>
+<ol type="1">
+<li>Create Swap file</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo fallocate -l 500M /swapfile1
+</code></pre>
+<ol type="1" start="2">
+<li>Verify Swap file allocated space</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">ls -lh /swapfile1
+</code></pre>
+<ol type="1" start="3">
+<li>Change Swap file permission</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo chmod 600 /swapfile1
+</code></pre>
+<ol type="1" start="4">
+<li>Mark swapfile1 as swap space</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo mkswap /swapfile1
+</code></pre>
+<ol type="1" start="5">
+<li>Enable Swap file</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo swapon /swapfile1
+</code></pre>
+<ol type="1" start="6">
+<li>Check swap file availability</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo swapon --show
+free -h
+</code></pre>
+<ol type="1" start="7">
+<li>Make Swap file permanent</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo cp /etc/fstab /etc/fstab.bak
+echo &#39;/swapfile1 none swap sw 0 0&#39; | sudo tee -a /etc/fstab
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What prerequisites are required for the Raspberry Pi" duration="2">
+        <p>The official matter github repo is the <a href="https://github.com/project-chip/connectedhomeip" target="_blank">ConnectedHomeIP repo from Project Chip</a></p>
+<ol type="1">
+<li>First thing we will do is create a new folder so that we can clone the code</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">mkdir ~/Projects
+cd ~/Projects
+</code></pre>
+<ol type="1" start="2">
+<li>Next we will clone the github repo</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">git clone https://github.com/project-chip/connectedhomeip.git
+cd connectedhomeip
+#git checkout tags/v1.1.0.1 #We try to keep to main tags (see releases)
+</code></pre>
+<ol type="1" start="3">
+<li>Matter relies on a substantial number of submodules. So next we will synchronize these submodules</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
+</code></pre>
+<p>Note: this process can take a while the very 1st time you install matter.</p>
+<p>Before building our Matter controller and sample app, we need to install a few OS specific dependencies.</p>
+<ol type="1" start="4">
+<li>Since we are using Ubuntu 22.04, the following dependencies are needed:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
+     libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev \
+     python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev 
+</code></pre>
+<p>Note: this process can take a while the very 1st time when you install matter.</p>
+<ol type="1" start="5">
+<li>Additionally for the Raspberry Pi, the following dependencies are needed:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo apt-get install pi-bluetooth avahi-utils 
+</code></pre>
+<ol type="1" start="6">
+<li>Do a little clean up to save disk space.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo apt-get clean
+</code></pre>
+<ol type="1" start="7">
+<li>The Connectedhomeip repo requires the ZAP tool for code generation. Unfortunately there are no compatible executables for ARM64 yet and the process of installing the ZAP tool is very complex and requires a lot of disk space. Therefore, I have pregenerated the required code and made it available on my Repo. Execute this commands to get the pregenerated code. Hopefully in the future this process will be easier.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">wget https://github.com/oidebrett/mattercloudcontroller/raw/main/integrations/docker/zzz_pregenerated.zip
+unzip zzz_pregenerated.zip
+rm zzz_pregenerated.zip
+</code></pre>
+<h2 is-upgraded>Configuring wpa_supplicant for storing permanent changes</h2>
+<p>By default, wpa_supplicant is not allowed to update (overwrite) configuration. If you want the Matter application to be able to store the configuration changes permanently, you need to make the following changes:</p>
+<p>Edit the dbus-fi.w1.wpa_supplicant1.service file to use configuration file instead by running the following command:</p>
+<pre><code language="language-shell" class="language-shell">sudo nano /etc/systemd/system/dbus-fi.w1.wpa_supplicant1.service
+</code></pre>
+<p>Run the following command to change the wpa_supplicant start parameters to the provided values:</p>
+<p><code>ExecStart=/sbin/wpa_supplicant -u -s -i wlan0 -c /etc/wpa_supplicant/wpa_supplicant.conf</code></p>
+<p>Add the wpa-supplicant configuration file by running the following command:</p>
+<pre><code language="language-shell" class="language-shell">sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+</code></pre>
+<p>Add the following content to the wpa-supplicant file:</p>
+<p><code>ctrl_interface=DIR=/run/wpa_supplicantupdate_config=1</code></p>
+<p>Finally, reboot your Raspberry Pi and log back in again.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to build the matter controller on the Raspberry Pi (chip-tool)" duration="0">
+        <p>Before building any matter app or controller we will need to create and initialise the environment</p>
+<p>Run the following commands</p>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
+source scripts/activate.sh
+</code></pre>
+<p>If everything has gone ok with the environment setup you should see:</p>
+<pre><code language="language-shell" class="language-shell">Checking the environment:
+
+20230506 13:25:40 INF Environment passes all checks!
+
+Environment looks good, you are ready to go!
+</code></pre>
+<ol type="1" start="2">
+<li>We then need to build the chip tool. Run the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">gn gen out/chiptool_arm64_release --args=&#39;chip_mdns=&#34;platform&#34; chip_inet_config_enable_ipv4=false chip_code_pre_generated_directory=&#34;../../../zzz_pregenerated/&#34; chip_detail_logging=false symbol_level=0&#39;
+
+ninja -C out/chiptool_arm64_release chip-tool
+</code></pre>
+<p>Note: if using a Raspberry Pi 3 you can use the flag -j 1 in the ninja command to limit multi tasking the build across multiple cores. This can help prevent hangs.</p>
+<ol type="1" start="3">
+<li>We then move the Matter Controller (chip-tool) to the <code>out</code> directory using the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">mv out/chiptool_arm64_release/chip-tool out/chip-tool \
+&amp;&amp; rm -rf out/chiptool_arm64_release
+</code></pre>
+<ol type="1" start="4">
+<li>If everything worked OK you should see an executable called <code>chip-tool</code>in the <code>out/</code> directory</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd out/
+ls -al
+</code></pre>
+<p>Note: if you run the <code>chip-tool</code> ensure that you clean up some of the temporary files using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every time you test.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Basic testing with ESP32 sample app and chip-tool" duration="10">
+        <p>In this section we will run a sample matter accessory application (all-clusters-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+<h2 is-upgraded>Running the CHIP Tool</h2>
+<p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool
+</code></pre>
+<p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
+<h2 is-upgraded>Using the CHIP Tool</h2>
+<ol type="1">
+<li>Clean the initialization of state using the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+<ol type="1" start="3">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (chip-all-clusters-app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="4">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions/</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read vendor-name 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+<ol type="1" start="6">
+<li>We can read other information using these commands:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read product-name 1 0
+./out/chip-tool basicinformation read software-version 1 0
+</code></pre>
+<p>We are using the Basic Information <code>cluster</code>. Clusters are logical groupings of Matter functionality.</p>
+<ol type="1" start="7">
+<li>We can read other information from another using these commands:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool generaldiagnostics read up-time 1 0
+</code></pre>
+<p>In the output logs, you should see the UpTime</p>
+<pre><code language="language-shell" class="language-shell">[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
+</code></pre>
+<ol type="1" start="8">
+<li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/chip-tool 
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the chip-all-clusters-app process by using Ctrl-C in the first shell window.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation here: <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

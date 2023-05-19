@@ -6,7 +6,7 @@ status: Published
 authors: MatterCoder
 Feedback Link: https://mattercoder.com
 
-# How to create a Matter app on esp32
+# How to Create a Matter app on esp32
 <!-- ------------------------ -->
 ## Overview 
 Duration: 25
