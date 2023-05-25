@@ -2,13 +2,13 @@
 FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
-ARG COMMITHASH=ec2ad41d30c8a1b4991e00e850c233d2fc978efc
-ARG MCCCOMMITHASH=6275948143ddd5dc7730bb926560278058456fa7
+ARG COMMITHASH=e217219c075e6dbf115568c225023b1717f41d92
+ARG MCCCOMMITHASH=74e09d956c01b00995516ca68aea6cddb47dc8a0
 
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
 # specified SHA
-ARG ZAP_VERSION=v2023.03.23-nightly
+ARG ZAP_VERSION=v2023.05.22-nightly
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
@@ -202,8 +202,8 @@ RUN mkdir /home/ggc_user/connectedhomeip
 RUN git clone https://github.com/project-chip/connectedhomeip.git /home/ggc_user/connectedhomeip
 WORKDIR /home/ggc_user/connectedhomeip/
 RUN git checkout ${COMMITHASH}
-RUN ./scripts/checkout_submodules.py --shallow --platform linux
-RUN scripts/build/gn_bootstrap.sh
+RUN ./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
+RUN bash scripts/bootstrap.sh
 SHELL ["/bin/bash", "-c"]
 RUN set -x && \
     source scripts/activate.sh \
