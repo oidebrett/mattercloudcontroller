@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
   <meta name="theme-color" content="#4F7DC9">
   <meta charset="UTF-8">
-  <title>How to Install Matter on Linux</title>
+  <title>How to Install Matter on MacOs</title>
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
   <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -22,13 +22,13 @@
 <body>
   <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
   <google-codelab codelab-gaid=""
-                  id="how-to-install-matter-on-linux"
-                  title="How to Install Matter on Linux"
+                  id="how-to-install-matter-on-macos"
+                  title="How to Install Matter on MacOs"
                   environment="web"
                   feedback-link="https://mattercoder.com">
     
       <google-codelab-step label="Overview" duration="25">
-        <p>In this codelab we will show you how to build and install a Matter controller and sample app on a Linux based OS.</p>
+        <p>In this codelab we will show you how to build and install a Matter controller and sample app on Mac OS (Darwin).</p>
 <h2 is-upgraded>What You&#39;ll Build</h2>
 <p>In this codelab, you will:</p>
 <ul>
@@ -37,7 +37,7 @@
 </ul>
 <h2 is-upgraded>Architecture</h2>
 <p class="image-container"><img alt="alt-architecture-here" src="img/c3589ada84e9712b.png"></p>
-<p>Typically, a Matter Accessory will be added to the same Wifi or Thread network as the Matter Controller as part of the &#34;commissioning&#34; process over Bluetooth Low Energy (BLE). However, in this CodeLab we will run the Matter Accessory and the Matter Controller on the same Linux Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission Matter devices over BLE.</p>
+<p>Typically, a Matter Accessory will be added to the same Wifi or Thread network as the Matter Controller as part of the &#34;commissioning&#34; process over Bluetooth Low Energy (BLE). However, in this CodeLab we will run the Matter Accessory and the Matter Controller on the same MacOS Host. This will allow us to create a simple Matter Network very quickly. In further codelabs, we will learn how to commission Matter devices over BLE.</p>
 <h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
 <ul class="checklist">
 <li>What you will need (Pre-requisities)</li>
@@ -50,10 +50,10 @@
       </google-codelab-step>
     
       <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
-        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+        <p>This set of Codelabs will use <code>Darwin Kernel</code> on a Amd64 MacOS based architecture. If you are using another OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
 <p>You will need</p>
 <ul>
-<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>a laptop or PC running <code>Darwin</code> with a Bluetooth interface</li>
 <li>Visual Studio Code IDE</li>
 <li>a basic knowledge of Linux shell commands</li>
 </ul>
@@ -75,23 +75,14 @@ cd ~/Projects
 </ol>
 <pre><code language="language-shell" class="language-shell">git clone https://github.com/project-chip/connectedhomeip.git
 cd connectedhomeip
-#git checkout XXXXXXXX #use if you want to check out a particular commit hash
+#git checkout tags/v1.1.0.1  #use if you want to check out a particular commit hash
 </code></pre>
 <ol type="1" start="3">
 <li>Matter relies on a substantial number of submodules. So next we will synchronize these submodules</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
+<pre><code language="language-shell" class="language-shell">./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --force --platform darwin
 </code></pre>
 <p>Note: this process can take a while the very 1st time you install matter.</p>
-<p>Before building our Matter controller and sample app, we need to install a few OS specific dependencies.</p>
-<ol type="1" start="4">
-<li>If using Ubuntu 22.04, the following dependencies are needed:</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
-     libglib2.0-dev libavahi-client-dev ninja-build python3-venv python3-dev \
-     python3-pip unzip libgirepository1.0-dev libcairo2-dev libreadline-dev 
-</code></pre>
-<p>Note: this process can take a while the very 1st time when you install matter.</p>
 
 
       </google-codelab-step>
@@ -117,26 +108,18 @@ Environment looks good, you are ready to go!
 <li>We then need to build the underlying core chip libraries</li>
 </ol>
 <p>Run the following commands</p>
-<pre><code language="language-shell" class="language-shell">gn gen out/debug --args=&#39;chip_mdns=&#34;platform&#34; chip_inet_config_enable_ipv4=false&#39;
-ninja -C out/debug
+<pre><code language="language-shell" class="language-shell">gn gen out/chiptool_x64_release --args=&#39;chip_mdns=&#34;platform&#34; chip_detail_logging=false symbol_level=0&#39;
+
+ninja -C out/chiptool_x64_release chip-tool
+mv out/chiptool_x64_release/chip-tool out/chip-tool
 </code></pre>
 <ol type="1" start="3">
-<li>We then can build the required sample apps using the following commands</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">./scripts/build/build_examples.py \
-  --target linux-x64-all-clusters-ipv6only \
-  --target linux-x64-chip-tool-ipv6only \
-  build \
-  &amp;&amp; mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
-  &amp;&amp; mv out/linux-x64-chip-tool-ipv6only/chip-tool out/chip-tool 
-</code></pre>
-<ol type="1" start="4">
 <li>If everything worked OK you should see an executable called <code>chip-all-clusters-app</code> and <code>chip-tool</code>in the <code>out/</code> directory</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">cd out/
 ls -al
 </code></pre>
-<p>Note: if you run the <code>chip-all-clusters-app</code> ensure that you clean up some of the temporary files using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every time you test.</p>
+<p>Note: if you run the <code>chip-tool</code> ensure that you clean up some of the temporary files using <code>rm -rf /tmp/chip*</code> as its a good habit to remove these after every time you test.</p>
 
 
       </google-codelab-step>

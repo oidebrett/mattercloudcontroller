@@ -1,12 +1,12 @@
-summary: How to Setup Raspberry Pi as a Matter Controller
-id: how-to-setup-raspberry-pi-as-matter-controller
+summary: How to Install Matter on RPi
+id: how-to-install-matter-on-rpi
 categories: Sample
 tags: medium
 status: Published 
 authors: MatterCoder
 Feedback Link: https://mattercoder.com
 
-#How to Setup Raspberry Pi as a Matter Controlle
+# How to Install Matter on RPi
 <!-- ------------------------ -->
 ## Overview 
 Duration: 25
@@ -27,7 +27,6 @@ in this CodeLab we will build the Matter Controller on a Raspberry Pi and we use
 - What you will need (Pre-requisities)
 - How to set up a headless Raspberry Pi
 - What prerequisites are required for the Raspberry Pi
-- What is and how to install the ZAP tool 
 - How to build the matter controller on the Raspberry Pi
 - What is a Matter fabric and how to control a sample app using the chip-tool
 
@@ -39,6 +38,7 @@ This set of Codelabs will use `Ubuntu 22.04` on a Amd64 based architecture. If y
 
 You will need
 - a Raspberry Pi 4 (or Raspberry Pi 3)
+- a SD card at least 16GB to install Ubuntu 22.04 OS
 - a laptop or PC running `Ubuntu 22.04` 
 - Visual Studio Code IDE
 - a basic knowledge of Linux shell commands
@@ -93,13 +93,24 @@ your RPi using nmap on your local network ip subnet `sudo nmap -p 22 192.168.0.0
 ssh ggc_user@IPADDRESSHERE
 ```
 
+4. Always good practice to upgrade to latest release:
+
+```shell
+sudo apt-get update
+sudo apt-get upgrade
+```
+
 <!-- ------------------------ -->
 ## How to Add Swap Space on Ubuntu 22.04 (optional for RPi 3)
 Duration: 5
 
+If you are using a Raspberry Pi 3 (RPI 4s are hard to come by!) then you may want to add some swap space as 
+the code compilation required to build the matter library may push the RPI3 to its limits. The RPI 3 is limited
+in RAM space so having some Swap space may help prevent the dreaded hanging!
+
 1. Create Swap file
 ```shell
-sudo fallocate -l 1G /swapfile1
+sudo fallocate -l 500M /swapfile1
 ```
 
 2. Verify Swap file allocated space
@@ -154,7 +165,7 @@ cd ~/Projects
 ```shell
 git clone https://github.com/project-chip/connectedhomeip.git
 cd connectedhomeip
-#git checkout XXXXXXXX #use if you want to check out a particular commit hash
+#git checkout tags/v1.1.0.1 #We try to keep to main tags (see releases)
 ```
 
 3. Matter relies on a substantial number of submodules. So next we will synchronize these submodules
@@ -177,12 +188,29 @@ sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
 
 Note: this process can take a while the very 1st time when you install matter.
 
+
 5. Additionally for the Raspberry Pi, the following dependencies are needed:
 
 ```shell
 sudo apt-get install pi-bluetooth avahi-utils 
 ```
-Reboot your Raspberry Pi after installing pi-bluetooth.
+
+6. Do a little clean up to save disk space.
+
+```shell
+sudo apt-get clean
+```
+
+7. The Connectedhomeip repo requires the ZAP tool for code generation. Unfortunately there are no compatible executables for ARM64 yet and
+the process of installing the ZAP tool is very complex and requires a lot of disk space. Therefore, I have pregenerated the required code
+and made it available on my Repo. Execute this commands to get the pregenerated code. Hopefully in the future this process will be easier.
+
+```shell
+wget https://github.com/oidebrett/mattercloudcontroller/raw/main/integrations/docker/zzz_pregenerated.zip
+unzip zzz_pregenerated.zip
+rm zzz_pregenerated.zip
+```
+
 
 ### Configuring wpa_supplicant for storing permanent changes
 By default, wpa_supplicant is not allowed to update (overwrite) configuration. If you want the Matter application to be able to store the configuration changes permanently, you need to make the following changes:
@@ -206,47 +234,7 @@ Add the following content to the wpa-supplicant file:
 `ctrl_interface=DIR=/run/wpa_supplicant`
 `update_config=1`
 
-Again we will reboot our Raspberry Pi.
-
-<!-- ------------------------ -->
-## What is and how to install the ZAP tool 
-Duration: 5
-
-When working with Matter you will need to use the ZAP tool. The ZAP tool is an open source 
-tool provided by Project-CHIP. The ZAP tool is a tool that is used to help in the generation 
-of code for each Matter application. Meta data associated with each matter application, such
-as clusers and attributes that are supported, can be defined in Zap files. These Zap files 
-are then transposed to the specific code for the underlying system architectures.
-
-Before building our Matter sample apps, we need to install the ZAP tool.
-
-1. First we need to install node
-```shell
-mkdir node_js
-cd node_js
-wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz 
-tar xfvJ node-v12.22.12-linux-arm64.tar.xz 
-sudo mv node-v12.22.12-linux-arm64 /opt/ 
-sudo ln -s /opt/node-v12.22.12-linux-arm64 /opt/node 
-sudo ln -s /opt/node/bin/* /usr/bin
-cd .. 
-rm -rf node_js
-```
-
-2. Download the latest ZAP version to the latest version. At the time of writing its v2023.04.27-nightly
-
-```shell
-export ZAP_VERSION=v2023.04.27-nightly
-sudo mkdir -p /opt/zap-${ZAP_VERSION}
-sudo git clone https://github.com/project-chip/zap.git /opt/zap-${ZAP_VERSION}
-cd /opt/zap-${ZAP_VERSION}
-sudo git checkout ${ZAP_VERSION}
-sudo npm config set user 0
-sudo npm ci
-export ZAP_DEVELOPMENT_PATH=/opt/zap-${ZAP_VERSION}
-```
-
-Note: please check the latest version of the Zap tool on the [Releases page from the Project Chip Zap repo](https://github.com/project-chip/zap/releases)
+Finally, reboot your Raspberry Pi and log back in again.
 
 ## How to build the matter controller on the Raspberry Pi (chip-tool)
 Before building any matter app or controller we will need to create and initialise the environment
@@ -267,21 +255,21 @@ Checking the environment:
 Environment looks good, you are ready to go!
 ```
 
-2. We then need to build the underlying core chip libraries
+2. We then need to build the chip tool. Run the following commands
 
-Run the following commands
 ```shell
-gn gen out/debug --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false'
-ninja -C out/debug
+gn gen out/chiptool_arm64_release --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false chip_code_pre_generated_directory="../../../zzz_pregenerated/" chip_detail_logging=false symbol_level=0'
+
+ninja -C out/chiptool_arm64_release chip-tool
 ```
+Note: if using a Raspberry Pi 3 you can use the flag -j 1 in the ninja command to limit multi tasking the build across multiple cores. This
+can help prevent hangs.
 
-3. We then can build the Matter Controller (chip-tool) using the following commands
+3. We then move the Matter Controller (chip-tool) to the `out` directory using the following commands
 
 ```shell
-./scripts/build/build_examples.py \
-  --target linux-x64-chip-tool-ipv6only \
-  build \
-  && mv out/linux-x64-chip-tool-ipv6only/chip-tool out/chip-tool 
+mv out/chiptool_arm64_release/chip-tool out/chip-tool \
+&& rm -rf out/chiptool_arm64_release
 ```
 
 4. If everything worked OK you should see an executable called `chip-tool`in the `out/` directory
