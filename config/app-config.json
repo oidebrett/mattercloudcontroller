@@ -43,8 +43,10 @@
                             "coreThing":{
                                 "classic": true,
                                 "namedShadows": [
-                                  "events",
                                   "commissionables",
+                                  "events_1",
+                                  "events_2",
+                                  "events_3",
                                   "1",
                                   "2",
                                   "3"

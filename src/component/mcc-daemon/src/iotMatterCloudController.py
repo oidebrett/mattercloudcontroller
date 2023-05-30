@@ -63,6 +63,7 @@ parser.add_argument("-d", "--chipdir", help="Path to project matter/chip source 
 parser.add_argument("-n", "--name", help="Name of the IOT thing (default: mcc-thing-ver01-1)", action="store", default="mcc-thing-ver01-1")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
 parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=10)
+parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=10)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", action="store", default="False")
 
@@ -73,7 +74,7 @@ CLEAN_ARG = args.clean
 CLEAN = CLEAN_ARG.lower() == 'true'
 STOP_ARG = args.stop
 STOP = STOP_ARG.lower() == 'true'
-
+MAX_EVENTS = args.maxevents
 
 curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
@@ -173,8 +174,9 @@ def OnEventChange(nodeId, eventReadResult)-> None:
     newEventObj["nodeId"] = nodeId
     newEventStr = json.dumps(newEventObj)
 
+    lPrint("shadowName: " + "events_" + str(nodeId))
     if not LOCAL_TEST:
-        shadowName = "events"
+        shadowName = "events_" + str(nodeId)
         #First read the existing events and then add to it
         lPrint("Calling get thing shadow request for events")
 
@@ -186,7 +188,7 @@ def OnEventChange(nodeId, eventReadResult)-> None:
             prevEvents = json.loads(response)
             
             #Append a new event to the event List - this will push out oldest if full
-            if len(prevEvents['state']['reported']['list']) > 5:
+            if len(prevEvents['state']['reported']['list']) > MAX_EVENTS:
                 newList = prevEvents['state']['reported']['list'][1:]
             else:
                 newList = prevEvents['state']['reported']['list']
@@ -271,11 +273,11 @@ def doCommission(ipaddress):
         changedNodeIds.append(nodeId) #add nodeId to the changedIds
         
         #Set up a subscription that will call OnValueChange when ever we get a change
-        lPrint("Settting Up Subscription on nodeId:")
+        lPrint("Setting Up Subscription on nodeId:")
         matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
         
         #Set up a subscription that will call OnEventChange when ever we get an event
-        lPrint("Settting Up Event Subscription on nodeId:")
+        lPrint("Setting Up Event Subscription on nodeId:")
         matterDevices.subscribeForEventChange(nodeId, OnEventChange)
         time.sleep(stabilisation_time_in_sec)            
 
@@ -720,9 +722,9 @@ def main():
 
         #Recreate the subscriptions so that we can detect the changes
         for nodeId in changedNodeIds:            
-            lPrint("Settting Up Subscription on nodeId:"+str(nodeId))
+            lPrint("Setting Up Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForAttributeChange(nodeId, OnValueChange)
-            lPrint("Settting Up Event Subscription on nodeId:"+str(nodeId))
+            lPrint("Setting Up Event Subscription on nodeId:"+str(nodeId))
             matterDevices.subscribeForEventChange(nodeId, OnEventChange)
             time.sleep(stabilisation_time_in_sec)
         lPrint("Finished Discovering commissioned devices")

@@ -65,6 +65,7 @@ class MatterDeviceController(object):
     commissionableDevices = set()
     fabricDevices = set()
     MAX_DEVICES = None
+    MAX_EVENTS = None
     devCtrl = None
     caList = None
     chipStack = None
@@ -341,7 +342,7 @@ class MatterDeviceController(object):
             (0, Clusters.FixedLabel),
             (0, Clusters.UserLabel),
             (0, Clusters.RelativeHumidityMeasurement),
-            (0, Clusters.ClientMonitoring),
+            (0, Clusters.IcdManagement),
             (0, Clusters.FaultInjection)
             ])))
         '''
@@ -416,6 +417,8 @@ class MatterDeviceController(object):
         self.chipDir = args.chipdir
         # Set Up Max Devices from Args
         self.MAX_DEVICES = args.maxdevices
+        # Set Up Max Events from Args
+        self.MAX_EVENTS = args.maxevents
         # Set Up the persistent storage path
         self.storagePath = args.storagepath
 
