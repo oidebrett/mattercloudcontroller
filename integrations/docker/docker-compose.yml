@@ -5,7 +5,7 @@ services:
     init: false
     container_name: aws-iot-greengrass
     privileged: true
-    image: oideibrett/mattercloudcontroller-arm64:2f3e9b2ead264bdb03a0a37f920d2418d28def14
+    image: oideibrett/mattercloudcontroller-arm64:v2
     network_mode: "host"
     ipc: "host"
     environment:

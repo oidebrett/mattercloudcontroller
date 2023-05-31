@@ -49,6 +49,7 @@ from mobly import base_test, logger, signals, utils
 from mobly.config_parser import ENV_MOBLY_LOGPATH, TestRunConfig
 from mobly.test_runner import TestRunner
 import jsonDumps
+from attributesConfig import AttributesInScope
 import yaml
 
 
@@ -244,7 +245,7 @@ class MatterDeviceController(object):
         self.lPrint(f"WriteAttribute to {attributeName}")
         #time.sleep(2)
 
-    def runActions(self, node_id: int, data):
+    async def runActions(self, node_id: int, data):
         # Parsing YAML test and setting up chip-repl yamltests runner.
         #We need a PICS file just to create the parser but we wont use it
         pics_file = os.path.abspath(os.path.dirname(__file__))+'/PICS_blank.yaml'
@@ -257,7 +258,7 @@ class MatterDeviceController(object):
             if test_action is None:
                 self.lPrint(f'Failed to encode test step {test_step.label}')
                 raise Exception(f'Failed to encode test step {test_step.label}')
-            response = self.runner.execute(test_action)
+            response = await self.runner.execute(test_action)
             decoded_response = self.runner.decode(response)
         return decoded_response
 
@@ -291,7 +292,7 @@ class MatterDeviceController(object):
         actions = yaml.safe_load(yamlActions)
 
         #Call the runner
-        decoded_response = self.runActions(node_id, actions)
+        decoded_response = asyncio.run(self.runActions(node_id, actions))
         return decoded_response
 
     def devOn(self, nodeId):
@@ -306,65 +307,10 @@ class MatterDeviceController(object):
 
     def readEndpointZeroAsJsonStr(self, nodeId):
         self.lPrint('Start Reading Endpoint0 Attributes')
-        #if we are less limited to json document size we could just ask for these
-        #data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [(0, Clusters.BasicInformation),(0,Clusters.PowerSource),(0,Clusters.Identify)])))
-        '''
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [
-            (0, Clusters.BasicInformation),
-            (0, Clusters.GeneralDiagnostics),
-            (0, Clusters.AccessControl)
-            ])))
-        '''
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [
-            (0, Clusters.BasicInformation),
-            (0, Clusters.Identify),
-            (0, Clusters.GeneralDiagnostics),
-            (0, Clusters.Groups),
-            (0, Clusters.Descriptor),
-            (0, Clusters.Binding),
-            (0, Clusters.AccessControl),
-            (0, Clusters.OtaSoftwareUpdateRequestor),
-#            (0, Clusters.LocalizationConfiguration),
-#            (0, Clusters.TimeFormatLocalization),
-#            (0, Clusters.UnitLocalization),
-            (0, Clusters.PowerSourceConfiguration),
-            (0, Clusters.PowerSource),
-            (0, Clusters.GeneralCommissioning),
-            (0, Clusters.NetworkCommissioning),
-            (0, Clusters.DiagnosticLogs),
-            (0, Clusters.SoftwareDiagnostics),
-            (0, Clusters.ThreadNetworkDiagnostics),
-            (0, Clusters.WiFiNetworkDiagnostics),
-            (0, Clusters.EthernetNetworkDiagnostics),
-            (0, Clusters.AdministratorCommissioning),
-            (0, Clusters.OperationalCredentials),
-            (0, Clusters.GroupKeyManagement),
-            (0, Clusters.FixedLabel),
-            (0, Clusters.UserLabel),
-            (0, Clusters.RelativeHumidityMeasurement),
-            (0, Clusters.IcdManagement),
-            (0, Clusters.FaultInjection)
-            ])))
-        '''
-        #if we all of endpoint 0 we could just ask for these
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, [0])))
-        #if we are limited to json document size we could just ask for these specific attributes
-        large_read_contents = [
-            Clusters.BasicInformation.Attributes.DataModelRevision,
-            Clusters.BasicInformation.Attributes.VendorName,
-            Clusters.BasicInformation.Attributes.VendorID,
-            Clusters.BasicInformation.Attributes.ProductName,
-            Clusters.BasicInformation.Attributes.ProductID,
-            Clusters.BasicInformation.Attributes.NodeLabel,
-            Clusters.BasicInformation.Attributes.Location,
-            Clusters.BasicInformation.Attributes.HardwareVersion,
-            Clusters.BasicInformation.Attributes.HardwareVersionString,
-        ]
-        large_read_paths = [(0, attrib) for attrib in large_read_contents]
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, large_read_paths)))
-        #if we all of everything in the node we could just ask for these
-        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, ['*'])))
-        '''
+        #see attributesConfig.py to have more fine grain control over what attributes are requested
+
+        data = (asyncio.run(self.devCtrl.ReadAttribute(nodeId, AttributesInScope)))
+
         self.lPrint('End Reading Endpoint0 Attributes')
 
         jsonStr = jsonDumps.jsonDumps(data)
@@ -380,7 +326,7 @@ class MatterDeviceController(object):
  
         self.lPrint("Establishing subscription from controller node %s" % (nodeId))
 
-        sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=[0],reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=True))
+        sub = asyncio.run(self.devCtrl.ReadAttribute(nodeId, attributes=AttributesInScope,reportInterval=(min_report_interval_sec, max_report_interval_sec), keepSubscriptions=True))
         attribute_handler = AttributeChangeAccumulator(name=nodeId, callback=callback, expected_attribute=Clusters.BasicInformation.Attributes.NodeLabel, output=output_queue)
         sub.SetAttributeUpdateCallback(attribute_handler)
 

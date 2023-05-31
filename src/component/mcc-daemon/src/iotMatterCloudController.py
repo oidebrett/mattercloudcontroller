@@ -15,6 +15,9 @@
 #
 
 """
+To Run Locally:
+python3 ../Projects/mattercloudcontroller/src/component/mcc-daemon/src/iotMatterCloudController.py -t True -d /home/ivob/connectedhomeip
+
 Listen for incoming chip requests and publish the results onto response topic
 --request-topic - defaults to chip/request
 --response-topic - defaults to chip/response
