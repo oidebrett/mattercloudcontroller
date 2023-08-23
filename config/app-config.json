@@ -47,9 +47,15 @@
                                   "events_1",
                                   "events_2",
                                   "events_3",
-                                  "1",
-                                  "2",
-                                  "3"
+                                  "1_0",
+                                  "1_1",
+                                  "1_2",
+                                  "2_0",
+                                  "2_1",
+                                  "2_2",
+                                  "3_0",
+                                  "3_1",
+                                  "3_2"
                                 ]
                             },
                             "shadowDocuments": []
@@ -66,9 +72,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.71",
+                "Version": "0.2.0",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1 -p /var/tmp/admin-storage.json"
+                "Args": "-n mcc-thing-ver01-1 "
             }
         },
         "ApiGatewayDeployment": {

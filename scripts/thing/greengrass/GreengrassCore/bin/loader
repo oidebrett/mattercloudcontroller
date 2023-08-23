@@ -1,0 +1,103 @@
+#!/bin/sh -x
+
+#Disable job control so that all child processes run in the same process group as the parent
+set +m
+
+PWD=$(dirname "$0")
+
+sigterm_received=0
+# Assuming loader is launched from "$GG_ROOT/alts/current/distro/bin/loader"
+GG_ROOT=$(cd $PWD/../../../..; pwd)
+
+echo "Greengrass root: "${GG_ROOT}
+
+LAUNCH_DIR="$GG_ROOT/alts/current"
+CONFIG_FILE=""
+
+is_directory_link() {
+  [ -L "$1" ] && [ -d "$1" ]
+}
+
+launch_kernel() {
+  if ! is_directory_link "${LAUNCH_DIR}"; then
+    echo FATAL: No Nucleus found!
+    exit 1
+  fi
+
+  if [ -f "${LAUNCH_DIR}/launch.params" ] ; then
+    JVM_OPTIONS=$(cat "$LAUNCH_DIR/launch.params")
+  fi
+
+  JVM_OPTIONS="$JVM_OPTIONS -Droot=$GG_ROOT"
+  OPTIONS="--setup-system-service false"
+  if [ ! -z "${CONFIG_FILE}" ]; then
+    OPTIONS="$OPTIONS --config $CONFIG_FILE"
+  fi
+  JAVA_EXE="java"
+  if [ ! -z "${GG_JAVA_EXE}" ]; then
+    JAVA_EXE="$GG_JAVA_EXE"
+  fi
+  echo "Java executable: "${JAVA_EXE}
+  echo "JVM options: "${JVM_OPTIONS}
+  echo "Nucleus options: "${OPTIONS}
+  child_pid=""
+  trap 'echo Received SIGTERM; sigterm_received=1; kill -TERM ${child_pid}; wait ${child_pid}; echo Killed child PID' TERM
+  ${JAVA_EXE} -Dlog.store=FILE ${JVM_OPTIONS} -jar "$LAUNCH_DIR/distro/lib/Greengrass.jar" ${OPTIONS} &
+  child_pid="$!"
+  wait "${child_pid}"
+  kernel_exit_code=$?
+  echo "Nucleus exit at code: "${kernel_exit_code}
+}
+
+flip_link() {
+  rm $2 || true
+  ln -s $(readlink $1) $2
+  rm $1 || true
+}
+
+# Determine Nucleus stage and proper config files based on launch directory
+if is_directory_link "${GG_ROOT}/alts/new"; then
+  if ! is_directory_link "${GG_ROOT}/alts/old" && is_directory_link "${LAUNCH_DIR}"; then
+    flip_link "${LAUNCH_DIR}" "${GG_ROOT}/alts/old"
+  fi
+  flip_link "${GG_ROOT}/alts/new" "${LAUNCH_DIR}"
+fi
+
+if is_directory_link "${GG_ROOT}/alts/broken" && is_directory_link "${GG_ROOT}/alts/old"; then
+  flip_link "${GG_ROOT}/alts/old" "${LAUNCH_DIR}"
+fi
+
+if is_directory_link "${GG_ROOT}/alts/old" && ! is_directory_link "${LAUNCH_DIR}"; then
+  flip_link "${GG_ROOT}/alts/old" "${LAUNCH_DIR}"
+fi
+
+# Launch Nucleus with max 3 retries
+j=1
+while [ $j -le 3 ] && [ $sigterm_received -eq 0 ];  do
+  launch_kernel
+  case ${kernel_exit_code} in
+  100|0)
+    echo "Restarting Nucleus"
+    # Exec loader from the same path, but the script might have changed due to Nucleus update
+    exec "${LAUNCH_DIR}/distro/bin/loader"
+    ;;
+  101)
+    echo "Rebooting host"
+    sudo reboot
+    exit 0
+    ;;
+  *)
+    echo "Nucleus exited ${kernel_exit_code}. Retrying $j times"
+    ;;
+  esac
+  j=$(( j + 1 ))
+done
+
+# If Nucleus did not receive a SIGTERM, then when reaching here, Nucleus has restarted 3 times and fails.
+# Keep the current status and flip symlink.
+if [ $sigterm_received -eq 0 ] && is_directory_link "${GG_ROOT}/alts/old" && is_directory_link "${LAUNCH_DIR}"; then
+  flip_link "${LAUNCH_DIR}" "${GG_ROOT}/alts/broken"
+  flip_link "${GG_ROOT}/alts/old" "${LAUNCH_DIR}"
+fi
+
+exit ${kernel_exit_code}

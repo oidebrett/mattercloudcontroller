@@ -1,0 +1,39 @@
+Manifest-Version: 1.0
+Created-By: 11.0.20 (Amazon.com Inc.)
+
+Name: bin/loader
+SHA-256-Digest: JwyOh3cSeOYXcY4DcdFHOcSAaoO9Z95Qhb26M1q/xoI=
+
+Name: bin/loader.cmd
+SHA-256-Digest: BjxqHhkkBms7s7TwabcU4nyUsK7lij27xf24Ig57R9Y=
+
+Name: NOTICE
+SHA-256-Digest: yPsNh63gAWTa8HeFmXg5GlRIvmpSxyPug73freccXjA=
+
+Name: bin/greengrass.xml.template
+SHA-256-Digest: F6QdlmtQ41OJjRhAmq26YkW6y3bn6D1Na1ts61HI5J8=
+
+Name: THIRD-PARTY-LICENSES
+SHA-256-Digest: BRxsTFWpg0pYeMOpkIbWzEgf5C6/nKEkntB7Cr5Wu7I=
+
+Name: bin/greengrass.service.procd.template
+SHA-256-Digest: zAIxDaJpm40zleWUJ9QQOQabOglgjSdYHLGhprMl8gM=
+
+Name: LICENSE
+SHA-256-Digest: CeipvOyAZxBGUsFoaFqwkx54aPnIKEtm9a5u2uXxEws=
+
+Name: bin/greengrass.exe
+SHA-256-Digest: PAZx57aRRRIGKJW1yW9rnPFqg4ieI1opSDeebjKSluc=
+
+Name: bin/greengrass.service.template
+SHA-256-Digest: 5whpLkqxii0d5jFWYYd92yHP8XCseebzxRrzARxkYtY=
+
+Name: conf/recipe.yaml
+SHA-256-Digest: Ce7h2Z0BK+O3zl3iO/2+xpwGfX/f/3BRt8QY6pzZRv8=
+
+Name: README.md
+SHA-256-Digest: h+WPn5BSlhpHvUyXwq36E+qesks8NPF7iLDGQZ71lCA=
+
+Name: lib/Greengrass.jar
+SHA-256-Digest: 7zIZncDX/PL05jWbZl9b1tM5BgWPAtMYjwjYn+Bp+PE=
+
