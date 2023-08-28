@@ -63,12 +63,13 @@ from aiohttp import web, ClientWebSocketResponse
 import json
 from concurrent.futures import ThreadPoolExecutor
 from asyncioUtils import MemQueue, TestFileHandler, CancellableSleeps
+import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="Name of the IOT thing (default: mcc-thing-ver01-1)", action="store", default="mcc-thing-ver01-1")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
-parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=10)
-parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=10)
+parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=100)
+parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=100)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", action="store", default="False")
 
@@ -93,6 +94,7 @@ URL = f'http://{HOST}:{PORT}/ws'
 queue = MemQueue(maxsize=1000, maxmemsize=5*1024*1024)
 routes = web.RouteTableDef()
 sleeps = CancellableSleeps()
+shadow_subscriptions = []
 
 curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
@@ -101,7 +103,7 @@ sleep_time_in_sec = float(os.environ.get('SLEEP_TIME', '0.1'))
 stabilisation_time_in_sec = int(os.environ.get('STABLE_TIME', '10'))
 
 RESPONSE_FORMAT = "json"
-TIMEOUT = 10
+TIMEOUT = 5
 MSG_TIMEOUT = f"Command timed out, limit of {TIMEOUT} seconds"
 MSG_MISSING_ATTRIBUTE = "The attributes 'message_id' and/or 'command' missing from request"
 MSG_INVALID_JSON = "Request message was not a valid JSON object"
@@ -133,6 +135,7 @@ if not LOCAL_TEST:
         ListNamedShadowsForThingRequest,
         GetThingShadowRequest,
         UpdateThingShadowRequest,
+        DeleteThingShadowRequest,
         InvalidArgumentsError,
         ResourceNotFoundError,
         ServiceError,
@@ -174,8 +177,6 @@ async def return_nodes(request):
                 message_respone = json.loads(msg.data)
                 #We are looking for the result
                 if "result" in message_respone:
-                    #lPrint("Result:", message_respone["result"])
-                    #lPrint(message_respone["result"])
                     await session.close()
                     return web.json_response(message_respone["result"])
                     break
@@ -209,8 +210,6 @@ async def return_command(request):
     # validate message and attributes
     try:
         message_from_rest = json.loads(json_str)
-
-        lPrint('message from rest api {}: '.format(message_from_rest))
 
         # Verify required keys are provided
         if not all(k in message_from_rest for k in ("message_id", "command")):
@@ -263,96 +262,60 @@ async def return_command(request):
 
 @routes.get('/api/things/shadow/ListNamedShadowsForThing/{name}')
 async def return_node(request):
-    controller_name = request.match_info['name'] 
+    thingName = request.match_info['name'] 
 
     resp = {}
     resp["response"] = "OK"
     resp["return_code"] = 200
-    messageObject = {
-            "message_id": "5",
-            "command": "get_nodes"
-        }
 
-    session = aiohttp.ClientSession()
-    async with session.ws_connect(URL) as ws:
+    shadow_list = []
+    next_token = None
 
-        await ws.send_json(messageObject)
+    named_shadow_list, next_token, timestamp = list_named_shadows_request(thingName, next_token)
+    shadow_list.extend(named_shadow_list)
 
-        async for msg in ws:
-            if msg.type in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
-                message_respone = json.loads(msg.data)
-                nodes = []
-                #We are looking for the result
-                if "result" in message_respone:
-                    for node in message_respone["result"]:
-                        nodes.append(node["node_id"])
-                    await session.close()
-                    return web.json_response(nodes)
-                    break
-                    
+    while next_token != None:
+        named_shadow_list, next_token, timestamp = list_named_shadows_request(thingName, next_token)
+        shadow_list.extend(named_shadow_list)
 
-            if msg.type in (aiohttp.WSMsgType.CLOSED,
-                            aiohttp.WSMsgType.ERROR):
-                resp["response"] = "SERVER ERROR"
-                resp["return_code"] = 500
-
-    response_message = {
-        "message": "ListNamedShadowsForThing",
-        "response": resp["response"],
-        "return_code": resp["return_code"]
-        }
-    await session.close()
-    return web.json_response(response_message)
-
-
-@routes.get('/shadow/{name}/{node}')
-async def return_node(request):
-    controller_name = request.match_info['name'] 
-    node_id = int(request.match_info['node']) 
-
-    resp = {}
-    resp["response"] = "OK"
-    resp["return_code"] = 200
-    messageObject = {
-        "message_id": "2",
-        "command": "get_node",
-        "args": {
-            "node_id": node_id
-        }
+    result = {
+        "results": shadow_list,
+        "timestamp": time.time()
     }
 
+    return web.json_response(result)
 
-    session = aiohttp.ClientSession()
-    async with session.ws_connect(URL) as ws:
 
-        await ws.send_json(messageObject)
 
-        async for msg in ws:
-            if msg.type in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
-                message_respone = json.loads(msg.data)
-                nodes = []
-                #We are looking for the result
-                if "result" in message_respone:
-                    #lPrint("Result:", message_respone["result"])
-                    #lPrint(message_respone["result"])
-                    await session.close()
-                    return web.json_response(message_respone["result"])
-                    break
-                    
+@routes.get('/shadow/{name}/{shadow}')
+async def return_named_shadow(request):
+    thingName = request.match_info['name'] 
+    shadowName = request.match_info['shadow'] 
 
-            if msg.type in (aiohttp.WSMsgType.CLOSED,
-                            aiohttp.WSMsgType.ERROR):
-                resp["response"] = "SERVER ERROR"
-                resp["return_code"] = 500
+    response_message = get_thing_shadow_request(thingName, shadowName)
+    resp = {}
+    resp["response"] = "OK"
+    resp["return_code"] = 200
+
+    response = json.loads(response_message)
+    return web.json_response(response)
+
+@routes.get('/deleteshadow/{name}/{shadow}')
+async def return_named_shadow(request):
+    thingName = request.match_info['name'] 
+    shadowName = request.match_info['shadow'] 
+
+    response_message = delete_named_shadow_request(thingName, shadowName)
+    resp = {}
+    resp["response"] = "OK"
+    resp["return_code"] = 200
 
     response_message = {
-        "message": "shadow",
+        "message": "DeleteNamedShadowForThing",
         "response": resp["response"],
         "return_code": resp["return_code"]
         }
-    await session.close()
     return web.json_response(response_message)
-
 
 #######################################################################################
 ##
@@ -417,7 +380,6 @@ def respond(event, loop):
     
     command = message_from_core["command"]
     command = command.lstrip()
-    lPrint(command)
 
     nodeId = None
     resp["response"] = "accepted"
@@ -438,7 +400,7 @@ def respond(event, loop):
         }
 
     # Print the message to stdout, which Greengrass saves in a log file.
-    lPrint("event.message.payload:" + str(event.message.payload))
+    #lPrint("event.message.payload:" + str(event.message.payload))
 
     # Publish to our topic
     response = PublishToIoTCoreRequest()
@@ -458,17 +420,85 @@ if not LOCAL_TEST:
             super().__init__()
 
         def on_stream_event(self, event: IoTCoreMessage) -> None:
-            lPrint("on_stream_event")
-            lPrint(event)
             try:
                 # Handle message.
                 respond(event, self.loop)
+                return True
             except:
                 traceback.print_exc()
 
         def on_stream_error(self, error: Exception) -> bool:
             # Handle error.
-            lPrint("on_stream_error")
+            return True  # Return True to close stream, False to keep stream open.
+
+        def on_stream_closed(self) -> None:
+            # Handle close.
+            pass
+
+    #Handler for subscription callback
+    class SubHandler(client.SubscribeToTopicStreamHandler):
+        loop = None
+        shadow = None
+        def __init__(self, shadow, loop):
+            self.loop = loop
+            self.shadow = shadow
+            super().__init__()
+
+        def on_stream_event(self, event: IoTCoreMessage) -> None:  
+
+            lPrint("Handler for subscription callback for " + self.shadow)
+            lPrint(event)
+
+            current_shadow = json.loads(get_thing_shadow_request(THING_NAME, self.shadow))
+
+            try:
+                if (isinstance(event, IoTCoreMessage)):
+                    message = str(event.message.payload, 'utf-8')
+                elif (isinstance(event, SubscriptionResponseMessage)):
+                    message = str(event.binary_message.message, 'utf-8')
+                else:
+                    return True
+                
+                # Load message and check values
+                jsonmsg = json.loads(message)
+
+                stateChanges = jsonmsg['state']
+                for iterator in stateChanges:
+
+                    #If we have already changed then do nothing
+                    reportedStates= current_shadow["state"]["reported"]
+                    if reportedStates[iterator] == stateChanges[iterator]:
+                        break
+
+                    tempNodeId = int(self.shadow.split('_')[0])
+                    tempEndpoint = int(iterator.split('/')[0])
+                    randMessageId = str(random.randint(1, 9999999) )
+                    lPrint(iterator + ":" + str(stateChanges[iterator]))
+
+                    # add to the queue
+                    lPrint("adding messageObject to queue")
+                    messageObject = {
+                                    "message_id": randMessageId, 
+                                    "command": "write_attribute", 
+                                    "args": {"endpoint_id": tempEndpoint, 
+                                            "node_id": tempNodeId, 
+                                            "attribute_path": iterator, 
+                                            "value": stateChanges[iterator]
+                                            }
+                                    }
+                    messageObjectStr = json.dumps(messageObject)
+                    lPrint(messageObjectStr)
+
+                    self.loop.create_task(queue.put(messageObjectStr))
+                    self.loop.create_task(asyncio.sleep(0.1))
+
+                return True
+
+            except:
+                traceback.print_exc()
+
+        def on_stream_error(self, error: Exception) -> bool:
+            # Handle error.
             return True  # Return True to close stream, False to keep stream open.
 
         def on_stream_closed(self) -> None:
@@ -477,7 +507,7 @@ if not LOCAL_TEST:
 
 def subscribeToTopic(topic, handler):
     global operation
-    lPrint("Setting up the MQTT Subscription")
+    lPrint("Setting up the MQTT Subscription to subscribe to topic")
     # Setup the MQTT Subscription
     qos = QOS.AT_MOST_ONCE
     request = SubscribeToIoTCoreRequest()
@@ -492,7 +522,6 @@ def get_thing_shadow_request(thingName, shadowName):
     lPrint("getting_thing_shadow_request: "+shadowName)
 
     try:
-        lPrint("Getting ipc_client")
         # set up IPC client to connect to the IPC server
         ipc_client = awsiot.greengrasscoreipc.connect()
                             
@@ -512,12 +541,13 @@ def get_thing_shadow_request(thingName, shadowName):
         
     except Exception as e:
         lPrint("Error get shadow")
+        return []
         # except ResourceNotFoundError | UnauthorizedError | ServiceError
 
 #Set the local shadow using the IPC
 def update_thing_shadow_request(thingName, shadowName, payload):
     lPrint("in update_thing_shadow_request")
-    lPrint(payload)
+    #lPrint(payload)
     try:
         # set up IPC client to connect to the IPC server
         client = GreengrassCoreIPCClientV2()
@@ -539,6 +569,82 @@ def update_thing_shadow_request(thingName, shadowName, payload):
     except Exception as e:
         lPrint("Error update shadow")
         traceback.print_exc()
+
+#Get the shadow from the local IPC
+def list_named_shadows_request(thingName, nextToken):
+    lPrint("list_named_shadows_request: "+thingName)
+
+    try:
+        # set up IPC client to connect to the IPC server
+        ipc_client = awsiot.greengrasscoreipc.connect()
+                            
+        lPrint("Creating the ListNamedShadowsForThing request")
+        # create the ListNamedShadowsForThingRequest request
+        list_named_shadows_for_thing_request = ListNamedShadowsForThingRequest()
+        list_named_shadows_for_thing_request.thing_name = thingName
+        list_named_shadows_for_thing_request.next_token = nextToken
+        #list_named_shadows_for_thing_request.page_size = 10
+
+        lPrint("Retrieving the ListNamedShadowsForThing response")
+        # retrieve the ListNamedShadowsForThingRequest response after sending the request to the IPC server
+        op = ipc_client.new_list_named_shadows_for_thing()
+
+        lPrint(op)
+
+        lPrint("Activating the ListNamedShadowsForThing response")
+        op.activate(list_named_shadows_for_thing_request)
+        fut = op.get_response()
+                
+        list_result = fut.result(TIMEOUT)
+        
+        # additional returned fields
+        timestamp = list_result.timestamp
+        next_token = list_result.next_token
+        named_shadow_list = list_result.results
+        
+        #return named_shadow_list
+        return named_shadow_list, next_token, timestamp
+        
+    except Exception as e:
+        lPrint("Error listing named shadows")
+        return []
+        # except ResourceNotFoundError | UnauthorizedError | ServiceError
+
+#Get the shadow from the local IPC
+def delete_named_shadow_request(thingName, shadowName):
+    lPrint("delete_named_shadow_request - thingName: "+thingName)
+    lPrint("delete_named_shadow_request - shadowName: "+shadowName)
+
+    try:
+        # set up IPC client to connect to the IPC server
+        ipc_client = awsiot.greengrasscoreipc.connect()
+                            
+        # create the DeleteThingShadowRequest request
+        delete_named_shadow_for_thing_request = DeleteThingShadowRequest()
+        delete_named_shadow_for_thing_request.thing_name = thingName
+        delete_named_shadow_for_thing_request.shadow_name = shadowName
+
+        # retrieve the DeleteThingShadowRequest response after sending the request to the IPC server
+
+        op = ipc_client.new_delete_thing_shadow()
+        lPrint(op)
+
+        lPrint("Activating the DeleteThingShadowRequest response")
+
+        op.activate(delete_named_shadow_for_thing_request)
+        fut = op.get_response()
+                
+        lPrint(fut)
+        result = fut.result(TIMEOUT)
+        lPrint("result")
+        lPrint(result)
+        
+        return result.payload
+        
+    except Exception as e:
+        lPrint("Error deleting named shadow")
+        return []
+        # except ResourceNotFoundError | UnauthorizedError | ServiceError
 
 def depth(x):
     if type(x) is dict and x:
@@ -571,7 +677,6 @@ def filterNodesByEndpoint(nodeResult, endpointId):
 def OnNodeChange(nodeId, nodeResult)-> None:
     lPrint("Saw node change inside Cloud Controller! for nodeId: "+ str(nodeId))
     thingName = args.name 
-    lPrint("thingName: "+ str(thingName))
 
     #Here we are going to create multiple shadows - per nodeid/endpointid 
     for endpoint in findEndpointsPerNode(nodeResult):
@@ -579,35 +684,25 @@ def OnNodeChange(nodeId, nodeResult)-> None:
             
         #set the device shadow for test
         shadowName = str(nodeId) + "_" + str(endpoint)
-        lPrint("shadowName: " + str(nodeId))
 
         newStr = '{"state": {"reported": '+json.dumps(filteredNodeResult)+'}}'
-
-        lPrint("Updating Thing Shadow Now.......")
-
-        lPrint("thingName:")
-        lPrint(thingName)
-
-        lPrint("shadowName:")
-        lPrint(shadowName)
-
-#        lPrint("document:")
-#        lPrint(bytes(newStr, "utf-8"))
 
         if not LOCAL_TEST:
             update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
+    if not LOCAL_TEST:
+        #now that we have created/updated new shadows 
+        #we need to subscrive to any deltas
+        subscribe_to_shadow_deltas(thingName)
+        pass
 
 def OnEventChange(nodeId, eventReadResult)-> None:
     lPrint("Saw event change inside Cloud Controller! for nodeId: "+ str(nodeId))
     thingName = args.name 
-    lPrint("thingName: "+ str(thingName))
 
-    lPrint("shadowName: " + "events_" + str(nodeId))
     if not LOCAL_TEST:
         shadowName = "events_" + str(nodeId)
         #First read the existing events and then add to it
-        lPrint("Calling get thing shadow request for events")
 
         #If we get an Exception its because we dont have an event list already
         newList = []
@@ -635,18 +730,75 @@ def OnEventChange(nodeId, eventReadResult)-> None:
         #Calling update thing shadow request for events
         result = update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
 
+def subscribe_to_shadow_deltas(thing_name):
+    shadow_list = []
+    named_shadow_list, next_token, timestamp = list_named_shadows_request(thing_name, None)
+    shadow_list.extend(named_shadow_list)
+    while next_token != None:
+        named_shadow_list, next_token, timestamp = list_named_shadows_request(thing_name, next_token)
+        shadow_list.extend(named_shadow_list)
+
+    # set up IPC client to connect to the IPC server
+    ipc_client = awsiot.greengrasscoreipc.connect()
+
+    #Now subscribe to the deltas for every shadow 
+    for shadow in named_shadow_list:
+
+        if shadow not in shadow_subscriptions:
+            #set up subscription of device shadow update deltas
+            subscribeShadowDeltaTopic = "$aws/things/"+thing_name+"/shadow/name/"+shadow+"/update/delta"
+
+            #We dont need to subscribe on the subscription as we now use interactions to change
+            #But we will leave this here in case we want to do something when the shadow changes
+            lPrint("Setting up the Shadow Subscription for: " + shadow)
+            # Setup the Shadow Subscription
+            request = SubscribeToTopicRequest()
+            request.topic = subscribeShadowDeltaTopic 
+            loop = asyncio.get_event_loop()
+            # Setup the MQTT Subscription
+            handler = SubHandler(shadow, loop)
+            operation = ipc_client.new_subscribe_to_topic(handler)
         
+            future = operation.activate(request)
+            future.result(TIMEOUT)
+            subscribeToTopic(subscribeShadowDeltaTopic, handler)
+
+            #We will keep track of the subscriptions that we have created
+            #so that we dont recreate them
+            shadow_subscriptions.append(shadow)
+
+
+def delete_all_shadows(thing_name):
+    shadow_list = []
+    named_shadow_list, next_token, timestamp = list_named_shadows_request(thing_name, None)
+    shadow_list.extend(named_shadow_list)
+    while next_token != None:
+        named_shadow_list, next_token, timestamp = list_named_shadows_request(thing_name, next_token)
+        shadow_list.extend(named_shadow_list)
+
+    #Now subscribe to the deltas for every shadow 
+    for shadow in named_shadow_list:
+        #delete all shadows
+        delete_named_shadow_request(thing_name, shadow)
+
+
 async def mainLoopTask(ws:ClientWebSocketResponse):
     loop = asyncio.get_running_loop()
     running = True
     
     if not LOCAL_TEST:
-        lPrint("Setting up the MQTT Subscription")
+        lPrint("Setting up the MQTT Subscription for MQTT stream")
         # Get the current running loop
         loop = asyncio.get_event_loop()
         # Setup the MQTT Subscription
         handler = StreamHandler(loop)
         subscribeToTopic(REQUEST_TOPIC, handler)
+
+        #Remove all the named shadows at start up
+        #If nodes exists they will be repopulated
+        if CLEAN:
+            delete_all_shadows(THING_NAME)
+            shadow_subscriptions = []
 
     lPrint('------------------------run-------------------')
 
@@ -672,13 +824,9 @@ async def websocketListenTask(ws):
 
     try:
         async for msg in ws:
-            #lPrint(msg.data)
 
             if msg.type == aiohttp.WSMsgType.TEXT:
                 message_response = msg.json()
-                #lPrint('Message received from server:')
-                #lPrint(json.dumps(message_response))
-
                 # Here we will look for the type of message (event,message response or start up message)
             
                 # Look for start up message like this 
@@ -688,8 +836,17 @@ async def websocketListenTask(ws):
                 if "fabric_id" in message_response:
                     print("compressed_fabric_id:", message_response["compressed_fabric_id"])
 
+                elif "error_code" in message_response:
+                    lPrint(message_response["details"])
+                
                 elif "message_id" in message_response:
+                    #when we get a message_id it could be 1 of 3 things:
+                    #1. If could be a simple acknowledge of a message request with no results (type None)
+                    #2. It could be a response giving the latest attributes for a single node (results is a dict not a list)
+                    #3. It could be a response giving the latest attributes for all nodes (results is a list)
+                    #4. Finally it could be a result from a command that is return results non related to nodes such as a open commissioning window request
                     lPrint("message_id:" + message_response["message_id"])
+
                     #check that we have results before processing them
                     if (not isinstance(message_response["result"], type(None))):
                         results = message_response["result"]
@@ -698,22 +855,27 @@ async def websocketListenTask(ws):
                         #list of nodes (array)
                         if isinstance(results, dict):
                             #if we got a single then go here
-                            print("Message Response with single node update")
-                            node_id = results["node_id"]
-                            print("node_id:", node_id)
-                            OnNodeChange(node_id, results)
+                            lPrint("Message Response with single node update")
+                            #Update the node shadows
+                            OnNodeChange(results["node_id"], results)
                         else:
                             #if we got a list of nodes we go here
                             for result in results:
-                                if "node_id" in result:
-                                    #Here we are dealing with an update on all the node
-                                    print("Message Response with nodes update")
-                                    node_id = result["node_id"]
-                                    print("node_id:", node_id)
-                                    OnNodeChange(node_id, result)
-                                if "Path" in result:
-                                    #Here we are dealing with an update on all the node
-                                    print("Message Response with path attribute updates")
+                                if isinstance(result, dict):
+                                    if "node_id" in result:
+                                        #Here we are dealing with an update on all the node
+                                        lPrint("Message Response with nodes update")
+                                        
+                                        #Update the node shadows
+                                        OnNodeChange(result["node_id"], result)
+                                    elif "Path" in result:
+                                        #Here we are dealing with an update on all the node
+                                        lPrint("Message Response with path attribute updates")
+                                        pass
+                                else:
+                                    #Here we are dealing with a response such as opening commission
+                                    lPrint("Message Response with other result")
+                                    pass
 
                 elif "event" in message_response:
                     print("event:", message_response)
@@ -722,10 +884,14 @@ async def websocketListenTask(ws):
                         or message_response["event"] == 'node_removed'
                         or message_response["event"] == 'node_event'):
                         node_id = message_response["data"]['node_id']
-                        message_response.pop('data') #Get rid of the data as its too big for events
-                    else:    
+                        #if len (message_response["data"])>500:
+                        message_response.pop('data') #Get rid of the data as its too big for events shadow
+                    else:
+                        #This is an attribute change event so we will force
+                        #an update of the node shadows by calling get_nodes
+                        #which will force the node shadows to be updated when 
+                        #the response is received back
                         node_id = message_response["data"][0]
-                        #await updateNode(node_id)
                         messageObject = {
                             "message_id": "2",
                             "command": "get_node",
@@ -740,6 +906,7 @@ async def websocketListenTask(ws):
 
                 else:
                     print("*****************Unknown/Unhandled message:", message_response)
+                    pass
     except:
         print("Connection is Closed")
         await ws.close()
@@ -758,7 +925,6 @@ async def queueListenTask(ws):
     while True:
         # get a unit of work
         Item_size, item = await queue.get()
-        # check for stop signal
         if item is None:
             break
         # report
@@ -836,7 +1002,7 @@ async def main():
                 if not session.closed:
                     await session.close()
                     await asyncio.sleep(sleep_time_in_sec)
-                    await main()
+                    #await main()
         
     except Exception as e:
         lPrint(f"Something went wrong: {str(e)}")

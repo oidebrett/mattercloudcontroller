@@ -115,7 +115,9 @@ export class ThingInstallerStack extends base.BaseStack {
                 "iot:DescribeThing",
                 "iot:DescribeThingGroup",
                 "iot:GetThingShadow",
+                "iot:DeleteThingShadow",
                 "iot:UpdateJob",
+                "iot:ListNamedShadowsForThing",
                 "iot:UpdateThingShadow"
             ],
             "Resource": "*"
@@ -187,6 +189,7 @@ export class ThingInstallerStack extends base.BaseStack {
             actions: [
                 "iot:DeleteThingShadow",
                 "iot:GetThingShadow",
+                "iot:DeleteThingShadow",
                 "iot:UpdateThingShadow",
                 "iot:ListNamedShadowsForThing"
             ],

@@ -31,13 +31,13 @@
             "PublicComponents": [
                 {
                     "Name": "aws.greengrass.Nucleus",
-                    "Version": "2.5.5",
+                    "Version": "2.6.0",
                     "ConfigurationUpdate": {
                     }
                 },
                 {
                     "Name": "aws.greengrass.ShadowManager",
-                    "Version": "2.1.0",
+                    "Version": "2.2.0",
                     "ConfigurationUpdate": {
                         "synchronize":{
                             "coreThing":{
@@ -72,9 +72,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.2.0",
+                "Version": "0.2.70",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-n mcc-thing-ver01-1 "
+                "Args": "-n mcc-thing-ver01-1 -c True"
             }
         },
         "ApiGatewayDeployment": {
