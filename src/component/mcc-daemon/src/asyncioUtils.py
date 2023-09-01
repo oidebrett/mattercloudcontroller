@@ -74,12 +74,11 @@ class TestFileHandler:
         sample = self.loadAndCleanTestData(file_name)
         nodeId = None
         try:
-            command = sample["command"]
             # add to the queue
-            messageObject = json.dumps(sample)
+            message_object = json.dumps(sample)
 
             # add to the queue
-            await queue.put(messageObject)
+            await queue.put(message_object)
 
         except:
             pass
