@@ -74,6 +74,7 @@ class TestFileHandler:
         sample = self.loadAndCleanTestData(file_name)
         nodeId = None
         try:
+            command = sample["command"]
             # add to the queue
             message_object = json.dumps(sample)
 

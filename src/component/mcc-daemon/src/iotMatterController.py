@@ -59,6 +59,7 @@ import traceback
 from rich.console import Console
 import asyncio
 import aiohttp
+import concurrent.futures
 from aiohttp import web, ClientWebSocketResponse
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -97,10 +98,13 @@ queue = MemQueue(maxsize=1000, maxmemsize=5*1024*1024)
 sleeps = CancellableSleeps()
 shadow_subscriptions = []
 
+# holds a list of dicts holding a callback function per message id
+callbacks_per_message_id = {}
+
 curr_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(curr_dir)
 
-sleep_time_in_sec = float(os.environ.get('SLEEP_TIME', '0.1'))
+sleep_time_in_sec = float(os.environ.get('SLEEP_TIME', '10'))
 stabilisation_time_in_sec = int(os.environ.get('STABLE_TIME', '10'))
 
 RESPONSE_FORMAT = "json"
@@ -114,11 +118,14 @@ REQUEST_TOPIC = "chip/request"
 RESPONSE_TOPIC = "chip/response"
 
 def lPrint(msg):
+    '''
     console = Console()
     console.print(msg)
     logging.info(msg)
     print(msg, file=sys.stdout)
     sys.stderr.flush()
+    '''
+    pass
 
 if not LOCAL_TEST:
     #Set up the IoT communication to AWS IoT Core
@@ -154,6 +161,30 @@ if not LOCAL_TEST:
 else:
     lPrint("is LOCAL_TEST")
     _sample_file_name = 'sample_data.json'
+
+
+#######################################################################################
+##
+## The following are the message router handlers for certain commands
+##
+#######################################################################################
+
+def message_router(message):
+    if "command" in message and message['command'] == 'open_commissioning_window':
+        lPrint("in message router with open_commissioning_window")
+        node_id = message['args']['node_id']
+        callbacks_per_message_id[message['message_id']] = (node_id, open_commissioning_window_callback)
+
+    pass
+
+def open_commissioning_window_callback(loop, node_id, message):
+    lPrint("In open_commissioning_window callback")
+    code = int(message['result'][1])
+    rand_message_id = str(random.randint(1, 9999999) )
+    # The spec allows this attribute to be used for the storage of a client-provided small payload which Administrators and
+    # Commissioners MAY write and then subsequently read, to keep track of their own progress.
+    message_object = {"message_id": rand_message_id, "command": "write_attribute", "args": {"endpoint_id": 0, "node_id": node_id, "attribute_path": "0/48/0", "value": code}}
+    loop.create_task(queue.put(json.dumps(message_object)))
 
 
 #######################################################################################
@@ -225,6 +256,9 @@ def respond(event, loop):
     resp["return_code"] = 200
     resp["message_id"] = message_from_core["message_id"]
 
+    #First we will route the message in case we need to process it later
+    message_router(message_from_core)
+
     # add to the queue
     message_object = json.dumps(message_from_core)
     loop.create_task(queue.put(message_object))
@@ -238,8 +272,6 @@ def respond(event, loop):
         "return_code": resp["return_code"]
         }
 
-    # Print the message to stdout, which Greengrass saves in a log file.
-    #lPrint("event.message.payload:" + str(event.message.payload))
 
     # Publish to our topic
     response = PublishToIoTCoreRequest()
@@ -286,7 +318,7 @@ if not LOCAL_TEST:
         def on_stream_event(self, event: IoTCoreMessage) -> None:  
 
             lPrint("Handler for subscription callback for " + self.shadow)
-            lPrint(event)
+            #lPrint(event)
 
             current_shadow = json.loads(get_thing_shadow_request(THING_NAME, self.shadow))
 
@@ -620,6 +652,7 @@ async def mainLoopTask(ws:ClientWebSocketResponse):
             delete_all_shadows(THING_NAME)
             shadow_subscriptions = []
 
+
     lPrint('------------------------run-------------------')
 
     lPrint("LOCAL_TEST: "+str(LOCAL_TEST))
@@ -637,9 +670,15 @@ async def mainLoopTask(ws:ClientWebSocketResponse):
 
 async def websocketListenTask(ws):
     try:
-        await ws.send_str('{"message_id": "3","command": "start_listening"}')
+        rand_message_id = str(random.randint(1, 9999999) )
+        message_object = {
+            "message_id": rand_message_id,
+            "command": "start_listening"
+        }
+        
+        await ws.send_str(json.dumps(message_object))
     except:
-        print("Connect Listening Set Up Error")
+        lPrint("Connect Listening Set Up Error")
 
 
     try:
@@ -654,7 +693,8 @@ async def websocketListenTask(ws):
                 # "schema_version": 4, "min_supported_schema_version": 2, "sdk_version": "0.0.0", 
                 # "wifi_credentials_set": false, "thread_credentials_set": false}
                 if "fabric_id" in message_response:
-                    print("compressed_fabric_id:", message_response["compressed_fabric_id"])
+                    lPrint("compressed_fabric_id:")
+                    lPrint(message_response["compressed_fabric_id"])
 
                 elif "error_code" in message_response:
                     lPrint(message_response["details"])
@@ -666,6 +706,13 @@ async def websocketListenTask(ws):
                     #3. It could be a response giving the latest attributes for all nodes (results is a list)
                     #4. Finally it could be a result from a command that is return results non related to nodes such as a open commissioning window request
                     lPrint("message_id:" + message_response["message_id"])
+
+                    #We will now execute any callbacks
+                    if message_response["message_id"] in callbacks_per_message_id:
+                        loop = asyncio.get_event_loop()
+                        node_id, cb_function = callbacks_per_message_id[message_response["message_id"]]
+                        cb_function(loop, node_id, message_response)
+                        callbacks_per_message_id.pop(message_response["message_id"]) #remove the callback
 
                     #check that we have results before processing them
                     if (not isinstance(message_response["result"], type(None))):
@@ -720,15 +767,16 @@ async def websocketListenTask(ws):
                         }
                         # add to the queue
                         await queue.put(json.dumps(message_object))
-                        await asyncio.sleep(sleep_time_in_sec)
-                    print("event:", message_response)
                     OnEventChange(node_id, message_response)
 
                 else:
-                    print("*****************Unknown/Unhandled message:", message_response)
+                    lPrint("*****************Unknown/Unhandled message:")
+                    lPrint(message_response)
                     pass
+            # simulate i/o operation using sleep
+            await asyncio.sleep(random.random())
     except:
-        print("Connection is Closed")
+        lPrint("Connection is Closed")
         await ws.close()
 
     finally:
@@ -753,7 +801,13 @@ async def queueListenTask(ws):
         except:
             lPrint("Caught an exception sending item and now exiting:" + item)
             #sys.exit(0)
-    
+
+        # Notify the queue that the "work item" has been processed.
+        queue.task_done()
+
+        # simulate i/o operation using sleep
+        await asyncio.sleep(random.random())
+
     # all done
     lPrint('queueListen: Done')
 
@@ -767,7 +821,7 @@ async def webserverTask():
             "list_named_shadows_request":list_named_shadows_request,
             "delete_named_shadow_request":delete_named_shadow_request
         }
-        app = await rest_handler.initialization(queue, URL, shadow_functions)
+        app = await rest_handler.initialization(queue, URL, shadow_functions, message_router)
         runner = aiohttp.web.AppRunner(app)
         await runner.setup()
         site = aiohttp.web.TCPSite(runner)    
@@ -787,12 +841,24 @@ def websocketClosedCB(_fut):
 
     lPrint(f"Cancelling {len(tasks)} outstanding tasks")
     sleeps.cancel() # cancel all running sleep tasks
-                
+
+async def monitorTasks():
+    while True:
+        tasks = [
+            t for t in asyncio.all_tasks()
+            if t is not asyncio.current_task()
+        ]
+        [t.print_stack(limit=5) for t in tasks]
+        await asyncio.sleep(2)
+
 async def main():
     try:
         # add the websocket client handler to the loop
             
         async with aiohttp.ClientSession().ws_connect(URL) as ws:
+            # 0 - the monitor task
+            monitor_task = asyncio.create_task(monitorTasks())
+
             # 1 - the webserver task
             webserver_task = asyncio.create_task(webserverTask())
 
@@ -806,7 +872,7 @@ async def main():
             # 4 - the main loop task
             main_loop_task = asyncio.create_task(mainLoopTask(ws))
 
-            tasks = [webserver_task, ws_listen_task, queue_listen_task, main_loop_task]
+            tasks = [monitor_task, webserver_task, ws_listen_task, queue_listen_task, main_loop_task]
             try:
                 await asyncio.gather(*tasks, return_exceptions=True)
             
@@ -824,7 +890,6 @@ async def main():
                 session = aiohttp.ClientSession()
                 if not session.closed:
                     await session.close()
-                    await asyncio.sleep(sleep_time_in_sec)
                     #await main()
         
     except Exception as e:

@@ -13,12 +13,13 @@ class RestHandler():
     def __init__(self):
         pass
 
-    async def initialization(self, queue, url, shadow_functions):
+    async def initialization(self, queue, url, shadow_functions, message_router):
         app = web.Application()
         app.add_routes(self.routes)
         app['queue'] = queue
         app['url'] = url
         app['shadow_functions'] = shadow_functions
+        app['message_router'] = message_router
         
         return app
 
@@ -72,7 +73,8 @@ class RestHandler():
     @routes.get('/chip-request')
     async def return_command(request):
         queue = request.app['queue']
-        
+        message_router = request.app['message_router']
+
         json_str = request.rel_url.query.get('json', '')
 
         resp = {}
@@ -116,6 +118,8 @@ class RestHandler():
         resp["response"] = "accepted"
         resp["return_code"] = 200
         resp["message_id"] = message_from_rest["message_id"]
+
+        message_router(message_from_rest)
 
         # add to the queue
         await queue.put(json_str)
