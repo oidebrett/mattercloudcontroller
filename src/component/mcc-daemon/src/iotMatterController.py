@@ -71,10 +71,11 @@ from iotRestApiService import RestHandler
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--name", help="Name of the IOT thing (default: mcc-thing-ver01-1)", action="store", default="mcc-thing-ver01-1")
 parser.add_argument("-t", "--test", help="true if testing local", action="store", default="False")
-parser.add_argument("-m", "--maxdevices", help="number of matter devices", action="store", default=100)
+parser.add_argument("-m", "--monitor", help="monitor and trace the loops", action="store", default="False")
 parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=100)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", action="store", default="False")
+parser.add_argument("--log-level", type=str, default="info", help="Provide logging level. Example --log-level debug, default=info, possible=(critical, error, warning, info, debug)")
 
 #Set up the variables from the arguments (and defaults)
 args = parser.parse_args()
@@ -86,6 +87,8 @@ STOP_ARG = args.stop
 STOP = STOP_ARG.lower() == 'true'
 MAX_EVENTS = args.maxevents
 THING_NAME = args.name
+MONITOR_ARG = args.monitor
+MONITOR = MONITOR_ARG.lower() == 'true'
 
 #Set up the Websocket client details
 HOST='127.0.0.1' 
@@ -116,15 +119,17 @@ MSG_INVALID_JSON = "Request message was not a valid JSON object"
 # Set up request topic and response topic from passed in arguments
 REQUEST_TOPIC = "chip/request"
 RESPONSE_TOPIC = "chip/response"
+console = Console()
+
+#Set up the logging
+logging.basicConfig(handlers=None, level=args.log_level.upper())
 
 def lPrint(msg):
-    '''
-    console = Console()
-    console.print(msg)
+    if LOCAL_TEST:
+        console.print(msg)
     logging.info(msg)
-    print(msg, file=sys.stdout)
-    sys.stderr.flush()
-    '''
+#    print(msg, file=sys.stdout)
+#    sys.stderr.flush()
     pass
 
 if not LOCAL_TEST:
@@ -158,9 +163,7 @@ if not LOCAL_TEST:
     # (from AWS implementation)
     ipc_client = awsiot.greengrasscoreipc.connect()
 
-else:
-    lPrint("is LOCAL_TEST")
-    _sample_file_name = 'sample_data.json'
+_sample_file_name = 'sample_data.json'
 
 
 #######################################################################################
@@ -662,10 +665,8 @@ async def mainLoopTask(ws:ClientWebSocketResponse):
     lPrint("Current Working Directory " + os.getcwd())
 
     while running:
-        if LOCAL_TEST: # if local testing we will use a file for commissioning
-            fh = TestFileHandler()
-            await fh.pollForCommand(curr_dir + '/' + _sample_file_name, ws, queue)
-
+        fh = TestFileHandler()
+        await fh.pollForCommand(curr_dir + '/' + _sample_file_name, ws, queue)
         await asyncio.sleep(sleep_time_in_sec)
 
 async def websocketListenTask(ws):
@@ -844,11 +845,12 @@ def websocketClosedCB(_fut):
 
 async def monitorTasks():
     while True:
-        tasks = [
-            t for t in asyncio.all_tasks()
-            if t is not asyncio.current_task()
-        ]
-        [t.print_stack(limit=5) for t in tasks]
+        if MONITOR:
+            tasks = [
+                t for t in asyncio.all_tasks()
+                if t is not asyncio.current_task()
+            ]
+            [t.print_stack(limit=5) for t in tasks]
         await asyncio.sleep(2)
 
 async def main():
@@ -872,7 +874,9 @@ async def main():
             # 4 - the main loop task
             main_loop_task = asyncio.create_task(mainLoopTask(ws))
 
+            #tasks = [monitor_task]
             tasks = [monitor_task, webserver_task, ws_listen_task, queue_listen_task, main_loop_task]
+
             try:
                 await asyncio.gather(*tasks, return_exceptions=True)
             
