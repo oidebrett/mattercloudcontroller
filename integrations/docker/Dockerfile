@@ -8,7 +8,7 @@ ARG MCCCOMMITHASH=7d2ba22a5db64848fd4f850abda45162d7fe8ba0
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
 # specified SHA
-ARG ZAP_VERSION=v2023.10.09-nightly
+ARG ZAP_VERSION=v2023.04.27-nightly
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
@@ -78,7 +78,7 @@ RUN set -x \
     net-tools \
     ninja-build \
     openjdk-8-jdk \
-    pkg-config \
+   pkg-config \
     python3 \
     python3-dev \
     python3-venv \
@@ -97,25 +97,25 @@ RUN set -x \
 
 # Cmake (Mbed OS requires >=3.19.0-rc3 version which is not available in Ubuntu 20.04 repository)
 RUN case ${TARGETPLATFORM} in \
-    "linux/amd64") \
-    set -x \
-    && (cd /tmp \
-    && wget --progress=dot:giga https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3-Linux-x86_64.sh \
-    && sh cmake-3.19.3-Linux-x86_64.sh --exclude-subdir --prefix=/usr/local \
-    && rm -rf cmake-3.19.3-Linux-x86_64.sh) \
-    && exec bash \
-    ;; \
-    "linux/arm64") \
-    set -x \
-    && (cd /tmp \
-    && wget --progress=dot:giga https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3-Linux-aarch64.sh \
-    && sh cmake-3.19.3-Linux-aarch64.sh --exclude-subdir --prefix=/usr/local \
-    && rm -rf cmake-3.19.3-Linux-aarch64.sh) \
-    && exec bash \
-    ;; \
-    *) \
-    test -n "$TARGETPLATFORM" \
-    echo "Unsupported platform ${TARGETPLATFORM}" \
+        "linux/amd64") \
+            set -x \
+            && (cd /tmp \
+            && wget --progress=dot:giga https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3-Linux-x86_64.sh \
+            && sh cmake-3.19.3-Linux-x86_64.sh --exclude-subdir --prefix=/usr/local \
+            && rm -rf cmake-3.19.3-Linux-x86_64.sh) \
+            && exec bash \
+            ;; \
+        "linux/arm64") \
+            set -x \
+            && (cd /tmp \
+            && wget --progress=dot:giga https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3-Linux-aarch64.sh \
+            && sh cmake-3.19.3-Linux-aarch64.sh --exclude-subdir --prefix=/usr/local \
+            && rm -rf cmake-3.19.3-Linux-aarch64.sh) \
+            && exec bash \
+            ;; \
+        *) \
+        test -n "$TARGETPLATFORM" \
+        echo "Unsupported platform ${TARGETPLATFORM}" \
     ;; \
     esac
 
@@ -144,6 +144,57 @@ RUN set -x \
     && cd .. \
     && rm -rf gn \
     && : # last line
+
+# Install bloat comparison tools
+#RUN set -x \
+#    && git clone https://github.com/google/bloaty.git \
+#    && mkdir -p bloaty/build \
+#    && cd bloaty/build \
+#    && cmake ../ \
+#    && make -j8 \
+#    && make install \
+#    && cd ../.. \
+#    && rm -rf bloaty \
+#    && : # last line
+
+# NodeJS: install a newer version than what apt-get would read
+# This installs the latest LTS version of nodejs
+RUN case ${TARGETPLATFORM} in \
+        "linux/amd64") \
+            set -x \
+            && mkdir node_js \
+            && cd node_js \
+            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz \
+            && tar xfvJ node-v12.22.12-linux-x64.tar.xz \
+            && mv node-v12.22.12-linux-x64 /opt/ \
+            && ln -s /opt/node-v12.22.12-linux-x64 /opt/node \
+            && ln -s /opt/node/bin/* /usr/bin \
+            && cd .. \
+            && rm -rf node_js \
+            ;; \
+        "linux/arm64")\
+            set -x \
+            && mkdir node_js \
+            && cd node_js \
+            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz \
+            && tar xfvJ node-v12.22.12-linux-arm64.tar.xz \
+            && mv node-v12.22.12-linux-arm64 /opt/ \
+            && ln -s /opt/node-v12.22.12-linux-arm64 /opt/node \
+            && ln -s /opt/node/bin/* /usr/bin \
+            && cd .. \
+            && rm -rf node_js \
+            ;; \
+        *) ;; \
+    esac
+
+RUN set -x \
+    && mkdir -p /opt/zap-${ZAP_VERSION} \
+    && git clone https://github.com/project-chip/zap.git /opt/zap-${ZAP_VERSION} \
+    && cd /opt/zap-${ZAP_VERSION} \
+    && git checkout ${ZAP_VERSION} \
+    && npm config set user 0 \
+    && npm ci
+ENV ZAP_DEVELOPMENT_PATH=/opt/zap-${ZAP_VERSION}
 
 # Stage 1.5: Bootstrap Matter.
 RUN mkdir /home/ggc_user
