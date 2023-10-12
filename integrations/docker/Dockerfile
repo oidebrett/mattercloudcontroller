@@ -210,6 +210,11 @@ RUN set -x && \
     && gn gen out/debug --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false' \
     && ninja -C out/debug
 
+# Stage 1.6: Bootstrap Python Matter Server.
+RUN mkdir /home/ggc_user
+RUN mkdir /home/ggc_user/python-matter-server
+RUN git clone https://github.com/home-assistant-libs/python-matter-server.git /home/ggc_user/python-matter-server
+
 from chip-build-cert as chip-build-cert-bins
 
 SHELL ["/bin/bash", "-c"]
@@ -314,6 +319,9 @@ RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/scripts/thing mattercloudcontroller/scripts/thing
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/src/component/mcc-daemon/src mattercloudcontroller/src/component/mcc-daemon/src
 #COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller mattercloudcontroller
+
+# Stage 4.1: Copy over the Python-matter-server.
+COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/python-matter-server python-matter-server
 
 #Stage 5: Set up the Greengrass v2 environment
 
