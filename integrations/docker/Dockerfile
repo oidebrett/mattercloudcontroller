@@ -164,10 +164,10 @@ RUN case ${TARGETPLATFORM} in \
             set -x \
             && mkdir node_js \
             && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-x64.tar.xz \
-            && mv node-v12.22.12-linux-x64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-x64 /opt/node \
+            && wget https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-x64.tar.xz \
+            && tar xfvJ node-v16.1.0-linux-x64.tar.xz \
+            && mv node-v16.1.0-linux-x64 /opt/ \
+            && ln -s /opt/node-v16.1.0-linux-x64 /opt/node \
             && ln -s /opt/node/bin/* /usr/bin \
             && cd .. \
             && rm -rf node_js \
@@ -176,10 +176,10 @@ RUN case ${TARGETPLATFORM} in \
             set -x \
             && mkdir node_js \
             && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-arm64.tar.xz \
-            && mv node-v12.22.12-linux-arm64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-arm64 /opt/node \
+            && wget https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-arm64.tar.xz \
+            && tar xfvJ node-v16.1.0-linux-arm64.tar.xz \
+            && mv node-v16.1.0-linux-arm64 /opt/ \
+            && ln -s /opt/node-v16.1.0-linux-arm64 /opt/node \
             && ln -s /opt/node/bin/* /usr/bin \
             && cd .. \
             && rm -rf node_js \
