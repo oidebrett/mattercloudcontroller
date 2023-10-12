@@ -2,13 +2,13 @@
 FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
-ARG COMMITHASH=e217219c075e6dbf115568c225023b1717f41d92
-ARG MCCCOMMITHASH=74e09d956c01b00995516ca68aea6cddb47dc8a0
+ARG COMMITHASH=963a859806b8b5c2c030599cf47f2311b7431a51
+ARG MCCCOMMITHASH=7d2ba22a5db64848fd4f850abda45162d7fe8ba0
 
 # ZAP Development install, so that it runs on both x64 and arm64
 # Generally this should match with the ZAP version that is used for codegen within the
 # specified SHA
-ARG ZAP_VERSION=v2023.05.22-nightly
+ARG ZAP_VERSION=v2023.8.4-nightly
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
