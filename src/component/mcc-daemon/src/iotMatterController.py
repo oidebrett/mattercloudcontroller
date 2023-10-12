@@ -178,6 +178,10 @@ def message_router(message):
         node_id = message['args']['node_id']
         callbacks_per_message_id[message['message_id']] = (node_id, open_commissioning_window_callback)
 
+#    elif "command" in message and message['command'] == 'discover':
+#        lPrint("in message router with discover command")
+#        node_id = message['args']['node_id']
+
     pass
 
 def open_commissioning_window_callback(loop, node_id, message):
@@ -258,9 +262,6 @@ def respond(event, loop):
     resp["response"] = "accepted"
     resp["return_code"] = 200
     resp["message_id"] = message_from_core["message_id"]
-
-    #First we will route the message in case we need to process it later
-    message_router(message_from_core)
 
     # add to the queue
     message_object = json.dumps(message_from_core)
@@ -707,7 +708,8 @@ async def websocketListenTask(ws):
                     #3. It could be a response giving the latest attributes for all nodes (results is a list)
                     #4. Finally it could be a result from a command that is return results non related to nodes such as a open commissioning window request
                     lPrint("message_id:" + message_response["message_id"])
-
+                    lPrint(message_response)
+                    
                     #We will now execute any callbacks
                     if message_response["message_id"] in callbacks_per_message_id:
                         loop = asyncio.get_event_loop()
@@ -736,6 +738,21 @@ async def websocketListenTask(ws):
                                         
                                         #Update the node shadows
                                         OnNodeChange(result["node_id"], result)
+                                    elif ("instanceName" in result) and ("pairingInstruction" in result):
+                                        #Here we are dealing with an update on all the node
+                                        lPrint("Message Response with discovery of commissionable nodes")
+                                        commissionableNodesJsonStr = json.dumps(result)
+                                        lPrint(commissionableNodesJsonStr)                                        
+                                        if not LOCAL_TEST:
+                                            #set the device shadow for commissionableNodes
+                                            shadowName = "commissionables"
+                                            thingName = args.name
+                                            newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
+                                            #lPrint(newStr)
+                                            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+                                        else:
+                                            pass
+
                                     elif "Path" in result:
                                         #Here we are dealing with an update on all the node
                                         lPrint("Message Response with path attribute updates")
@@ -798,6 +815,8 @@ async def queueListenTask(ws):
             break
         # report
         try:
+            #First we will route the message in case we need to process it later
+            message_router(json.loads(item))
             await ws.send_str(item)
         except:
             lPrint("Caught an exception sending item and now exiting:" + item)
