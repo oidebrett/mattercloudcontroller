@@ -2,7 +2,7 @@
 FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
-ARG COMMITHASH=963a859806b8b5c2c030599cf47f2311b7431a51
+ARG COMMITHASH=053d17fe5207daea46c83dff3d33599740e8156d
 ARG MCCCOMMITHASH=7d2ba22a5db64848fd4f850abda45162d7fe8ba0
 
 # ZAP Development install, so that it runs on both x64 and arm64
@@ -164,10 +164,10 @@ RUN case ${TARGETPLATFORM} in \
             set -x \
             && mkdir node_js \
             && cd node_js \
-            && wget https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-x64.tar.xz \
-            && tar xfvJ node-v16.1.0-linux-x64.tar.xz \
-            && mv node-v16.1.0-linux-x64 /opt/ \
-            && ln -s /opt/node-v16.1.0-linux-x64 /opt/node \
+            && wget https://nodejs.org/dist/v18.18.1/node-v18.18.1-linux-x64.tar.xz \
+            && tar xfvJ node-v18.18.1-linux-x64.tar.xz \
+            && mv node-v18.18.1-linux-x64 /opt/ \
+            && ln -s /opt/node-v18.18.1-linux-x64 /opt/node \
             && ln -s /opt/node/bin/* /usr/bin \
             && cd .. \
             && rm -rf node_js \
@@ -176,10 +176,10 @@ RUN case ${TARGETPLATFORM} in \
             set -x \
             && mkdir node_js \
             && cd node_js \
-            && wget https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-arm64.tar.xz \
-            && tar xfvJ node-v16.1.0-linux-arm64.tar.xz \
-            && mv node-v16.1.0-linux-arm64 /opt/ \
-            && ln -s /opt/node-v16.1.0-linux-arm64 /opt/node \
+            && wget https://nodejs.org/dist/v18.18.1/node-v18.18.1-linux-arm64.tar.xz \
+            && tar xfvJ node-v18.18.1-linux-arm64.tar.xz \
+            && mv node-v18.18.1-linux-arm64 /opt/ \
+            && ln -s /opt/node-v18.18.1-linux-arm64 /opt/node \
             && ln -s /opt/node/bin/* /usr/bin \
             && cd .. \
             && rm -rf node_js \
@@ -204,7 +204,7 @@ WORKDIR /home/ggc_user/connectedhomeip/
 RUN git checkout ${COMMITHASH}
 RUN ./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
 RUN bash scripts/bootstrap.sh
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/bash", "-c"]053d17fe5207daea46c83dff3d33599740e8156d
 RUN set -x && \
     source scripts/activate.sh \
     && gn gen out/debug --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false' \
