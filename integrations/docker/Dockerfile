@@ -175,11 +175,11 @@ RUN case ${TARGETPLATFORM} in \
     set -x \
     && source scripts/activate.sh \
     && scripts/build/build_examples.py \
-    --target linux-x64-chip-tool-ipv6only-platform-mdns \
+ #   --target linux-x64-chip-tool-ipv6only-platform-mdns \
     --target linux-x64-all-clusters-ipv6only \
     --target linux-x64-ota-provider-ipv6only \
     build \
-    && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+#    && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
     && mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
     && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
     ;; \
@@ -187,11 +187,11 @@ RUN case ${TARGETPLATFORM} in \
     set -x \
     && source scripts/activate.sh \
     && scripts/build/build_examples.py \
-    --target linux-arm64-chip-tool-ipv6only-platform-mdns \
+#    --target linux-arm64-chip-tool-ipv6only-platform-mdns \
     --target linux-arm64-all-clusters-ipv6only \
     --target linux-arm64-ota-provider-ipv6only \
     build \
-    && mv out/linux-arm64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+#    && mv out/linux-arm64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
     && mv out/linux-arm64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
     && mv out/linux-arm64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
     ;; \
@@ -258,7 +258,7 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/.sd
 #Below is the right fine-grained copys that we need - we will make a note for now
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/credentials connectedhomeip/credentials
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/python_lib/controller/python connectedhomeip/out/python_lib/controller/python
-COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-tool connectedhomeip/out/chip-tool
+#COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-tool connectedhomeip/out/chip-tool
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-all-clusters-app connectedhomeip/out/chip-all-clusters-app
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-ota-provider-app connectedhomeip/out/chip-ota-provider-app
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/scripts connectedhomeip/scripts
