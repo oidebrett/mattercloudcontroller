@@ -171,32 +171,33 @@ RUN git rev-parse HEAD > /home/ggc_user/.sdk-sha-version
 
 #Build the chip-tool and one example (all clusters app) so that users can debug using chip-tool and app
 RUN case ${TARGETPLATFORM} in \
-        "linux/amd64") \
-            set -x \
-            && source scripts/activate.sh \
-            && scripts/build/build_examples.py \
-            --target linux-x64-all-clusters-ipv6only \
-            --target linux-x64-chip-tool-ipv6only-platform-mdns \
-            --target linux-x64-ota-provider-ipv6only \
-            build \
-            && mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
-            && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
-            && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
-                ;; \
-        "linux/arm64")\
-            set -x \
-            && source scripts/activate.sh \
-            && scripts/build/build_examples.py \
-            --target linux-arm64-all-clusters-ipv6only \
-            --target linux-x64-chip-tool-ipv6only-platform-mdns \
-            --target linux-arm64-ota-provider-ipv6only \
-            build \
-            && mv out/linux-arm64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
-            && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
-            && mv out/linux-arm64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
-            ;; \
-        *) ;; \
+    "linux/amd64") \
+    set -x \
+    && source scripts/activate.sh \
+    && scripts/build/build_examples.py \
+    --target linux-x64-chip-tool-ipv6only-platform-mdns \
+    --target linux-x64-all-clusters-ipv6only \
+    --target linux-x64-ota-provider-ipv6only \
+    build \
+    && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+    && mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
+    && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
+    ;; \
+    "linux/arm64")\
+    set -x \
+    && source scripts/activate.sh \
+    && scripts/build/build_examples.py \
+    --target linux-arm64-chip-tool-ipv6only-platform-mdns \
+    --target linux-arm64-all-clusters-ipv6only \
+    --target linux-arm64-ota-provider-ipv6only \
+    build \
+    && mv out/linux-arm64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+    && mv out/linux-arm64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
+    && mv out/linux-arm64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
+    ;; \
+    *) ;; \
     esac
+
 
 RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i no
 #RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i separate
