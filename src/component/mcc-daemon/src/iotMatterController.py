@@ -708,7 +708,6 @@ async def websocketListenTask(ws):
                     #3. It could be a response giving the latest attributes for all nodes (results is a list)
                     #4. Finally it could be a result from a command that is return results non related to nodes such as a open commissioning window request
                     lPrint("message_id:" + message_response["message_id"])
-                    lPrint(message_response)
                     
                     #We will now execute any callbacks
                     if message_response["message_id"] in callbacks_per_message_id:
@@ -872,7 +871,48 @@ async def monitorTasks():
             [t.print_stack(limit=5) for t in tasks]
         await asyncio.sleep(2)
 
+def startUpMatterServer():
+        """
+        Check to see if an process is running. If not, restart.
+        Run this in a cron job
+        """
+        process_name= "matter_server.server" # change this to the name of your process
+
+        tmp = os.popen("ps -Af").read()
+
+        if process_name not in tmp[:]:
+            lPrint("The process is not running. Let's restart.")
+            """"Use nohup to make sure it runs like a daemon"""
+            # The location of the python-matter-server.
+            if (os.path.isfile('../python-matter-server/matter_server/server/server.py')):
+                current_dir = os. getcwd()
+                python_matter_server_dir = "../python-matter-server"
+                os.chdir(python_matter_server_dir) #change to python matter server directory
+                newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
+                os.system(newprocess)
+                os.chdir(current_dir) #change back to original directory
+                time.sleep(20)
+
+        else:
+            lPrint("The process is running.")
+
+async def startUpMatterServerTask():
+    lPrint('startUpMatterServerTask: Running')
+
+    # constantly check that matter server is working
+    while True:
+        startUpMatterServer()
+
+        # simulate i/o operation using sleep
+        await asyncio.sleep(random.random())
+
+    # all done
+    lPrint('startUpMatterServerTask: Done')
+
 async def main():
+    startUpMatterServer()
+    time.sleep(20)
+
     try:
         # add the websocket client handler to the loop
             
@@ -880,6 +920,9 @@ async def main():
             # 0 - the monitor task
             monitor_task = asyncio.create_task(monitorTasks())
 
+            #0.5 - the startUpMatterServerTask
+#            startup_task = asyncio.create_task(startUpMatterServerTask())
+            
             # 1 - the webserver task
             webserver_task = asyncio.create_task(webserverTask())
 
@@ -913,7 +956,7 @@ async def main():
                 session = aiohttp.ClientSession()
                 if not session.closed:
                     await session.close()
-                    #await main()
+                    await main()
         
     except Exception as e:
         lPrint(f"Something went wrong: {str(e)}")
