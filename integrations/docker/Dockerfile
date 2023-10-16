@@ -272,6 +272,9 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mat
 
 # Stage 4.1: Copy over the Python-matter-server.
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/python-matter-server python-matter-server
+RUN pip install aiohttp aiorun orjson 
+RUN mkdir /data
+RUN chown  -R $USERNAME:$GROUPNAME /data
 
 #Stage 5: Set up the Greengrass v2 environment
 
