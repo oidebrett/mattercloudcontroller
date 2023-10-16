@@ -3,7 +3,7 @@ FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
 ARG COMMITHASH=c1ec2d777456924dcaa59b53351b00d73caf378f
-ARG MCCCOMMITHASH=7d2ba22a5db64848fd4f850abda45162d7fe8ba0
+ARG MCCCOMMITHASH=76d727897d45912a4f43c3e282b301d0acc982e2
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
