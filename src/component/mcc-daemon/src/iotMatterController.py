@@ -917,7 +917,7 @@ async def startUpMatterServerTask():
 
 async def main():
     startUpMatterServer()
-    time.sleep(20)
+    time.sleep(30)
 
     try:
         # add the websocket client handler to the loop
