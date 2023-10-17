@@ -440,7 +440,7 @@ Alternatively, you can start the docker container without starting greengrass v2
 be useful if you want to run a shell and review the code in the container
 
 ```bash
-docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
+docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock  -v /data:/data -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
 ```
 
 # Preventing  docker image from overwriting the persistent storage
