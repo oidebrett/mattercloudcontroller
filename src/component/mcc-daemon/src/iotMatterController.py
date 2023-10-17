@@ -882,16 +882,22 @@ def startUpMatterServer():
 
         if process_name not in tmp[:]:
             lPrint("The process is not running. Let's restart.")
-            """"Use nohup to make sure it runs like a daemon"""
             # The location of the python-matter-server.
+            python_matter_server_dir = ''
             if (os.path.isfile('../python-matter-server/matter_server/server/server.py')):
-                current_dir = os. getcwd()
                 python_matter_server_dir = "../python-matter-server"
+            elif (os.path.isfile('/home/ggc_user/python-matter-server/matter_server/server/server.py')):
+                python_matter_server_dir = "/home/ggc_user/python-matter-server"
+
+            if python_matter_server_dir != '':
+                current_dir = os. getcwd()
                 os.chdir(python_matter_server_dir) #change to python matter server directory
                 newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
                 os.system(newprocess)
                 os.chdir(current_dir) #change back to original directory
                 time.sleep(20)
+            else:
+                lPrint("Check path of python-matter-server. If running locally in test mode make sure you are in the mattercloudcontroller directory.")
 
         else:
             lPrint("The process is running.")
