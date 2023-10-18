@@ -274,7 +274,8 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mat
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/python-matter-server python-matter-server
 RUN pip install aiohttp aiorun orjson 
 RUN mkdir /data
-RUN chown  -R $USERNAME:$GROUPNAME /data
+#RUN chown  -R $USERNAME:$GROUPNAME /data
+RUN chmod 777 /data
 
 #Stage 5: Set up the Greengrass v2 environment
 
@@ -283,7 +284,7 @@ RUN apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
 ## Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  jq unzip bluez vim && \
+  jq unzip bluez && \
   apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
 
 ## Install greengrassv2 dependencies

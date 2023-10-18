@@ -61,7 +61,6 @@ export class ThingComponent extends base.BaseConstruct {
                               "aws.greengrass#GetThingShadow",
                               "aws.greengrass#UpdateThingShadow",
                               "aws.greengrass#DeleteThingShadow",
-                              "aws.greengrass#ListNamedShadowsForThing",
                               "aws.greengrass#SubscribeToTopic"
                             ],
                             "resources": [
