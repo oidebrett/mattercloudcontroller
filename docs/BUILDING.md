@@ -443,6 +443,22 @@ be useful if you want to run a shell and review the code in the container
 docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock  -v /data:/data -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
 ```
 
+
+Run the following command to start the AWS IoT Greengrass Core software. If you run this command in a terminal, you must keep the terminal session open to keep the AWS IoT Greengrass Core software running.
+
+```bash
+sudo /greengrass/v2/alts/current/distro/bin/loader
+```
+
+It may be also useful to view the greengrass logs when starting the greengrass core software. You can do this by accessing the running docker container and then accessing the logs
+
+```bash
+docker container ls
+docker exec -it <CONTAINER ID> /bin/bash
+sudo tail -f /greengrass/v2/logs/MCCDev-mcc-daemon.log
+```
+
+
 # Preventing  docker image from overwriting the persistent storage
 
 We had 2 options:
