@@ -110,6 +110,10 @@ sys.path.append(curr_dir)
 sleep_time_in_sec = float(os.environ.get('SLEEP_TIME', '10'))
 stabilisation_time_in_sec = int(os.environ.get('STABLE_TIME', '10'))
 
+# Set up the retry count and retry timer (secs) for starting the python-matter-server
+MATTER_SERVER_RETRY_COUNT = 3
+MATTER_SERVER_STARTUP_BACKOFF_TIMER = 20
+
 RESPONSE_FORMAT = "json"
 TIMEOUT = 5
 MSG_TIMEOUT = f"Command timed out, limit of {TIMEOUT} seconds"
@@ -884,10 +888,12 @@ def startUpMatterServer():
             lPrint("The process is not running. Let's restart.")
             # The location of the python-matter-server.
             python_matter_server_dir = ''
-            if (os.path.isfile('../python-matter-server/matter_server/server/server.py')):
+            if (os.path.isfile(f'/home/ggc_user/python-matter-server/matter_server/server/server.py')):
+                #this is the location of the python server on the docker image
+                python_matter_server_dir = f'/home/ggc_user/python-matter-server'
+            elif (os.path.isfile('../python-matter-server/matter_server/server/server.py')):
+                #this is the location of the python server when testing locally
                 python_matter_server_dir = "../python-matter-server"
-            elif (os.path.isfile('/home/ggc_user/python-matter-server/matter_server/server/server.py')):
-                python_matter_server_dir = "/home/ggc_user/python-matter-server"
 
             if python_matter_server_dir != '':
                 current_dir = os. getcwd()
@@ -895,40 +901,23 @@ def startUpMatterServer():
                 newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
                 os.system(newprocess)
                 os.chdir(current_dir) #change back to original directory
-                time.sleep(20)
+                time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
             else:
                 lPrint("Check path of python-matter-server. If running locally in test mode make sure you are in the mattercloudcontroller directory.")
+                lPrint(os. getcwd())
 
         else:
             lPrint("The process is running.")
 
-async def startUpMatterServerTask():
-    lPrint('startUpMatterServerTask: Running')
-
-    # constantly check that matter server is working
-    while True:
-        startUpMatterServer()
-
-        # simulate i/o operation using sleep
-        await asyncio.sleep(random.random())
-
-    # all done
-    lPrint('startUpMatterServerTask: Done')
-
-async def main():
-    startUpMatterServer()
-    time.sleep(30)
+async def main(retryCount):
 
     try:
-        # add the websocket client handler to the loop
-            
+        # Lets first try to open the websocket as it might already be running via another docker container
+        # add the websocket client handler to the loop            
         async with aiohttp.ClientSession().ws_connect(URL) as ws:
             # 0 - the monitor task
             monitor_task = asyncio.create_task(monitorTasks())
 
-            #0.5 - the startUpMatterServerTask
-#            startup_task = asyncio.create_task(startUpMatterServerTask())
-            
             # 1 - the webserver task
             webserver_task = asyncio.create_task(webserverTask())
 
@@ -962,10 +951,21 @@ async def main():
                 session = aiohttp.ClientSession()
                 if not session.closed:
                     await session.close()
-                    await main()
+                    await main(0)
         
     except Exception as e:
         lPrint(f"Something went wrong: {str(e)}")
+        if str(e).__contains__("Cannot connect to host "):
+
+            if retryCount < MATTER_SERVER_RETRY_COUNT:
+                # Start the matter server
+                startUpMatterServer()
+                time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
+                await main(retryCount+1)
+            else:
+                raise Exception("Failed to connect to websocket for python-matter-server - we retried: ", retryCount)
+        else:
+            raise Exception("Failed in main start up")
 
 
 
@@ -982,7 +982,7 @@ def exitGracefully():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        asyncio.run(main(0))
     except KeyboardInterrupt:
         pass
     finally:
