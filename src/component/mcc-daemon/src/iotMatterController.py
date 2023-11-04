@@ -731,6 +731,20 @@ async def websocketListenTask(ws):
                             lPrint("Message Response with single node update")
                             #Update the node shadows
                             OnNodeChange(results["node_id"], results)
+                        elif (isinstance(results, list) and (len(results) > 0) and ("commissioningMode" in results[0])):
+                            lPrint("Message Response with discovery of commissionable nodes")
+                            #Here we are dealing with a commissioning response
+                            commissionableNodesJsonStr = json.dumps(results)    
+
+                            if not LOCAL_TEST:
+                                #set the device shadow for commissionableNodes
+                                shadowName = "commissionables"
+                                thingName = args.name
+                                newStr = '{"state": {"reported": { "list": '+commissionableNodesJsonStr+' }}}'
+                                #lPrint(newStr)
+                                update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
+                            else:
+                                pass
                         else:
                             #if we got a list of nodes we go here
                             for result in results:
@@ -741,20 +755,6 @@ async def websocketListenTask(ws):
                                         
                                         #Update the node shadows
                                         OnNodeChange(result["node_id"], result)
-                                    elif ("instanceName" in result) and ("pairingInstruction" in result):
-                                        #Here we are dealing with an update on all the node
-                                        lPrint("Message Response with discovery of commissionable nodes")
-                                        commissionableNodesJsonStr = json.dumps(result)
-                                        lPrint(commissionableNodesJsonStr)                                        
-                                        if not LOCAL_TEST:
-                                            #set the device shadow for commissionableNodes
-                                            shadowName = "commissionables"
-                                            thingName = args.name
-                                            newStr = '{"state": {"reported": '+commissionableNodesJsonStr+'}}'
-                                            #lPrint(newStr)
-                                            update_thing_shadow_request(thingName, shadowName, bytes(newStr, "utf-8"))
-                                        else:
-                                            pass
 
                                     elif "Path" in result:
                                         #Here we are dealing with an update on all the node

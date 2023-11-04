@@ -2,7 +2,7 @@
 FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
-ARG COMMITHASH=c1ec2d777456924dcaa59b53351b00d73caf378f
+ARG COMMITHASH=c49852a85368fe39e947ea4885cdead1d9352865
 ARG MCCCOMMITHASH=723dbd79eb99d7e5ad3b845a83fcbee40fee24e8
 
 # Ensure TARGETPLATFORM is set
@@ -274,8 +274,8 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mat
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/python-matter-server python-matter-server
 RUN pip install aiohttp aiorun orjson 
 RUN mkdir /data
-#RUN chown  -R $USERNAME:$GROUPNAME /data
-RUN chmod 777 /data
+RUN chown  -R $USERNAME:$GROUPNAME /data
+#RUN chmod 777 /data
 
 #Stage 5: Set up the Greengrass v2 environment
 
