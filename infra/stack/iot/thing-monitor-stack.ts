@@ -25,7 +25,7 @@ export class ThingMonitorStack extends base.BaseStack {
 
     // https://docs.aws.amazon.com/iot/latest/developerguide/registry-events.html
     private createIotRule(ruleName: string, topic: string, sns_topic: string) {
-        const sql = `SELECT topic(3) as thing_name, topic(6) as shadow_name FROM '$aws/things/+/shadow/name/+/${topic}'`;
+        const sql = `SELECT topic(3) as thing_name, topic(6) as shadow_name, state.reported as reported FROM '$aws/things/+/shadow/name/+/${topic}'`;
 
         const role = new iam.Role(this, `${ruleName}Role`, {
             roleName: `${this.projectPrefix}-${ruleName}Role`,
