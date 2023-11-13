@@ -26,6 +26,10 @@
             "BucketName": "gg-comp-upload",
             "BucketPrefix": "deployment"            
         },
+        "IotUpdateDB": {
+            "CodePath": "src/lambda/custom_iot_update_db",
+            "LambdaName": "gg-iot-update-db"
+        },
         "ComponentDeployment": {
             "Name": "ComponentDeploymentStack",
             "PublicComponents": [
@@ -72,7 +76,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.2.140",
+                "Version": "0.2.141",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-n mcc-thing-ver01-1 -c True"
             }

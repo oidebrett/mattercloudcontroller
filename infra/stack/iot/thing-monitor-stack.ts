@@ -47,7 +47,13 @@ export class ThingMonitorStack extends base.BaseStack {
             })
         );
 
-        SnsTopic.addSubscription(new subscriptions.UrlSubscription(this.stackConfig.WebhookUrl));
+        SnsTopic.addSubscription(new subscriptions.LambdaSubscription(new lambda.Function(this, `iot-update-db-${ruleName}`, {
+            functionName: `${this.projectPrefix}-iot-update-db-${ruleName}Function`,
+            code: lambda.Code.fromAsset('./src/lambda/custom_iot_update_db/src/gg-iot-update-db.zip'),
+            handler: 'handler.lambda_handler',
+            timeout: cdk.Duration.seconds(120),
+            runtime: lambda.Runtime.PYTHON_3_9,
+        })));
 
         new iot.CfnTopicRule(this, ruleName, {
             ruleName: `${this.projectPrefix.toLowerCase().replace('-', '_')}_${ruleName}`,
