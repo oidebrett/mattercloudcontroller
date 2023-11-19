@@ -30,7 +30,47 @@ def set_up_connection():
 	)
 	return conn
 
-def lambda_handler(event, context):
+def lambda_handler_thing_deleted(event, context):
+	print("lambda_handler_thing_deleted")
+	print(json.dumps(event))
+	#Create the postgres connection
+	global conn
+	conn = set_up_connection()
+
+	#print(json.dumps(event))
+	for record in event['Records']:
+			try:
+					message = json.dumps(record['Sns']['Message'])
+					#print(f"Processing message {message}")
+					jsonMessage = json.loads(record['Sns']['Message'])
+					thingName = jsonMessage['thing_name']
+					shadowName = jsonMessage['shadow_name']
+					nodeId = shadowName.split('_')[0]
+					endpointId = shadowName.split('_')[1]
+
+					deleteFromDb(thingName, nodeId)
+			except Exception as err:
+					print("An error occurred")
+					print(err)
+					conn.close()
+
+					# TODO implement
+					return {
+							'statusCode': 500,
+							'body': json.dumps('ERROR')
+					}
+					raise err
+
+	conn.close()
+
+	# TODO implement
+	return {
+			'statusCode': 200,
+			'body': json.dumps('OK')
+	}
+
+def lambda_handler_thing_updated(event, context):
+	print("lambda_handler_thing_updated")
 	print(json.dumps(event))
 	#Create the postgres connection
 	global conn
@@ -51,7 +91,7 @@ def lambda_handler(event, context):
 					attributes = jsonMessage['reported']
 					jsonEndpoints = attributes_to_json(attributes)
 					#print(f"Processing message {jsonEndpoints}")
-					controllerId = findControllerId(shadowName)
+					controllerId = findControllerId(thingName)
 					cacheToDb(controllerId, nodeId, jsonEndpoints)
 			except Exception as err:
 					print("An error occurred")
@@ -75,8 +115,8 @@ def lambda_handler(event, context):
 
 def findControllerId(thing_name):
 	cur = conn.cursor(cursor_factory = RealDictCursor)
-	val = (thing_name)
-	sql = "select id from \"Controller\" where \"name\"='mcc-thing-ver01-1'"
+	val = (thing_name,)
+	sql = "select id from \"Controller\" where \"name\"=%s"
 	cur.execute(sql,val)
 	result = cur.fetchone() #check the result
 	return result['id']
@@ -242,6 +282,38 @@ def attributes_to_json(attributes):
             data_dict[endpoint_key] = cluster_dict
     return data_dict
 
+def deleteFromDb(controllerName, id):
+	cur = conn.cursor(cursor_factory = RealDictCursor)
+
+	print("Trying to delete all attributes for Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Attribute\" where id in (select a.id FROM \"Attribute\" a JOIN \"Cluster\" c ON a.\"clusterId\"  = c.id JOIN \"Endpoint\" e ON c.\"endpointId\"  = e.id JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+	print("Trying to delete all clusters for Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Cluster\" where id in (SELECT c.id FROM \"Cluster\" c INNER JOIN \"Endpoint\" e ON c.\"endpointId\"  = e.id INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+	print("Trying to delete all endpoints for Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Endpoint\" where id in (SELECT e.id FROM \"Endpoint\" e INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+	print("Trying to delete Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Node\" where id in (SELECT n.id FROM \"Node\" n INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+
 def main_lambda_handler():
 
 
@@ -256,7 +328,10 @@ def main_lambda_handler():
 
 	jsonEndpoints = attributes_to_json(attributes)
 	print(json.dumps(jsonEndpoints))
-	cacheToDb(controllerId, 2, jsonEndpoints)
+	cacheToDb(controllerId, '2', jsonEndpoints)
+
+	deleteFromDb('mcc-thing-ver01-1', '2')
+
 	conn.close()
 
 

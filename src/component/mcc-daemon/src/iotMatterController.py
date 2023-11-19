@@ -564,9 +564,23 @@ def OnNodeChange(node_id, node_result)-> None:
 def OnEventChange(node_id, event_read_result)-> None:
     lPrint("Saw event change inside Cloud Controller! for node_id: "+ str(node_id))
     thing_name = args.name 
+    shadow_name = "events_" + str(node_id)
 
     if not LOCAL_TEST:
-        shadow_name = "events_" + str(node_id)
+
+        #We need to check if this is an event indicating a shutdown or a leave
+        if (event_read_result["event"] == 'node_event' 
+        and "cluster_id" in event_read_result["data"] 
+        and event_read_result["data"]['cluster_id'] == 40
+        and "event_id" in event_read_result["data"] 
+        and (event_read_result["data"]['event_id'] == 1 or event_read_result["data"]['event_id'] == 2)) :
+            lPrint("We need to remove the shadows:")
+            #Here we will remove the shadows
+            #TODO - we need to list the shadows so that we remove all endpoints            
+            delete_named_shadow_request(thing_name, shadow_name)
+            delete_named_shadow_request(thing_name, str(node_id) + "_0")
+            delete_named_shadow_request(thing_name, str(node_id) + "_1")
+
         #First read the existing events and then add to it
 
         #If we get an Exception its because we dont have an event list already
@@ -766,12 +780,19 @@ async def websocketListenTask(ws):
                                     pass
 
                 elif "event" in message_response:
-                    if (message_response["event"] == 'node_added' 
+                    lPrint(json.dumps(message_response))
+                    if (message_response["event"] == 'node_removed'):
+                        #if we have removed a node we need to delete the associated shadows
+                        node_id = message_response["data"]
+                        lPrint("we have removed a node")
+                        lPrint(node_id)
+                        pass
+                    elif (message_response["event"] == 'node_added' 
                         or message_response["event"] == 'node_updated'
-                        or message_response["event"] == 'node_removed'
                         or message_response["event"] == 'node_event'):
                         node_id = message_response["data"]['node_id']
-                        message_response['data'].pop('attributes') #Get rid of the attribute data as its too big for events shadow
+                        if "attributes" in message_response['data']:
+                            message_response['data'].pop('attributes') #Get rid of the attribute data as its too big for events shadow
                     else:
                         #This is an attribute change event so we will force
                         #an update of the node shadows by calling get_nodes

@@ -76,7 +76,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.2.141",
+                "Version": "0.2.151",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-n mcc-thing-ver01-1 -c True"
             }

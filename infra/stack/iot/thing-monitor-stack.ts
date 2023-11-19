@@ -15,17 +15,16 @@ export class ThingMonitorStack extends base.BaseStack {
         super(appContext, stackConfig);
 
         const ruleList: any[] = [
-//            { name: 'thing_created', topic: 'created', sns_topic: 'node_created' },
-            { name: 'thing_updated', topic: 'update/accepted', sns_topic: 'node_updated_topic_test' },
-            { name: 'thing_deleted', topic: 'deleted', sns_topic: 'node_deleted_topic_test' },
+            { name: 'thing_updated', topic: 'update/accepted', sns_topic: 'node_updated_topic_test', sql_fields: 'topic(3) as thing_name, topic(6) as shadow_name, state.reported as reported' },
+            { name: 'thing_deleted', topic: 'delete/accepted', sns_topic: 'node_deleted_topic_test', sql_fields: 'topic(3) as thing_name, topic(6) as shadow_name' },
         ];
 
-        ruleList.forEach((rule) => { this.createIotRule(rule.name, rule.topic, rule.sns_topic) });
+        ruleList.forEach((rule) => { this.createIotRule(rule.name, rule.topic, rule.sns_topic, rule.sql_fields) });
     }
 
     // https://docs.aws.amazon.com/iot/latest/developerguide/registry-events.html
-    private createIotRule(ruleName: string, topic: string, sns_topic: string) {
-        const sql = `SELECT topic(3) as thing_name, topic(6) as shadow_name, state.reported as reported FROM '$aws/things/+/shadow/name/+/${topic}'`;
+    private createIotRule(ruleName: string, topic: string, sns_topic: string, sql_fields: string) {
+        const sql = `SELECT ${sql_fields} FROM '$aws/things/+/shadow/name/+/${topic}'`;
 
         const role = new iam.Role(this, `${ruleName}Role`, {
             roleName: `${this.projectPrefix}-${ruleName}Role`,
@@ -50,7 +49,7 @@ export class ThingMonitorStack extends base.BaseStack {
         SnsTopic.addSubscription(new subscriptions.LambdaSubscription(new lambda.Function(this, `iot-update-db-${ruleName}`, {
             functionName: `${this.projectPrefix}-iot-update-db-${ruleName}Function`,
             code: lambda.Code.fromAsset('./src/lambda/custom_iot_update_db/src/gg-iot-update-db.zip'),
-            handler: 'handler.lambda_handler',
+            handler: `handler.lambda_handler_${ruleName}`,
             timeout: cdk.Duration.seconds(120),
             runtime: lambda.Runtime.PYTHON_3_9,
         })));
