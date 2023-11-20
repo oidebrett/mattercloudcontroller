@@ -1,11 +1,11 @@
 {
   "app": "npx ts-node --prefer-ts-exts infra/app-main.ts",
   "context": {
-    "aws-cdk:enableDiffNoFail": "true",
-    "@aws-cdk/core:stackRelativeExports": "true",
-    "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
-    "@aws-cdk/aws-secretsmanager:parseOwnedSecretName": true,
-    "@aws-cdk/aws-kms:defaultKeyPolicies": true,
-    "@aws-cdk/aws-s3:grantWriteWithoutAcl": true
+    "aws-cdk-lib:enableDiffNoFail": "true",
+    "aws-cdk-lib:stackRelativeExports": "true",
+    "aws-cdk-lib/aws-ecr-assets:dockerIgnoreSupport": true,
+    "aws-cdk-lib/aws-secretsmanager:parseOwnedSecretName": true,
+    "aws-cdk-lib/aws-kms:defaultKeyPolicies": true,
+    "aws-cdk-lib/aws-s3:grantWriteWithoutAcl": true
   }
 }

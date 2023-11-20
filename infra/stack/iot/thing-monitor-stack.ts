@@ -1,10 +1,10 @@
-import * as cdk from '@aws-cdk/core';
-import * as iot from '@aws-cdk/aws-iot';
-import * as iam from '@aws-cdk/aws-iam';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as cr from '@aws-cdk/custom-resources';
-import * as sns from '@aws-cdk/aws-sns';
-import * as subscriptions from '@aws-cdk/aws-sns-subscriptions'
+import * as cdk from 'aws-cdk-lib';
+import * as iot from 'aws-cdk-lib/aws-iot';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions'
 
 import * as base from '../../../lib/template/stack/base/base-stack';
 import { AppContext } from '../../../lib/template/app-context';
@@ -51,7 +51,7 @@ export class ThingMonitorStack extends base.BaseStack {
             code: lambda.Code.fromAsset('./src/lambda/custom_iot_update_db/src/gg-iot-update-db.zip'),
             handler: `handler.lambda_handler_${ruleName}`,
             timeout: cdk.Duration.seconds(120),
-            runtime: lambda.Runtime.PYTHON_3_9,
+            runtime: lambda.Runtime.PYTHON_3_10,
         })));
 
         new iot.CfnTopicRule(this, ruleName, {

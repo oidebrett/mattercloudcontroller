@@ -1,8 +1,9 @@
-import cdk = require('@aws-cdk/core');
-import lambda = require('@aws-cdk/aws-lambda');
-import * as iam from '@aws-cdk/aws-iam';
-import * as s3 from '@aws-cdk/aws-s3';
-import { S3EventSource } from '@aws-cdk/aws-lambda-event-sources';
+import cdk = require('aws-cdk-lib');
+import lambda = require('aws-cdk-lib/aws-lambda');
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import { S3EventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { Construct } from 'constructs';
 
 export interface LambdaPatternConstructProps {
   projectFullName: string;
@@ -18,11 +19,11 @@ export interface LambdaPatternConstructProps {
   bucketSuffix?: string[];
 }
 
-export class LambdaPatternConstruct extends cdk.Construct {
+export class LambdaPatternConstruct extends Construct {
   public readonly lambdaFunction: lambda.Function;
   public readonly lambdaRole: iam.Role;
 
-  constructor(scope: cdk.Construct, id: string, props: LambdaPatternConstructProps) {
+  constructor(scope: Construct, id: string, props: LambdaPatternConstructProps) {
     super(scope, id);
 
     const lambdaName: string = `${props.projectFullName}-${props.baseName}-Lambda`;
