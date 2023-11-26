@@ -125,20 +125,44 @@ def cacheToDb(controllerId, id, endpoints):
 	cur = conn.cursor(cursor_factory = RealDictCursor)
 
 	print("Trying to find Node Id: %s and updating its timestamp: " % id)
+
 	val = (id, controllerId)
+	#we will adjust the historyBitmap
+	# 1) first we work out what is the next most significant bit after this number
+    #    - Math.pow(2,Math.ceil(Math.log(historyBitmap+1)/Math.log(2))) //e.g. 5 = 101 so next bit is 8 since we want 1000
+    # 2) then we make an adjustment for the number of days since the last update
+    #    - Math.pow(2,daysSinceUpdate-1)  // e.g. if its been 2 days since the last update adjustment = 2^1 = 2
+	# 3) then we multiply the nextBit by the adjustment and add this to the currentBitmap
+    #	- nextBit*adjustment+currentBitmap // e.g. we multiply 8 by 2 to get 16 and add the current bitmap of 5 so we get 21 or 10101
+	# 4) Finally, we need to stop this getting too big so divide by 2 after going over 30 days
+				
+	sql = "UPDATE \"Node\" SET \"historyBitmap\" = power(2,ceil(log(\"historyBitmap\"+1)/log(2)))*pow(2,(DATE(now()) - DATE(\"createdAt\"))-1)+\"historyBitmap\" WHERE (DATE(now())  - DATE(\"createdAt\")) > 0 and \"name\"=%s and \"controllerId\"=%s"
+	print(sql % val)
+	cur.execute(sql,val)
+	conn.commit()
+
+	sql = "UPDATE \"Node\" SET \"historyBitmap\" = floor(\"historyBitmap\"/2) WHERE \"historyBitmap\" > power(2,31) and \"name\"=%s and \"controllerId\"=%s"
+	print(sql % val)
+	cur.execute(sql,val)
+	conn.commit()
+	#we will adjust the historyBitmap
+
+	#we will adjust the datestamp
 	sql = "UPDATE \"Node\" SET \"createdAt\"='now()' WHERE \"name\"=%s and \"controllerId\"=%s RETURNING id"
+	print(sql % val)
 	cur.execute(sql,val)
 	result = cur.fetchone() #check the result
 	if (result is None):
 		# We dont already have a Node - now create one
 		print("Inserting Node: %s for controllerId: %s " % (id, controllerId))
 		val = (id, id, controllerId)
-		sql = "INSERT into \"Node\" (\"name\", body, \"controllerId\") VALUES(%s,%s,%s) RETURNING id"
+		sql = "INSERT into \"Node\" (\"name\", body, \"controllerId\", \"historyBitmap\") VALUES(%s,%s,%s,1) RETURNING id"
 		cur.execute(sql,val)
 		id = cur.fetchone()["id"]
 		#print(id)
 	else:
 		id = result["id"]
+
 		#print(id)
 
 	conn.commit()
@@ -189,7 +213,7 @@ def cacheToDb(controllerId, id, endpoints):
 			#print(clusterInputData)
 			val = (clusterInputData['body'],cluster,endpointId)
 			sql = "UPDATE \"Cluster\" SET \"createdAt\"='now()' , body= %s WHERE \"name\"=%s and \"endpointId\"=%s RETURNING id"
-			#print(sql % val)
+			print(sql % val)
 			cur.execute(sql,val)
 			result = cur.fetchone() #check the result
 			if (result is None):
@@ -231,7 +255,7 @@ def cacheToDb(controllerId, id, endpoints):
 				#print(attributeInputData)
 				val = (attributeInputData['body'],attribute,clusterId)
 				sql = "UPDATE \"Attribute\" SET \"createdAt\"='now()' , body= %s WHERE \"name\"=%s and \"clusterId\"=%s RETURNING id"
-				#print(sql % val)
+				print(sql % val)
 				cur.execute(sql,val)
 				result = cur.fetchone() #check the result
 				if (result is None):
