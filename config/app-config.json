@@ -35,13 +35,13 @@
             "PublicComponents": [
                 {
                     "Name": "aws.greengrass.Nucleus",
-                    "Version": "2.6.0",
+                    "Version": "2.11.3",
                     "ConfigurationUpdate": {
                     }
                 },
                 {
                     "Name": "aws.greengrass.ShadowManager",
-                    "Version": "2.2.0",
+                    "Version": "2.3.4",
                     "ConfigurationUpdate": {
                         "synchronize":{
                             "coreThing":{
@@ -49,17 +49,25 @@
                                 "namedShadows": [
                                   "commissionables",
                                   "events_1",
-                                  "events_2",
-                                  "events_3",
                                   "1_0",
                                   "1_1",
                                   "1_2",
+                                  "events_2",
                                   "2_0",
                                   "2_1",
                                   "2_2",
+                                  "events_3",
                                   "3_0",
                                   "3_1",
-                                  "3_2"
+                                  "3_2",
+                                  "events_4",
+                                  "4_0",
+                                  "4_1",
+                                  "4_2",
+                                  "events_5",
+                                  "5_0",
+                                  "5_1",
+                                  "5_2"
                                 ]
                             },
                             "shadowDocuments": []
@@ -76,7 +84,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.2.152",
+                "Version": "0.2.215",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-n mcc-thing-ver01-1 -c True"
             }

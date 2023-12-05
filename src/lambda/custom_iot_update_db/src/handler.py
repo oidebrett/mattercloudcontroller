@@ -84,15 +84,20 @@ def lambda_handler_thing_updated(event, context):
 					jsonMessage = json.loads(record['Sns']['Message'])
 					thingName = jsonMessage['thing_name']
 					shadowName = jsonMessage['shadow_name']
-					nodeId = shadowName.split('_')[0]
-					endpointId = shadowName.split('_')[1]
 
-					# Iterate through the object
-					attributes = jsonMessage['reported']
-					jsonEndpoints = attributes_to_json(attributes)
-					#print(f"Processing message {jsonEndpoints}")
-					controllerId = findControllerId(thingName)
-					cacheToDb(controllerId, nodeId, jsonEndpoints)
+					if (shadowName.includes("events")):
+						nodeId = shadowName.split('_')[1]
+						continue #lets leave here for now as we dont handle events updates in the lambda yet
+					else:
+						nodeId = shadowName.split('_')[0]
+						endpointId = shadowName.split('_')[1]
+
+						# Iterate through the object
+						attributes = jsonMessage['reported']
+						jsonEndpoints = attributes_to_json(attributes)
+						#print(f"Processing message {jsonEndpoints}")
+						controllerId = findControllerId(thingName)
+						cacheToDb(controllerId, nodeId, jsonEndpoints)
 			except Exception as err:
 					print("An error occurred")
 					print(err)
@@ -326,6 +331,13 @@ def deleteFromDb(controllerName, id):
 	print("Trying to delete all endpoints for Node Id: %s : " % id)
 	val = (id, controllerName)
 	sql = "delete from \"Endpoint\" where id in (SELECT e.id FROM \"Endpoint\" e INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+	print("Trying to delete all events for Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Event\" where id in (SELECT e.id FROM \"Event\" e INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
 	cur.execute(sql,val)
 
 	conn.commit()

@@ -22,6 +22,17 @@ export class ThingMonitorStack extends base.BaseStack {
         ruleList.forEach((rule) => { this.createIotRule(rule.name, rule.topic, rule.sns_topic, rule.sql_fields) });
     }
 
+    // We need to add a new rule to here to cover the update document rules
+    /*
+
+SQL statement
+SELECT topic(3) as thing_name, topic(6) as shadow_name, previous as previous, current as current FROM '$aws/things/+/shadow/name/+/update/documents'
+
+SNS topic: node_updated_topic
+HTTPS: https://matterdashboard.netlify.app/.netlify/functions/shadowUpdateWebhook
+
+    */
+
     // https://docs.aws.amazon.com/iot/latest/developerguide/registry-events.html
     private createIotRule(ruleName: string, topic: string, sns_topic: string, sql_fields: string) {
         const sql = `SELECT ${sql_fields} FROM '$aws/things/+/shadow/name/+/${topic}'`;
