@@ -75,6 +75,7 @@ parser.add_argument("-m", "--monitor", help="monitor and trace the loops", actio
 parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=100)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", action="store", default="False")
+parser.add_argument("-p", "--pythonserver", help="true to auto start the python matter server", action="store", default="False")
 parser.add_argument("--log-level", type=str, default="info", help="Provide logging level. Example --log-level debug, default=info, possible=(critical, error, warning, info, debug)")
 
 #Set up the variables from the arguments (and defaults)
@@ -89,6 +90,8 @@ MAX_EVENTS = args.maxevents
 THING_NAME = args.name
 MONITOR_ARG = args.monitor
 MONITOR = MONITOR_ARG.lower() == 'true'
+PYTHONSERVER_ARG = args.pythonserver
+PYTHONSERVER_ARG = PYTHONSERVER_ARG.lower() == 'true'
 
 #Set up the Websocket client details
 HOST='127.0.0.1' 
@@ -426,7 +429,7 @@ def get_thing_shadow_request(thing_name, shadow_name):
 #Set the local shadow using the IPC
 def update_thing_shadow_request(thing_name, shadow_name, payload):
     lPrint("in update_thing_shadow_request")
-    #lPrint(payload)
+    lPrint(payload)
     try:
         # set up IPC client to connect to the IPC server
         client = GreengrassCoreIPCClientV2()
@@ -539,7 +542,7 @@ def filterNodesByEndpoint(node_result, endpoint_id):
     filtered_results["attributes"] = attributes
     return attributes
 
-def OnNodeChange(node_id, node_result)-> None:
+async def OnNodeChange(node_id, node_result)-> None:
     lPrint("Saw node change inside Cloud Controller! for node_id: "+ str(node_id))
     thing_name = args.name 
 
@@ -560,6 +563,23 @@ def OnNodeChange(node_id, node_result)-> None:
         #we need to subscrive to any deltas
         subscribe_to_shadow_deltas(thing_name)
         pass
+
+
+    lPrint("we will subscribe to attribute changes")
+    #This is a node event so we will 
+    #subscribe to the attribute changes for this noide
+    rand_message_id = str(random.randint(1, 9999999) )
+    message_object = {
+        "message_id": rand_message_id,
+        "command": "subscribe_attribute",
+        "args": {
+            "node_id": node_id,
+            "attribute_path": str(node_id)+"/*/*"
+        }
+    }
+    #lPrint(json.dumps(message_object))
+    # add to the queue
+    await queue.put(json.dumps(message_object))
 
 def OnEventChange(node_id, event_read_result)-> None:
     lPrint("Saw event change inside Cloud Controller! for node_id: "+ str(node_id))
@@ -607,6 +627,9 @@ def OnEventChange(node_id, event_read_result)-> None:
         newStr = json.dumps(prevEvents)
 
         #Calling update thing shadow request for events
+        lPrint("updating error thing shadow:")
+        lPrint(newStr)
+
         result = update_thing_shadow_request(thing_name, shadow_name, bytes(newStr, "utf-8"))
 
 def subscribe_to_shadow_deltas(thing_name):
@@ -707,7 +730,8 @@ async def websocketListenTask(ws):
             if msg.type == aiohttp.WSMsgType.TEXT:
                 message_response = msg.json()
                 # Here we will look for the type of message (event,message response or start up message)
-            
+                #lPrint(message_response)
+
                 # Look for start up message like this 
                 # {"fabric_id": 1, "compressed_fabric_id": 7869426522387137316, 
                 # "schema_version": 4, "min_supported_schema_version": 2, "sdk_version": "0.0.0", 
@@ -738,18 +762,24 @@ async def websocketListenTask(ws):
                     if (not isinstance(message_response["result"], type(None))):
                         results = message_response["result"]
 
+                        #Check if the results are for a single True or Fase
+                        if isinstance(results, bool):
+                            #if we got a single then go here
+                            lPrint("Message Response with single attribute")
+
                         #Check if the results are for a single node (dict) or
                         #list of nodes (array)
-                        if isinstance(results, dict):
+                        elif isinstance(results, dict):
                             #if we got a single then go here
                             lPrint("Message Response with single node update")
                             #Update the node shadows
-                            OnNodeChange(results["node_id"], results)
+                            await OnNodeChange(results["node_id"], results)
                         elif (isinstance(results, list) and (len(results) > 0) and ("commissioningMode" in results[0])):
                             lPrint("Message Response with discovery of commissionable nodes")
                             #Here we are dealing with a commissioning response
                             commissionableNodesJsonStr = json.dumps(results)    
 
+                            lPrint('{"state": {"reported": { "list": '+commissionableNodesJsonStr+' }}}')
                             if not LOCAL_TEST:
                                 #set the device shadow for commissionableNodes
                                 shadowName = "commissionables"
@@ -768,7 +798,7 @@ async def websocketListenTask(ws):
                                         lPrint("Message Response with nodes update")
                                         
                                         #Update the node shadows
-                                        OnNodeChange(result["node_id"], result)
+                                        await OnNodeChange(result["node_id"], result)
 
                                     elif "Path" in result:
                                         #Here we are dealing with an update on all the node
@@ -780,7 +810,7 @@ async def websocketListenTask(ws):
                                     pass
 
                 elif "event" in message_response:
-                    lPrint(json.dumps(message_response))
+                    #lPrint(json.dumps(message_response))
                     if (message_response["event"] == 'node_removed'):
                         #if we have removed a node we need to delete the associated shadows
                         node_id = message_response["data"]
@@ -793,6 +823,9 @@ async def websocketListenTask(ws):
                         node_id = message_response["data"]['node_id']
                         if "attributes" in message_response['data']:
                             message_response['data'].pop('attributes') #Get rid of the attribute data as its too big for events shadow
+                        if "data" in message_response['data']:
+                            message_response['data'].pop('data') #Get rid of the data data as its too big for events shadow
+
                     else:
                         #This is an attribute change event so we will force
                         #an update of the node shadows by calling get_nodes
@@ -919,7 +952,10 @@ def startUpMatterServer():
             if python_matter_server_dir != '':
                 current_dir = os. getcwd()
                 os.chdir(python_matter_server_dir) #change to python matter server directory
-                newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
+                if LOCAL_TEST:
+                    newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
+                else:
+                    newprocess="python3 -m %s --storage-path=/data &" % (process_name)
                 os.system(newprocess)
                 os.chdir(current_dir) #change back to original directory
                 time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
@@ -978,13 +1014,16 @@ async def main(retryCount):
         lPrint(f"Something went wrong: {str(e)}")
         if str(e).__contains__("Cannot connect to host "):
 
-            if retryCount < MATTER_SERVER_RETRY_COUNT:
-                # Start the matter server
-                startUpMatterServer()
-                time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
-                await main(retryCount+1)
+            if PYTHONSERVER_ARG:
+                if retryCount < MATTER_SERVER_RETRY_COUNT:
+                    # Start the matter server
+                    startUpMatterServer()
+                    time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
+                    await main(retryCount+1)
+                else:
+                    raise Exception("Failed to connect to websocket for python-matter-server - we retried: ", retryCount)
             else:
-                raise Exception("Failed to connect to websocket for python-matter-server - we retried: ", retryCount)
+                raise Exception("Failed to connect to websocket for python-matter-server - did you start it?")
         else:
             raise Exception("Failed in main start up")
 

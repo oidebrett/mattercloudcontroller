@@ -40,7 +40,7 @@ def lambda_handler_thing_deleted(event, context):
 	#print(json.dumps(event))
 	for record in event['Records']:
 			try:
-					message = json.dumps(record['Sns']['Message'])
+					#message = json.dumps(record['Sns']['Message'])
 					#print(f"Processing message {message}")
 					jsonMessage = json.loads(record['Sns']['Message'])
 					thingName = jsonMessage['thing_name']
@@ -79,20 +79,25 @@ def lambda_handler_thing_updated(event, context):
 	#print(json.dumps(event))
 	for record in event['Records']:
 			try:
-					message = json.dumps(record['Sns']['Message'])
+					#message = json.dumps(record['Sns']['Message'])
 					#print(f"Processing message {message}")
 					jsonMessage = json.loads(record['Sns']['Message'])
 					thingName = jsonMessage['thing_name']
 					shadowName = jsonMessage['shadow_name']
-					nodeId = shadowName.split('_')[0]
-					endpointId = shadowName.split('_')[1]
 
-					# Iterate through the object
-					attributes = jsonMessage['reported']
-					jsonEndpoints = attributes_to_json(attributes)
-					#print(f"Processing message {jsonEndpoints}")
-					controllerId = findControllerId(thingName)
-					cacheToDb(controllerId, nodeId, jsonEndpoints)
+					if ("events" in shadowName):
+						nodeId = shadowName.split('_')[1]
+						continue #lets leave here for now as we dont handle events updates in the lambda yet
+					else:
+						nodeId = shadowName.split('_')[0]
+						endpointId = shadowName.split('_')[1]
+
+						# Iterate through the object
+						attributes = jsonMessage['reported']
+						jsonEndpoints = attributes_to_json(attributes)
+						#print(f"Processing message {jsonEndpoints}")
+						controllerId = findControllerId(thingName)
+						cacheToDb(controllerId, nodeId, jsonEndpoints)
 			except Exception as err:
 					print("An error occurred")
 					print(err)
@@ -125,20 +130,44 @@ def cacheToDb(controllerId, id, endpoints):
 	cur = conn.cursor(cursor_factory = RealDictCursor)
 
 	print("Trying to find Node Id: %s and updating its timestamp: " % id)
+
 	val = (id, controllerId)
+	#we will adjust the historyBitmap
+	# 1) first we work out what is the next most significant bit after this number
+    #    - Math.pow(2,Math.ceil(Math.log(historyBitmap+1)/Math.log(2))) //e.g. 5 = 101 so next bit is 8 since we want 1000
+    # 2) then we make an adjustment for the number of days since the last update
+    #    - Math.pow(2,daysSinceUpdate-1)  // e.g. if its been 2 days since the last update adjustment = 2^1 = 2
+	# 3) then we multiply the nextBit by the adjustment and add this to the currentBitmap
+    #	- nextBit*adjustment+currentBitmap // e.g. we multiply 8 by 2 to get 16 and add the current bitmap of 5 so we get 21 or 10101
+	# 4) Finally, we need to stop this getting too big so divide by 2 after going over 30 days
+				
+	sql = "UPDATE \"Node\" SET \"historyBitmap\" = power(2,ceil(log(\"historyBitmap\"+1)/log(2)))*pow(2,(DATE(now()) - DATE(\"createdAt\"))-1)+\"historyBitmap\" WHERE (DATE(now())  - DATE(\"createdAt\")) > 0 and \"name\"=%s and \"controllerId\"=%s"
+	print(sql % val)
+	cur.execute(sql,val)
+	conn.commit()
+
+	sql = "UPDATE \"Node\" SET \"historyBitmap\" = floor(\"historyBitmap\"/2) WHERE \"historyBitmap\" > power(2,31) and \"name\"=%s and \"controllerId\"=%s"
+	print(sql % val)
+	cur.execute(sql,val)
+	conn.commit()
+	#we will adjust the historyBitmap
+
+	#we will adjust the datestamp
 	sql = "UPDATE \"Node\" SET \"createdAt\"='now()' WHERE \"name\"=%s and \"controllerId\"=%s RETURNING id"
+	print(sql % val)
 	cur.execute(sql,val)
 	result = cur.fetchone() #check the result
 	if (result is None):
 		# We dont already have a Node - now create one
 		print("Inserting Node: %s for controllerId: %s " % (id, controllerId))
 		val = (id, id, controllerId)
-		sql = "INSERT into \"Node\" (\"name\", body, \"controllerId\") VALUES(%s,%s,%s) RETURNING id"
+		sql = "INSERT into \"Node\" (\"name\", body, \"controllerId\", \"historyBitmap\") VALUES(%s,%s,%s,1) RETURNING id"
 		cur.execute(sql,val)
 		id = cur.fetchone()["id"]
 		#print(id)
 	else:
 		id = result["id"]
+
 		#print(id)
 
 	conn.commit()
@@ -189,7 +218,7 @@ def cacheToDb(controllerId, id, endpoints):
 			#print(clusterInputData)
 			val = (clusterInputData['body'],cluster,endpointId)
 			sql = "UPDATE \"Cluster\" SET \"createdAt\"='now()' , body= %s WHERE \"name\"=%s and \"endpointId\"=%s RETURNING id"
-			#print(sql % val)
+			print(sql % val)
 			cur.execute(sql,val)
 			result = cur.fetchone() #check the result
 			if (result is None):
@@ -231,7 +260,7 @@ def cacheToDb(controllerId, id, endpoints):
 				#print(attributeInputData)
 				val = (attributeInputData['body'],attribute,clusterId)
 				sql = "UPDATE \"Attribute\" SET \"createdAt\"='now()' , body= %s WHERE \"name\"=%s and \"clusterId\"=%s RETURNING id"
-				#print(sql % val)
+				print(sql % val)
 				cur.execute(sql,val)
 				result = cur.fetchone() #check the result
 				if (result is None):
@@ -302,6 +331,13 @@ def deleteFromDb(controllerName, id):
 	print("Trying to delete all endpoints for Node Id: %s : " % id)
 	val = (id, controllerName)
 	sql = "delete from \"Endpoint\" where id in (SELECT e.id FROM \"Endpoint\" e INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
+	cur.execute(sql,val)
+
+	conn.commit()
+
+	print("Trying to delete all events for Node Id: %s : " % id)
+	val = (id, controllerName)
+	sql = "delete from \"Event\" where id in (SELECT e.id FROM \"Event\" e INNER JOIN \"Node\" n ON e.\"nodeId\" = n.id INNER JOIN \"Controller\" co ON n.\"controllerId\" = co.id WHERE n.\"name\" = %s AND co.name = %s)"
 	cur.execute(sql,val)
 
 	conn.commit()

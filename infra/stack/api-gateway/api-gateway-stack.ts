@@ -1,12 +1,13 @@
-import * as cdk from '@aws-cdk/core';
-import * as api from '@aws-cdk/aws-apigateway';
-import * as iam from '@aws-cdk/aws-iam';
-import * as logs from '@aws-cdk/aws-logs';
+import * as cdk from 'aws-cdk-lib';
+import * as api from 'aws-cdk-lib/aws-apigateway';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as base from '../../../lib/template/stack/base/base-stack';
 import { AppContext } from '../../../lib/template/app-context';
-import { Construct } from '@aws-cdk/core';
+import { Construct } from 'constructs';
+
 import * as deepmerge from 'deepmerge';
-import { IRole } from '@aws-cdk/aws-iam';
+import { IRole } from 'aws-cdk-lib/aws-iam';
 
 export class ApiGatewayDeploymentStack extends base.BaseStack {
     
