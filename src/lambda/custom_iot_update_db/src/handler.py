@@ -40,7 +40,7 @@ def lambda_handler_thing_deleted(event, context):
 	#print(json.dumps(event))
 	for record in event['Records']:
 			try:
-					message = json.dumps(record['Sns']['Message'])
+					#message = json.dumps(record['Sns']['Message'])
 					#print(f"Processing message {message}")
 					jsonMessage = json.loads(record['Sns']['Message'])
 					thingName = jsonMessage['thing_name']
@@ -79,13 +79,13 @@ def lambda_handler_thing_updated(event, context):
 	#print(json.dumps(event))
 	for record in event['Records']:
 			try:
-					message = json.dumps(record['Sns']['Message'])
+					#message = json.dumps(record['Sns']['Message'])
 					#print(f"Processing message {message}")
 					jsonMessage = json.loads(record['Sns']['Message'])
 					thingName = jsonMessage['thing_name']
 					shadowName = jsonMessage['shadow_name']
 
-					if (shadowName.includes("events")):
+					if ("events" in shadowName):
 						nodeId = shadowName.split('_')[1]
 						continue #lets leave here for now as we dont handle events updates in the lambda yet
 					else:
