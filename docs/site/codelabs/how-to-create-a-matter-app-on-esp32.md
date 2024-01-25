@@ -142,12 +142,16 @@ The currently logged user should have read and write access the serial port over
 sudo usermod -a -G dialout $USER
 ```
 
-6. Finally, you will then flash the image on to the ESP32. But its good practice to erase the flash before hand
+6. You will then flash the image on to the ESP32. But its good practice to erase the flash before hand.
 
 ```shell
 idf.py -p /dev/ttyUSB0 erase_flash
 idf.py -p /dev/ttyUSB0 flash monitor 
 ```
+
+7. Finally, you will create a circuit with an LED connected to GPIO5 that will indicate the status of the light.
+
+![ESP32 LED circuit](assets/esp32-lighting-circuit.png)
 
 <!-- ------------------------ -->
 ## Basic testing with ESP32 sample app and chip-tool
