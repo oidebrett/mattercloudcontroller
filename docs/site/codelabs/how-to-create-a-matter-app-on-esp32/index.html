@@ -138,11 +138,15 @@ idf.py set-target esp32
 <pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
 </code></pre>
 <ol type="1" start="6">
-<li>Finally, you will then flash the image on to the ESP32. But its good practice to erase the flash before hand</li>
+<li>You will then flash the image on to the ESP32. But its good practice to erase the flash before hand.</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
 idf.py -p /dev/ttyUSB0 flash monitor 
 </code></pre>
+<ol type="1" start="7">
+<li>Finally, you will create a circuit with an LED connected to GPIO5 that will indicate the status of the light.</li>
+</ol>
+<p class="image-container"><img alt="ESP32 LED circuit" src="img/4beea08f0c436b58.png"></p>
 
 
       </google-codelab-step>
