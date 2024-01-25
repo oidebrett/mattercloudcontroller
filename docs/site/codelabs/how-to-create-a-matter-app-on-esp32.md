@@ -191,10 +191,7 @@ If everything is working you should see output logs and you should see that the 
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 ```
 
-4. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple 
-interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details 
-of the "interaction model" and "data model" of Matter in later codelabs. But for now, we will do some simple 
-interactions/
+4. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the "interaction model" and "data model" of Matter in later codelabs. But for now, we will do some simple interactions.
 
 In the same shell window, we will read the vendor-name of the Matter accessory using the following command:
 
@@ -227,7 +224,14 @@ In the output logs, you should see the UpTime
 [1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
 ```
 
-8. You can find out the other different clusters that are supported by the chip-tool by running:
+8. We can control the status of the Matter light using the onoff cluster:
+```shell
+./out/chip-tool onoff toggle 1 1
+```
+
+On the circuit board, you should see the Light turn on and off everytime you run this command.
+
+9. You can find out the other different clusters that are supported by the chip-tool by running:
 ```shell
 ./out/chip-tool 
 ```
