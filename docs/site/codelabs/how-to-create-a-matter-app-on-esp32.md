@@ -125,6 +125,16 @@ cd examples/lighting-app/esp32/
 idf.py set-target esp32
 ```
 
+2.1. We will confirm the esp build configuration using the idf.py menuconfig command
+
+```shell
+idf.py menuconfig
+```
+
+Navigate into the demo option and confirm the board type and LED GPIO pin. You should see something like this:
+
+![idfpymenuconfig](assets/idfpy_menuconfig.JPG)
+
 3. We then can build the required sample apps using the following commands
 
 ```shell
