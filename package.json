@@ -21,18 +21,9 @@
     "typescript": "~3.9.7"
   },
   "dependencies": {
-    "@aws-cdk/aws-apigateway": "^1.173.0",
-    "@aws-cdk/aws-greengrassv2": "1.173.0",
-    "@aws-cdk/aws-iot": "1.173.0",
-    "@aws-cdk/aws-lambda": "1.173.0",
-    "@aws-cdk/aws-lambda-event-sources": "1.173.0",
-    "@aws-cdk/aws-s3": "1.173.0",
-    "@aws-cdk/aws-s3-deployment": "1.173.0",
-    "@aws-cdk/aws-sns": "^1.173.0",
-    "@aws-cdk/aws-sns-subscriptions": "^1.173.0",
-    "@aws-cdk/core": "1.173.0",
-    "@aws-cdk/custom-resources": "1.173.0",
+    "aws-cdk-lib": "^2.110.0",
     "cdk": "^2.15.0",
+    "constructs": "^10.3.0",
     "deepmerge": "^4.2.2",
     "env-var": "6.3.0",
     "lodash": ">=4.17.21"

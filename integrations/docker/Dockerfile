@@ -2,13 +2,8 @@
 FROM ubuntu:22.04 as chip-build-cert
 ARG TARGETPLATFORM
 # COMMITHASH defines the target commit to build from. May be passed in using --build-arg.
-ARG COMMITHASH=e217219c075e6dbf115568c225023b1717f41d92
-ARG MCCCOMMITHASH=74e09d956c01b00995516ca68aea6cddb47dc8a0
-
-# ZAP Development install, so that it runs on both x64 and arm64
-# Generally this should match with the ZAP version that is used for codegen within the
-# specified SHA
-ARG ZAP_VERSION=v2023.05.22-nightly
+ARG COMMITHASH=c49852a85368fe39e947ea4885cdead1d9352865
+ARG MCCCOMMITHASH=723dbd79eb99d7e5ad3b845a83fcbee40fee24e8
 
 # Ensure TARGETPLATFORM is set
 RUN case ${TARGETPLATFORM} in \
@@ -78,7 +73,7 @@ RUN set -x \
     net-tools \
     ninja-build \
     openjdk-8-jdk \
-   pkg-config \
+    pkg-config \
     python3 \
     python3-dev \
     python3-venv \
@@ -157,44 +152,6 @@ RUN set -x \
 #    && rm -rf bloaty \
 #    && : # last line
 
-# NodeJS: install a newer version than what apt-get would read
-# This installs the latest LTS version of nodejs
-RUN case ${TARGETPLATFORM} in \
-        "linux/amd64") \
-            set -x \
-            && mkdir node_js \
-            && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-x64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-x64.tar.xz \
-            && mv node-v12.22.12-linux-x64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-x64 /opt/node \
-            && ln -s /opt/node/bin/* /usr/bin \
-            && cd .. \
-            && rm -rf node_js \
-            ;; \
-        "linux/arm64")\
-            set -x \
-            && mkdir node_js \
-            && cd node_js \
-            && wget https://nodejs.org/dist/v12.22.12/node-v12.22.12-linux-arm64.tar.xz \
-            && tar xfvJ node-v12.22.12-linux-arm64.tar.xz \
-            && mv node-v12.22.12-linux-arm64 /opt/ \
-            && ln -s /opt/node-v12.22.12-linux-arm64 /opt/node \
-            && ln -s /opt/node/bin/* /usr/bin \
-            && cd .. \
-            && rm -rf node_js \
-            ;; \
-        *) ;; \
-    esac
-
-RUN set -x \
-    && mkdir -p /opt/zap-${ZAP_VERSION} \
-    && git clone https://github.com/project-chip/zap.git /opt/zap-${ZAP_VERSION} \
-    && cd /opt/zap-${ZAP_VERSION} \
-    && git checkout ${ZAP_VERSION} \
-    && npm config set user 0 \
-    && npm ci
-ENV ZAP_DEVELOPMENT_PATH=/opt/zap-${ZAP_VERSION}
 
 # Stage 1.5: Bootstrap Matter.
 RUN mkdir /home/ggc_user
@@ -204,49 +161,43 @@ WORKDIR /home/ggc_user/connectedhomeip/
 RUN git checkout ${COMMITHASH}
 RUN ./scripts/checkout_submodules.py --allow-changing-global-git-config --shallow --platform linux
 RUN bash scripts/bootstrap.sh
-SHELL ["/bin/bash", "-c"]
-RUN set -x && \
-    source scripts/activate.sh \
-    && gn gen out/debug --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false' \
-    && ninja -C out/debug
 
-from chip-build-cert as chip-build-cert-bins
+FROM chip-build-cert as chip-build-cert-bins
 
 SHELL ["/bin/bash", "-c"]
 
 # Records Matter SDK commit hash to include in the image.
 RUN git rev-parse HEAD > /home/ggc_user/.sdk-sha-version
 
-
 #Build the chip-tool and one example (all clusters app) so that users can debug using chip-tool and app
-
 RUN case ${TARGETPLATFORM} in \
-        "linux/amd64") \
-            set -x \
-            && source scripts/activate.sh \
-            && scripts/build/build_examples.py \
-            --target linux-x64-all-clusters-ipv6only \
-            --target linux-x64-chip-tool-ipv6only \
-            --target linux-x64-ota-provider-ipv6only \
-            build \
-            && mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
-            && mv out/linux-x64-chip-tool-ipv6only/chip-tool out/chip-tool \
-            && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
-                ;; \
-        "linux/arm64")\
-            set -x \
-            && source scripts/activate.sh \
-            && scripts/build/build_examples.py \
-            --target linux-arm64-all-clusters-ipv6only \
-            --target linux-arm64-chip-tool-ipv6only \
-            --target linux-arm64-ota-provider-ipv6only \
-            build \
-            && mv out/linux-arm64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
-            && mv out/linux-arm64-chip-tool-ipv6only/chip-tool out/chip-tool \
-            && mv out/linux-arm64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
-            ;; \
-        *) ;; \
+    "linux/amd64") \
+    set -x \
+    && source scripts/activate.sh \
+    && scripts/build/build_examples.py \
+ #   --target linux-x64-chip-tool-ipv6only-platform-mdns \
+    --target linux-x64-all-clusters-ipv6only \
+    --target linux-x64-ota-provider-ipv6only \
+    build \
+#    && mv out/linux-x64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+    && mv out/linux-x64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
+    && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
+    ;; \
+    "linux/arm64")\
+    set -x \
+    && source scripts/activate.sh \
+    && scripts/build/build_examples.py \
+#    --target linux-arm64-chip-tool-ipv6only-platform-mdns \
+    --target linux-arm64-all-clusters-ipv6only \
+    --target linux-arm64-ota-provider-ipv6only \
+    build \
+#    && mv out/linux-arm64-chip-tool-ipv6only-platform-mdns/chip-tool out/chip-tool \
+    && mv out/linux-arm64-all-clusters-ipv6only/chip-all-clusters-app out/chip-all-clusters-app \
+    && mv out/linux-arm64-ota-provider-ipv6only/chip-ota-provider-app out/chip-ota-provider-app \
+    ;; \
+    *) ;; \
     esac
+
 
 RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i no
 #RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i separate
@@ -255,11 +206,14 @@ RUN source scripts/activate.sh && scripts/build_python.sh -m platform -d true -i
 RUN mkdir /home/ggc_user/mattercloudcontroller
 #ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN git clone https://github.com/oidebrett/mattercloudcontroller.git /home/ggc_user/mattercloudcontroller
-#ARG MCCCOMMITHASH=d69694783bbfff4222f0c3d9312a539f3ab48c3a
 WORKDIR /home/ggc_user/mattercloudcontroller/
 RUN git rev-parse HEAD > /home/ggc_user/.matter-sha-version
 RUN git checkout ${MCCCOMMITHASH}
 #RUN git checkout main
+
+# Set Up Bootstrap Python Matter Server.
+RUN mkdir /home/ggc_user/python-matter-server
+RUN git clone https://github.com/home-assistant-libs/python-matter-server.git /home/ggc_user/python-matter-server
 
 
 # Stage 3: Copy relevant cert bins to a minimal image to reduce size.
@@ -304,8 +258,9 @@ COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/.sd
 #Below is the right fine-grained copys that we need - we will make a note for now
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/credentials connectedhomeip/credentials
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/python_lib/controller/python connectedhomeip/out/python_lib/controller/python
-COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-tool connectedhomeip/out/chip-tool
+#COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-tool connectedhomeip/out/chip-tool
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-all-clusters-app connectedhomeip/out/chip-all-clusters-app
+COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/out/chip-ota-provider-app connectedhomeip/out/chip-ota-provider-app
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/connectedhomeip/scripts connectedhomeip/scripts
 
 RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/chip*.whl
@@ -314,6 +269,13 @@ RUN pip install --no-cache-dir connectedhomeip/out/python_lib/controller/python/
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/scripts/thing mattercloudcontroller/scripts/thing
 COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller/src/component/mcc-daemon/src mattercloudcontroller/src/component/mcc-daemon/src
 #COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/mattercloudcontroller mattercloudcontroller
+
+# Stage 4.1: Copy over the Python-matter-server.
+COPY --from=chip-build-cert-bins --chown=$USERNAME:$GROUPNAME /home/ggc_user/python-matter-server python-matter-server
+RUN pip install aiohttp aiorun orjson 
+RUN mkdir /data
+RUN chown  -R $USERNAME:$GROUPNAME /data
+#RUN chmod 777 /data
 
 #Stage 5: Set up the Greengrass v2 environment
 

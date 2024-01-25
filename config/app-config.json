@@ -26,18 +26,22 @@
             "BucketName": "gg-comp-upload",
             "BucketPrefix": "deployment"            
         },
+        "IotUpdateDB": {
+            "CodePath": "src/lambda/custom_iot_update_db",
+            "LambdaName": "gg-iot-update-db"
+        },
         "ComponentDeployment": {
             "Name": "ComponentDeploymentStack",
             "PublicComponents": [
                 {
                     "Name": "aws.greengrass.Nucleus",
-                    "Version": "2.5.5",
+                    "Version": "2.11.3",
                     "ConfigurationUpdate": {
                     }
                 },
                 {
                     "Name": "aws.greengrass.ShadowManager",
-                    "Version": "2.1.0",
+                    "Version": "2.3.4",
                     "ConfigurationUpdate": {
                         "synchronize":{
                             "coreThing":{
@@ -45,11 +49,25 @@
                                 "namedShadows": [
                                   "commissionables",
                                   "events_1",
+                                  "1_0",
+                                  "1_1",
+                                  "1_2",
                                   "events_2",
+                                  "2_0",
+                                  "2_1",
+                                  "2_2",
                                   "events_3",
-                                  "1",
-                                  "2",
-                                  "3"
+                                  "3_0",
+                                  "3_1",
+                                  "3_2",
+                                  "events_4",
+                                  "4_0",
+                                  "4_1",
+                                  "4_2",
+                                  "events_5",
+                                  "5_0",
+                                  "5_1",
+                                  "5_2"
                                 ]
                             },
                             "shadowDocuments": []
@@ -66,9 +84,9 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.1.71",
+                "Version": "0.2.217",
                 "CodePath": "src/component/mcc-daemon",
-                "Args": "-d /home/ggc_user/connectedhomeip -n mcc-thing-ver01-1 -p /var/tmp/admin-storage.json"
+                "Args": "-n mcc-thing-ver01-1 -c True"
             }
         },
         "ApiGatewayDeployment": {

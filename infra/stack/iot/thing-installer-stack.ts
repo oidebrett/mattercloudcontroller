@@ -1,8 +1,8 @@
-import * as cdk from '@aws-cdk/core';
-import * as iam from '@aws-cdk/aws-iam';
-import * as lambda from '@aws-cdk/aws-lambda';
-import * as cr from '@aws-cdk/custom-resources';
-
+import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as cr from 'aws-cdk-lib/custom-resources';
+import { Construct } from 'constructs';
 import * as base from '../../../lib/template/stack/base/base-stack';
 import { AppContext } from '../../../lib/template/app-context';
 
@@ -115,7 +115,9 @@ export class ThingInstallerStack extends base.BaseStack {
                 "iot:DescribeThing",
                 "iot:DescribeThingGroup",
                 "iot:GetThingShadow",
+                "iot:DeleteThingShadow",
                 "iot:UpdateJob",
+                "iot:ListNamedShadowsForThing",
                 "iot:UpdateThingShadow"
             ],
             "Resource": "*"
@@ -187,6 +189,7 @@ export class ThingInstallerStack extends base.BaseStack {
             actions: [
                 "iot:DeleteThingShadow",
                 "iot:GetThingShadow",
+                "iot:DeleteThingShadow",
                 "iot:UpdateThingShadow",
                 "iot:ListNamedShadowsForThing"
             ],

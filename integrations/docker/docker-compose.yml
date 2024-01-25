@@ -5,7 +5,7 @@ services:
     init: false
     container_name: aws-iot-greengrass
     privileged: true
-    image: oideibrett/mattercloudcontroller-arm64:v2
+    image: oideibrett/mattercloudcontroller-arm64:v3
     network_mode: "host"
     ipc: "host"
     environment:
@@ -16,4 +16,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket
       - /greengrass/v2:/greengrass/v2
+      - /data:/data
       - /var/tmp:/var/tmp

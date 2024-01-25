@@ -7,3 +7,6 @@ coloredlogs
 click
 lark
 stringcase
+aiohttp
+orjson
+aiorun

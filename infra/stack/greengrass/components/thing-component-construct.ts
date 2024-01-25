@@ -1,7 +1,7 @@
-import * as cdk from '@aws-cdk/core';
-import * as s3 from '@aws-cdk/aws-s3';
-import * as gg2 from '@aws-cdk/aws-greengrassv2';
-
+import * as cdk from 'aws-cdk-lib';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as gg2 from 'aws-cdk-lib/aws-greengrassv2';
+import { Construct } from 'constructs';
 import * as base from '../../../../lib/template/construct/base/base-construct';
 
 export interface ConstructProps extends base.ConstructCommonProps {
@@ -13,7 +13,7 @@ export interface ConstructProps extends base.ConstructCommonProps {
 export class ThingComponent extends base.BaseConstruct {
     private compName: string;
 
-    constructor(scope: cdk.Construct, id: string, props: ConstructProps) {
+    constructor(scope: Construct, id: string, props: ConstructProps) {
         super(scope, id, props);
 
         this.compName = `${this.projectPrefix}-${props.compConfig['Name']}`;
@@ -93,10 +93,10 @@ export class ThingComponent extends base.BaseConstruct {
                             "FUNCTION_VERION": `${this.compName}:${compVersion}`,
                         },
                         "Install": {
-                            "script": `pip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt`
+                            "script": `pip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt \n`
                         },
                         "Run": {
-                            "script": `python3 {artifacts:decompressedPath}/${this.compName}/iotMatterCloudController.py ${compArgs}\n`
+                            "script": `python3 -u {artifacts:decompressedPath}/${this.compName}/iotMatterController.py ${compArgs}\n`
                         },
                     },
                     "Artifacts": [

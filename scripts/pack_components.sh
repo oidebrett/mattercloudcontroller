@@ -10,6 +10,8 @@ PROJECT_PREFIX=$PROJECT_NAME$PROJECT_STAGE
 THING_NAME=$(cat $APP_CONFIG | jq -r '.Stack.ComponentDeployment.Thing.Name') 
 THING_PATH=$(cat $APP_CONFIG | jq -r '.Stack.ComponentDeployment.Thing.CodePath') 
 
+LAMBDA_NAME=$(cat $APP_CONFIG | jq -r '.Stack.IotUpdateDB.LambdaName') 
+UPDATE_DB_PATH=$(cat $APP_CONFIG | jq -r '.Stack.IotUpdateDB.CodePath')
 
 echo ==-------ThingComponent---------==
 echo $THING_NAME
@@ -18,6 +20,7 @@ COMP_NAME=$THING_NAME
 BASE_PATH=$THING_PATH
 
 ZIP_FILE=$PROJECT_PREFIX-$COMP_NAME.zip
+
 cd $BASE_PATH
 if [ -d "zip" ]; then
     rm -r "zip"
@@ -30,3 +33,15 @@ cd ../../../..
 echo .
 echo .
 
+echo ==-------IoTUpdateDB---------==
+LAMBDA_ZIP_FILE=$LAMBDA_NAME.zip
+cd $UPDATE_DB_PATH
+if [ -d "zip" ]; then
+    rm -r "zip"
+fi
+mkdir zip
+cd src
+zip -r $LAMBDA_ZIP_FILE ./*  -x \*__pycache__\*
+cd ../../../..
+echo .
+echo .

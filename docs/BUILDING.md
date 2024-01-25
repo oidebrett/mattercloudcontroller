@@ -217,7 +217,7 @@ sh ./scripts/deploy_stacks.sh config/app-config.json # generated-> ./scripts/thi
 python3 ./scripts/thing/generate-install-gg-config.py -a config/app-config.json -t ./scripts/thing/output-thing-installer-stack-[ProjectPrefix].json # generated-> ./scripts/thing/install-gg-config-[ProjectPrefix].json
 
 #Do this the first time when run to update the iot policy to allow iot shadow interactions
-python3 ./scripts/thing/update_iot_policy.py -a config/app-config.json -p '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["iot:GetThingShadow","iot:UpdateThingShadow","iot:DeleteThingShadow","iot:Connect","iot:Publish","iot:Subscribe","iot:Receive","greengrass:*"],"Resource": "*"}]}' 
+python3 ./scripts/thing/update_iot_policy.py -a config/app-config.json -p '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["iot:GetThingShadow","iot:UpdateThingShadow","iot:DeleteThingShadow","iot:ListNamedShadowsForThing","iot:Connect","iot:Publish","iot:Subscribe","iot:Receive","greengrass:*"],"Resource": "*"}]}' 
 
 ```
 
@@ -440,8 +440,24 @@ Alternatively, you can start the docker container without starting greengrass v2
 be useful if you want to run a shell and review the code in the container
 
 ```bash
-docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
+docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock  -v /data:/data -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
 ```
+
+
+Run the following command to start the AWS IoT Greengrass Core software. If you run this command in a terminal, you must keep the terminal session open to keep the AWS IoT Greengrass Core software running.
+
+```bash
+sudo /greengrass/v2/alts/current/distro/bin/loader
+```
+
+It may be also useful to view the greengrass logs when starting the greengrass core software. You can do this by accessing the running docker container and then accessing the logs
+
+```bash
+docker container ls
+docker exec -it <CONTAINER ID> /bin/bash
+sudo tail -f /greengrass/v2/logs/MCCDev-mcc-daemon.log
+```
+
 
 # Preventing  docker image from overwriting the persistent storage
 
