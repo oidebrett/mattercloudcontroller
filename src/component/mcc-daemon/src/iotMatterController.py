@@ -586,25 +586,26 @@ def OnEventChange(node_id, event_read_result)-> None:
     thing_name = args.name 
     shadow_name = "events_" + str(node_id)
 
-    if not LOCAL_TEST:
-
-        #We need to check if this is an event indicating a shutdown or a leave
-        if (event_read_result["event"] == 'node_event' 
-        and "cluster_id" in event_read_result["data"] 
-        and event_read_result["data"]['cluster_id'] == 40
-        and "event_id" in event_read_result["data"] 
-        and (event_read_result["data"]['event_id'] == 1 or event_read_result["data"]['event_id'] == 2)) :
-            lPrint("We need to remove the shadows:")
-            #Here we will remove the shadows
-            #TODO - we need to list the shadows so that we remove all endpoints            
+    #We need to check if this is an event indicating a shutdown or a leave
+    if (event_read_result["event"] == 'node_event' 
+    and "cluster_id" in event_read_result["data"] 
+    and event_read_result["data"]['cluster_id'] == 40
+    and "event_id" in event_read_result["data"] 
+    and (event_read_result["data"]['event_id'] == 1 or event_read_result["data"]['event_id'] == 2)) :
+        lPrint("We need to remove the shadows:")
+        #Here we will remove the shadows
+        #TODO - we need to list the shadows so that we remove all endpoints            
+        if not LOCAL_TEST:
             delete_named_shadow_request(thing_name, shadow_name)
             delete_named_shadow_request(thing_name, str(node_id) + "_0")
             delete_named_shadow_request(thing_name, str(node_id) + "_1")
 
-        #First read the existing events and then add to it
+    #First read the existing events and then add to it
 
+    newList = []
+
+    if not LOCAL_TEST:
         #If we get an Exception its because we dont have an event list already
-        newList = []
         try:
             response = get_thing_shadow_request(thing_name, shadow_name)
 
@@ -620,16 +621,24 @@ def OnEventChange(node_id, event_read_result)-> None:
             prevEvents = {"state": None}
             prevEvents["state"] = {"reported": None}
             prevEvents["state"]["reported"] = {"list": []}
+    else: #create a dummy prevEvents object so we can debug locally
+            prevEvents = {"state": None}
+            prevEvents["state"] = {"reported": None}
+            prevEvents["state"]["reported"] = {"list": []}
 
-        newList.append(event_read_result)
-        prevEvents['state']['reported']['list'] = newList
+    #Add a date stamp to this event
+    event_read_result['createdAt'] = str(datetime.datetime.now().isoformat())
 
-        newStr = json.dumps(prevEvents)
+    newList.append(event_read_result)
+    prevEvents['state']['reported']['list'] = newList
 
-        #Calling update thing shadow request for events
-        lPrint("updating error thing shadow:")
-        lPrint(newStr)
+    newStr = json.dumps(prevEvents)
 
+    #Calling update thing shadow request for events
+    lPrint("updating error thing shadow:")
+    lPrint(newStr)
+
+    if not LOCAL_TEST:
         result = update_thing_shadow_request(thing_name, shadow_name, bytes(newStr, "utf-8"))
 
 def subscribe_to_shadow_deltas(thing_name):
