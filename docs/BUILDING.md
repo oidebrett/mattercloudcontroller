@@ -443,11 +443,24 @@ be useful if you want to run a shell and review the code in the container
 docker run -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock  -v /data:/data -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
 ```
 
-
-Run the following command to start the AWS IoT Greengrass Core software. If you run this command in a terminal, you must keep the terminal session open to keep the AWS IoT Greengrass Core software running.
+Note, if you want to leave the raspberry pi working over a long period of time (i.e. after you ssh out), then you should run the docker container in detached mode
 
 ```bash
-sudo /greengrass/v2/alts/current/distro/bin/loader
+docker run -d -it --privileged --ipc=host --net=host -e DISPLAY --entrypoint /bin/bash -v /var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket -v /var/run/docker.sock:/var/run/docker.sock  -v /data:/data -v /greengrass/v2:/greengrass/v2 -i <IMAGE ID>
+```
+
+Run the following command to start the python matter server. If you run this command in a terminal, you must keep the terminal session open to keep the AWS IoT Greengrass Core software running. If you want this process to remain working use the nohup command in front of the command and use the & to start as a job
+```bash
+sudo rm -rf ~/data/* /data/* /tmp/chip_* ~/.matter_server/* #this clears out old persistent data
+cd python-matter-server
+python3 -m matter_server.server --log-level debug # to run as a job use - nohup python3 -m matter_server.server --log-level debug & 
+```
+
+
+Run the following command to start the AWS IoT Greengrass Core software. If you run this command in a terminal, you must keep the terminal session open to keep the AWS IoT Greengrass Core software running. If you want this process to remain working use the nohup command in front of the command and use the & to start as a job
+
+```bash
+sudo /greengrass/v2/alts/current/distro/bin/loader # to run as job use - sudo nohup /greengrass/v2/alts/current/distro/bin/loader & 
 ```
 
 It may be also useful to view the greengrass logs when starting the greengrass core software. You can do this by accessing the running docker container and then accessing the logs
