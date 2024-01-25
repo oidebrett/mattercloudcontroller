@@ -1,0 +1,10 @@
+{
+  "title": "Matter Articles",
+  "description": "Codelabs that are related to Matter development",
+  "logoUrl": "/matter/vslive-logo.jpg",
+  "tags": ["matter"],
+  "exclude": [
+    ".*-about$",
+    "^lang-.*"
+  ]
+}

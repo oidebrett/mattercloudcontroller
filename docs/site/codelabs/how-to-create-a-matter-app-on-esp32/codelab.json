@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2023-05-19T08:07:19+01:00",
+  "updated": "2024-01-24T21:24:16Z",
   "id": "how-to-create-a-matter-app-on-esp32",
   "duration": 50,
   "title": "How to Create a Matter app on esp32",
@@ -18,7 +18,7 @@
     "sample"
   ],
   "tags": [
-    "medium"
+    "matter"
   ],
   "feedback": "https://mattercoder.com",
   "url": "how-to-create-a-matter-app-on-esp32"

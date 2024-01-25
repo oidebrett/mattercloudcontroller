@@ -1,0 +1,446 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Set up OTA on AWS-IOT</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-set-up-OTA-on-AWS-IOT"
+                  title="How to Set up OTA on AWS-IOT"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to Set up OTA on AWS-IOT</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Set up Over The Air Firmware Updates using AWS IOT</li>
+</ul>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to create an IAM User with the appropriate policies.</li>
+<li>How to create an Amazon S3 bucket to store your update</li>
+<li>How to create an OTA Update service role</li>
+<li>How to create certificate for signing code</li>
+<li>How to create OTA Thing and job</li>
+<li>How to Create OTA JOB to send a Matter binary over OTA ( Optional )</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>You will need</p>
+<ul>
+<li>a laptop or PC running Ubuntu 22.04</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create IAM User (This is used instead of using the ROOT User)" duration="5">
+        <p>1- Search and navigate to IAM page</p>
+<p>2- Choose User then Add User</p>
+<p>3- Select the name &#34;My_OTA_User&#34; for example</p>
+<p>4- For access type Select whatever you like (we can use Paragmmatic access)</p>
+<p>5- Select attach existence policy and search for and select the following:</p>
+<pre><code>  - AmazonFreeRTOSFullAccess
+
+  - AmazonFreeRTOSOTAUpdate
+  
+  - AWSIoTFullAccess
+</code></pre>
+<p>6- Select Create User and download the credentials CSV file</p>
+<p>7- Take note of the account id » arn:aws:iam::XXXXXXXXXXXX:user/My_OTA_User</p>
+<p>Note: These Xs is the account id and we will need it later.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Creating Policies and Roles for OTA update/ S3 bucket access:" duration="5">
+        <h2 is-upgraded>Create an Amazon S3 bucket to store your update</h2>
+<p>1- Sign in to the Amazon S3 console at https://console.aws.amazon.com/s3/.</p>
+<p>2- Choose Create bucket.</p>
+<p>3- Enter a bucket name. (for example  testotabucket123)</p>
+<p>4- Under Bucket settings for Block Public Access keep Block all public access selected to accept the default permissions.</p>
+<p>5- Under Bucket Versioning, select Enable to keep all versions in the same bucket.</p>
+<p>6- Choose Create bucket.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create an OTA Update service role:" duration="2">
+        <h2 is-upgraded>Sign in to the https://console.aws.amazon.com/iam/.</h2>
+<p>1- From the navigation pane, choose Roles.</p>
+<p>2- Choose Create role.</p>
+<p>3- Under Select type of trusted entity, choose AWS Service.</p>
+<p>4- Choose IoT from the list of AWS services.</p>
+<p>5- Under Select your use case, choose IoT.</p>
+<p>6- Choose Next: Permissions.</p>
+<p>7- Choose Next: Tags.</p>
+<p>8- Choose Next: Review.</p>
+<p>9- Enter a role name (OTA_Service_Role for example) and description, and then choose Create role.</p>
+<h2 is-upgraded>Add OTA update permissions to your OTA service role:</h2>
+<p>1- Open the Role you just create (OTA_Service_Role)</p>
+<p>2- Choose Attach policies.</p>
+<p>3- In the Search box, enter &#34;AmazonFreeRTOSOTAUpdate&#34;, select AmazonFreeRTOSOTAUpdate and then choose Attach policy to attach the policy to your service role.</p>
+<h2 is-upgraded>Add the required IAM permissions to your OTA service role</h2>
+<p>1- Open the Role again (OTA_Service_Role)</p>
+<p>2- Choose Add inline policy.</p>
+<p>3- Choose the JSON tab.</p>
+<p>4- Copy and paste the following policy document into the text box:</p>
+<pre><code language="language-shell" class="language-shell">  {
+    &#34;Version&#34;: &#34;2012-10-17&#34;,
+    &#34;Statement&#34;: [
+      {
+            &#34;Effect&#34;: &#34;Allow&#34;,
+            &#34;Action&#34;: [
+                &#34;iam:GetRole&#34;,
+                &#34;iam:PassRole&#34;
+            ],
+            &#34;Resource&#34;: &#34;arn:aws:iam::your_account_id:role/your_role_name&#34;
+      }
+    ]
+  }
+</code></pre>
+<p>5- Update &#34;your_account_id&#34; with the user account you created (The Xs), and the &#34;your_role_name&#34; with your ota service role, which in our example is OTA_Service_Role, so the line will be like this</p>
+<p>&#34;Resource&#34;: &#34;arn:aws:iam::XXXXXXXXXXXX:role/OTA_Service_Role&#34;</p>
+<p>6- Choose Review policy.</p>
+<p>7- Enter a name for the policy (for example OTA_Role_IAM_Permission_Policy), and then choose Create policy.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Add the required Amazon S3 permissions to your OTA service role" duration="2">
+        <p>1- Open the Role again (OTA_Service_Role)</p>
+<p>2- Choose Add inline policy.</p>
+<p>3- Choose the JSON tab.</p>
+<p>4- Copy and paste the following policy document into the text box:</p>
+<pre><code language="language-shell" class="language-shell">  {
+    &#34;Version&#34;: &#34;2012-10-17&#34;,
+    &#34;Statement&#34;: [
+        {
+            &#34;Effect&#34;: &#34;Allow&#34;,
+            &#34;Action&#34;: [
+                &#34;s3:GetObjectVersion&#34;,
+                &#34;s3:GetObject&#34;,
+                &#34;s3:PutObject&#34;
+            ],
+            &#34;Resource&#34;: [
+                &#34;arn:aws:s3:::example-bucket/*&#34;
+            ]
+        }
+    ]
+  }
+</code></pre>
+<p>5- Upate the example-bucket with the bucket name you created, in our example testotabucket</p>
+<p>So it will be &#34;arn:aws:s3:::testotabucket123/*&#34;</p>
+<p>6- Choose Review policy.</p>
+<p>7- Enter a name for the policy (for example OTA_Role_S3_Bucket_Permission_Policy ), and then choose Create policy.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create an OTA user policy:" duration="2">
+        <h2 is-upgraded>This gives the user all the needed permission to perform OTA updates</h2>
+<p>1- Navigate to IAM page</p>
+<p>2- In the navigation pane, choose Policies</p>
+<p>3- Choose Create policy.</p>
+<p>4- Choose the JSON tab, and copy and paste the following policy document into the policy editor:</p>
+<pre><code language="language-shell" class="language-shell">  {
+    &#34;Version&#34;:&#34;2012-10-17&#34;,
+    &#34;Statement&#34;: [
+        {
+            &#34;Effect&#34;: &#34;Allow&#34;,
+            &#34;Action&#34;: [
+                &#34;s3:ListBucket&#34;,
+                &#34;s3:ListAllMyBuckets&#34;,
+                &#34;s3:CreateBucket&#34;,
+                &#34;s3:PutBucketVersioning&#34;,
+                &#34;s3:GetBucketLocation&#34;,
+                &#34;s3:GetObjectVersion&#34;,
+                &#34;s3:ListBucketVersions&#34;,
+                &#34;acm:ImportCertificate&#34;,
+                &#34;acm:ListCertificates&#34;,
+                &#34;iot:*&#34;,
+                &#34;iam:ListRoles&#34;,
+                &#34;freertos:ListHardwarePlatforms&#34;,
+                &#34;freertos:DescribeHardwarePlatform&#34;
+            ],
+            &#34;Resource&#34;: &#34;*&#34;
+        },
+        {
+            &#34;Effect&#34;: &#34;Allow&#34;,
+            &#34;Action&#34;: [
+                &#34;s3:GetObject&#34;,
+                &#34;s3:PutObject&#34;
+            ],
+            &#34;Resource&#34;: &#34;arn:aws:s3:::testotabucket123/*&#34;
+        },
+        {   
+            &#34;Effect&#34;: &#34;Allow&#34;,
+            &#34;Action&#34;: &#34;iam:PassRole&#34;,
+            &#34;Resource&#34;: &#34;arn:aws:iam::your-account-id:role/role-name&#34;
+        }
+    ]
+}
+</code></pre>
+<p>5- Update the &#34;example-bucket&#34;, &#34;your-account-id&#34;, and &#34;role-name&#34; as before</p>
+<p>6- Choose Review policy.</p>
+<p>7- Enter a name for your new OTA user policy (for example OTA_User_Policy), and then choose Create policy.</p>
+<h2 is-upgraded>To attach the OTA user policy to your IAM user</h2>
+<p>1- In the IAM console, in the navigation pane, choose Users, and then choose your user.</p>
+<p>2- Choose Add permissions.</p>
+<p>3- Choose Attach existing policies directly.</p>
+<p>4- Search for the OTA user policy you just created (for example OTA_User_Policy) and select the check box next to it.</p>
+<p>5- Choose Next: Review.</p>
+<p>6- Choose Add permissions.</p>
+<h2 is-upgraded>To grant your IAM user account permissions for code signing for AWS IoT</h2>
+<p>1- In the IAM console,  choose Policies.</p>
+<p>2- Choose Create Policy.</p>
+<p>3- On the JSON tab, copy and paste the following JSON document into the policy editor.</p>
+<p>This policy allows the IAM user access to all code-signing operations.</p>
+<pre><code language="language-shell" class="language-shell">{
+  &#34;Version&#34;: &#34;2012-10-17&#34;,
+  &#34;Statement&#34;: [
+    {
+      &#34;Effect&#34;: &#34;Allow&#34;,
+      &#34;Action&#34;: [
+        &#34;signer:*&#34;
+      ],
+      &#34;Resource&#34;: &#34;*&#34;
+    }
+  ]
+}
+</code></pre>
+<p>4-Choose Review policy.</p>
+<p>5- Enter a policy name (for example OTA_Code_Sign_Policy) and description, and then choose Create policy.</p>
+<p>6- In the navigation pane, choose Users.</p>
+<p>7- Choose your IAM user account.</p>
+<p>8- On the Permissions tab, choose Add permissions.</p>
+<p>9- Choose Attach existing policies directly, and then select the check box next to the code-signing policy you just created OTA_Code_Sign_Policy.</p>
+<p>10- Choose Next: Review.</p>
+<p>11- Choose Add permissions.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create certificate for signing the code :" duration="5">
+        <p>Note: we are following https://docs.aws.amazon.com/freertos/latest/userguide/ota-code-sign-cert-esp.html</p>
+<p>1- Check if openssl is already installed by typing openssl version</p>
+<p>2- If not already installed, download and install openssl : https://github.com/openssl/openssl/releases/tag/OpenSSL_1_1_1j</p>
+<p>3- Add Openssl to the enviornment variable path</p>
+<p>4- Create a directory and name it &#34;Code_Certificate&#34;</p>
+<p>5- In your directory open command line prompt</p>
+<p>6- Create a file named cert_config.txt. Add the following contest, Replace test_signer@amazon.com with your email address:</p>
+<pre><code language="language-shell" class="language-shell">[ req ]
+prompt             = no
+distinguished_name = my_dn
+                    
+[ my_dn ]
+commonName = test_signer@amazon.com
+                    
+[ my_exts ]
+keyUsage         = digitalSignature
+extendedKeyUsage = codeSigning
+</code></pre>
+<p>6- Create an ECDSA code-signing private key using the command:</p>
+<p>openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -pkeyopt ec_param_enc:named_curve -outform PEM -out ecdsasigner.key</p>
+<p>7- Create an ECDSA code-signing certificate using the command:</p>
+<p>openssl req -new -x509 -config cert_config.txt -extensions my_exts -nodes -days 365 -key ecdsasigner.key -out ecdsasigner.crt</p>
+<p>8- Import the code-signing certificate, private key, and certificate chain into AWS Certificate Manager:</p>
+<p>aws acm import-certificate –certificate fileb://ecdsasigner.crt –private-key fileb://ecdsasigner.key</p>
+<p>This command displays an ARN for your certificate. You need this ARN when you create an OTA update job.</p>
+<p>==================================================================</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create OTA Thing and job" duration="10">
+        <h2 is-upgraded>Install aws cli:</h2>
+<ul>
+<li>You should have python 3.4 or later installed and pip</li>
+<li>Install aws cli using</li>
+</ul>
+<pre><code language="language-shell" class="language-shell">pip install boto3
+</code></pre>
+<ul>
+<li>Configure aws cli with your user:</li>
+</ul>
+<p>1- run commnad : aws configure</p>
+<p>2- From the CSV file you downloaded while createing the user, find access key ID, secret access key</p>
+<p>3- Enter access key ID, secret access key when prompt</p>
+<p>4- Keep Default region name [eu-west-1] (just press enter)</p>
+<p>5- Keep Default output format [json] (just press enter)</p>
+<h2 is-upgraded>Now we can start to create the OTA thing and job</h2>
+<p>1- Preapare FreeRTOS repo and install required packages</p>
+<p>2- Create thing using aws cli and update device header files</p>
+<p>3- Select OTA Demo to build,  Build and flash OTA Demo</p>
+<p>4- Create OTA JOB</p>
+<p>the following 3 sections need to be changed for</p>
+<p>1- Clone the esp-aws-iot repo https://github.com/espressif/esp-aws-iot/tree/master</p>
+<p>2- Prepare FreeRTOS repo and install required packages</p>
+<ul>
+<li>You should have python 3.4 or later installed and pip</li>
+<li>Download esp-aws-iot.git repo</li>
+</ul>
+<pre><code language="language-shell" class="language-shell">      git clone https://github.com/espressif/esp-aws-iot.git --recurse-submodules
+</code></pre>
+<p>and then switch to the latest release</p>
+<pre><code language="language-shell" class="language-shell">      git fetch --all --tags
+      git checkout master
+</code></pre>
+<ul>
+<li>Go to your ESP idf tools folder and</li>
+</ul>
+<pre><code language="language-shell" class="language-shell">      git fetch --all --tags
+      git checkout master
+</code></pre>
+<ul>
+<li>in command prompt run:</li>
+</ul>
+<pre><code language="language-shell" class="language-shell">      ./install.sh
+</code></pre>
+<p>This will download and install required packages</p>
+<p>5- After download all packages sucessfully, run . /export.sh to populate enviornmental variables.</p>
+<p>6- Manually creating Things with policy as per https://youtu.be/0Lt-bMbJyKc?si=9YQNOVXxZTybGqsv&amp;t=575</p>
+<p>7-  Create thing using aws console</p>
+<ul>
+<li>in aws console go to IoT Core - Manage - All Devices<pre><code>  Create a new Thing:
+
+  thing_name :  to whatever name for your device, for example OTA_Device
+</code></pre>
+</li>
+<li>Select Auto-generate a new certificate:</li>
+<li>Create a new Policy - give it a name such as OTA_Device_policy</li>
+<li>Select JSON and paste in the following</li>
+</ul>
+<pre><code language="language-shell" class="language-shell">{
+  &#34;Version&#34;: &#34;2012-10-17&#34;,
+  &#34;Statement&#34;: [
+    {
+      &#34;Effect&#34;: &#34;Allow&#34;,
+      &#34;Action&#34;: &#34;iot:Connect&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:iot:eu-west-1:your-account-id:client/OTA_Device&#34;
+    },
+    {
+      &#34;Effect&#34;: &#34;Allow&#34;,
+      &#34;Action&#34;: &#34;iot:Subscribe&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:iot:eu-west-1:your-account-id:topicfilter/$aws/things/OTA_Device/*&#34;
+    },
+    {
+      &#34;Effect&#34;: &#34;Allow&#34;,
+      &#34;Action&#34;: &#34;iot:Receive&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:iot:eu-west-1:your-account-id:topic/$aws/things/OTA_Device/*&#34;
+    },
+    {
+      &#34;Effect&#34;: &#34;Allow&#34;,
+      &#34;Action&#34;: &#34;iot:Publish&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:iot:eu-west-1:your-account-id:topic/$aws/things/OTA_Device/*&#34;
+    }
+  ]
+}
+</code></pre>
+<p>Note: You can tighten up the wildcards when you have this working</p>
+<ul>
+<li>Attach this policy to your Thing and hit create</li>
+<li>Download the certificate and keys to your Code_certificate folder</li>
+<li>Click Done</li>
+</ul>
+<ol type="1" start="8">
+<li>Build new OTA verson and flash</li>
+</ol>
+<ul>
+<li>Select OTA Demo to build,  Build and flash OTA Demo<ul>
+<li>open folder examples/ota/ota_mqtt/main/certsReplace client.crt with the client certificate that you downloaded. Make sure you rename to client.crtReplace client.key with the client private key that you downloaded. Make sure you rename to client.key</li>
+<li>To configure the demo, Open command prompt in examples/ota/ota_mqtt and run:idf.py set-target esp32 idf.py menuconfigChange -&gt;Example Configuration-&gt; Client Identifier to OTA_Device (name of your Thing)Change -&gt;Example Configuration-&gt; Endpoint of MQTT broker to your endpointyou will find this in AWS Console AWS IoT-&gt;Settings (*look for something like youruniqueid-ats.iot.eu-west-1.amazonaws.com)Change -&gt;Example Connection Configuration -&gt; Wifi SSID and Password to your SSID and password</li>
+<li>To build the demo, Open command prompt in examples/ota/ota_mqtt and run:idf.py build</li>
+<li>To flash and monitor the demo run:idf.py -p COMx erase_flash flash monitor<pre><code>- Replace x in COMx with your ESP32 COM port number
+- you can use erase_flash first time only to make sure flash layout is cleaned before flash OTA demo.
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<ol type="1" start="9">
+<li>Create OTA JOB<ul>
+<li>In AWS IOT console, go to manage-&gt;Remote Actions-&gt; Jobs</li>
+<li>Choose create, create OTA update job</li>
+<li>Select your device, in our example &#34;OTA_Device&#34;</li>
+<li>Keep MQTT as the transfer protocol</li>
+<li>Select &#34;Sign a new file for me&#34;</li>
+<li>For Code signing profile, choose create,<ul>
+<li>write the profile name, for example OTA_Sign_Profile</li>
+<li>Select device : ESP-32</li>
+<li>For certificate: use an existing Cert (stored previously in ACM)</li>
+<li>For &#34;Path name of code signing certificate on device&#34;, put the following value:Code Verify Key</li>
+</ul>
+</li>
+<li>Select your file in S3 or upload it<ul>
+<li>Select your bucket, in our example: &#34;testotabucket&#34;, and upload a file, or select previously uploaded one.</li>
+<li>OTA_Demo bin file is located in examples/ota/ota_mqtt/ota_mqtt.bin</li>
+</ul>
+NOTE: The new bin file version should be higher than the one on the ESP, for example in<pre><code>examples/ota/ota_mqtt/main/demo_config.h
+
+If the version we build and flash was 0.9.2
+
+We should increment the number for example to 0.9.3, and build but not flash using idf.py build (as before)
+</code></pre>
+</li>
+<li>Pathname of file on device: just write /</li>
+<li>IAM role for OTA update job: choose the OTA role you created, in our examle: &#34;OTA_Service_Role&#34;, choose Next</li>
+<li>Write and Name for the Job in ID: for exaple ID_001, then chhose create</li>
+<li>If the device is connected, Firmware update should start.</li>
+<li>The esp32 device will restart at least 2 times to complete the software update</li>
+</ul>
+You can confirm that your ESP32 is running the updated version by looking at the logs on the idf.py monitor just before when the TLS session is established</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">    I (5693) AWS_OTA: OTA over MQTT demo, Application version 0.9.3  &lt;&lt;&lt;&lt;&lt;------- this shows the new version has be flashed over the air
+    I (5703) AWS_OTA: Establishing a TLS session to xxxxxxxxx.iot.eu-west-1.amazonaws.com:888
+</code></pre>
+<ol type="1" start="10">
+<li>Optional - Create OTA JOB to send a Matter binary over OTA</li>
+</ol>
+<ul>
+<li>Build the matter lighting esp32 app from the github connectedhomeoverip</li>
+<li>copy the partitions.csv to the esp-aws-iot examples folder ota_mqtt</li>
+<li>save the old  partitions_ota_mqtt.csv to  partitions_ota_mqtt.csv.copy</li>
+<li>move the partitions.csv to partitions_ota_mqtt.csv</li>
+<li>build the ota_mqtt example and flash</li>
+<li>follow the steps in 4 to create a job to update the ESP32 with the matter lighting binary</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

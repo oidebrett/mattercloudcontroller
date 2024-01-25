@@ -3,13 +3,13 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2024-01-24T20:44:15Z",
-  "id": "how-to-install-matter-on-linux",
-  "duration": 50,
-  "title": "How to Install Matter on Linux",
+  "updated": "2024-01-06T11:08:42Z",
+  "id": "how-to-develop-on-wsl",
+  "duration": 39,
+  "title": "How to Develop Matter on WSL2",
   "authors": "MatterCoder",
-  "summary": "How to Install Matter on Linux",
-  "source": "how-to-install-matter-on-linux.md",
+  "summary": "How to Develop for Matter on WSL",
+  "source": "how-to-develop-on-wsl.md",
   "theme": "",
   "status": [
     "published"
@@ -21,5 +21,5 @@
     "matter"
   ],
   "feedback": "https://mattercoder.com",
-  "url": "how-to-install-matter-on-linux"
+  "url": "how-to-develop-on-wsl"
 }

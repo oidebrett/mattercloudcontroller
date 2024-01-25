@@ -3,13 +3,13 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2024-01-24T20:44:15Z",
-  "id": "how-to-install-matter-on-linux",
-  "duration": 50,
-  "title": "How to Install Matter on Linux",
+  "updated": "2024-01-24T21:19:23Z",
+  "id": "how-to-set-up-OTA-on-AWS-IOT",
+  "duration": 58,
+  "title": "How to Set up OTA on AWS-IOT",
   "authors": "MatterCoder",
-  "summary": "How to Install Matter on Linux",
-  "source": "how-to-install-matter-on-linux.md",
+  "summary": "How to Developer Matter on WSL",
+  "source": "how-to-set-up-OTA-on-AWS-IOT.md",
   "theme": "",
   "status": [
     "published"
@@ -18,8 +18,8 @@
     "sample"
   ],
   "tags": [
-    "matter"
+    "aws-iot"
   ],
   "feedback": "https://mattercoder.com",
-  "url": "how-to-install-matter-on-linux"
+  "url": "how-to-set-up-OTA-on-AWS-IOT"
 }

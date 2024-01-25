@@ -1,7 +1,7 @@
 summary: How to Install Matter on RPi
 id: how-to-install-matter-on-rpi
 categories: Sample
-tags: medium
+tags: matter
 status: Published 
 authors: MatterCoder
 Feedback Link: https://mattercoder.com
@@ -201,17 +201,6 @@ sudo apt-get install pi-bluetooth avahi-utils
 sudo apt-get clean
 ```
 
-7. The Connectedhomeip repo requires the ZAP tool for code generation. Unfortunately there are no compatible executables for ARM64 yet and
-the process of installing the ZAP tool is very complex and requires a lot of disk space. Therefore, I have pregenerated the required code
-and made it available on my Repo. Execute this commands to get the pregenerated code. Hopefully in the future this process will be easier.
-
-```shell
-wget https://github.com/oidebrett/mattercloudcontroller/raw/main/integrations/docker/zzz_pregenerated.zip
-unzip zzz_pregenerated.zip
-rm zzz_pregenerated.zip
-```
-
-
 ### Configuring wpa_supplicant for storing permanent changes
 By default, wpa_supplicant is not allowed to update (overwrite) configuration. If you want the Matter application to be able to store the configuration changes permanently, you need to make the following changes:
 
@@ -250,7 +239,7 @@ If everything has gone ok with the environment setup you should see:
 ```shell
 Checking the environment:
 
-20230506 13:25:40 INF Environment passes all checks!
+20250506 13:25:40 INF Environment passes all checks!
 
 Environment looks good, you are ready to go!
 ```
@@ -258,12 +247,11 @@ Environment looks good, you are ready to go!
 2. We then need to build the chip tool. Run the following commands
 
 ```shell
-gn gen out/chiptool_arm64_release --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false chip_code_pre_generated_directory="../../../zzz_pregenerated/" chip_detail_logging=false symbol_level=0'
+gn gen out/chiptool_arm64_release --args='chip_mdns="platform" chip_inet_config_enable_ipv4=false chip_detail_logging=false symbol_level=0'
 
 ninja -C out/chiptool_arm64_release chip-tool
 ```
-Note: if using a Raspberry Pi 3 you can use the flag -j 1 in the ninja command to limit multi tasking the build across multiple cores. This
-can help prevent hangs.
+Note: if using a Raspberry Pi 3 you can use the flag -j 1 in the ninja command to limit multi tasking the build across multiple cores. This can help prevent hangs.
 
 3. We then move the Matter Controller (chip-tool) to the `out` directory using the following commands
 
@@ -317,6 +305,27 @@ If everything is working you should see output logs and you should see that the 
 ```shell
 [1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step 'Cleanup'
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+```
+
+3.1. Troubleshooting issues
+
+Make sure you are able to see a bluetooth device using;
+
+```shell
+hcitool dev
+```
+
+Note: if you are having problems finding a bluetooth device. Then you can try this:
+
+```shell
+sudo apt-get dist-upgrade -y
+sudo apt-get install pi-bluetooth
+```
+
+There is also a known bug when a Raspberry Pi is using both Wifi and Etho adapters. Bring the Wifo adapter down using this command:
+
+```shell
+sudo ip link set dev wlan0 down
 ```
 
 4. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple 

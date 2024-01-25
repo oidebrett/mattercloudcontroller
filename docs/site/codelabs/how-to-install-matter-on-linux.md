@@ -1,7 +1,7 @@
 summary: How to Install Matter on Linux
 id: how-to-install-matter-on-linux
 categories: Sample
-tags: medium
+tags: matter
 status: Published 
 authors: MatterCoder
 Feedback Link: https://mattercoder.com
@@ -111,7 +111,7 @@ If everything has gone ok with the environment setup you should see:
 ```shell
 Checking the environment:
 
-20230423 16:49:39 INF Environment passes all checks!
+20250423 16:49:39 INF Environment passes all checks!
 
 Environment looks good, you are ready to go!
 ```

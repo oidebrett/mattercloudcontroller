@@ -1,0 +1,331 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Install Border Router on Esp32</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-install-border-router-on-esp32"
+                  title="How to Install Border Router on Esp32"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to build and install an Open Thread Border Router on the esp32 development kits.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Build and install the Open Thread Border Router on ESP32 development kits.</li>
+<li>Learn about the concept of Matter Border Routers</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/dc049b68cb79fab.JPG"></p>
+<p>In this CodeLab we will build the Open Thread Border Router (ot_br) on an ESP32 development kit. We will then build and install the Thread Radio Co-processor (ot_rcp) on the ESP32-H2. This will allow us to create a border router between a Wifi and Thread Network. In doing so, we will learn how Border Routers work in Matter.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to set up the ESP32 and ESP32-H2 Thread Border Router</li>
+<li>How to build and install the Open Thread radio co-processor</li>
+<li>How to build and install the Open Thread Border Router</li>
+<li>How to set up a Command Line Interface on a thread device</li>
+<li>How to check commmunication between a Thread and a Wifi/IP Network</li>
+<li>Where you can get more information of the ESP32 Open Thread Border Router</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+<p>You will need</p>
+<ul>
+<li>an ESP32 develoment kit. We will use an ESP32_DEVKITC_V4.</li>
+<li>an ESP32-H2 develoment kit to add support for Thread</li>
+<li>an ESP32-C6 develoment kit to use as a Thread CLI device.</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code></li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to set up the ESP32 and ESP32-H2 Thread Border Router" duration="5">
+        <p>We will be using the OpenThread Border Router Example application which is available on the <a href="https://github.com/espressif/esp-idf/tree/master/examples/openthread/ot_br" target="_blank">Espressif ESP-IDF github repo for ot_br</a></p>
+<p>First thing to do is sonnect the two SoCs via UART, below is an example setup with ESP32 DevKitC and ESP32-H2 DevKitC:</p>
+<p class="image-container"><img alt="wiring diagram" src="img/a90693b2d2537289.jpg"></p>
+<p>The pin outs are as follows:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>ESP32 pin</p>
+</td><td colspan="1" rowspan="1"><p>ESP32-H2 pin</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>GND</p>
+</td><td colspan="1" rowspan="1"><p>G</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>GPIO4</p>
+</td><td colspan="1" rowspan="1"><p>TX</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>GPIO5</p>
+</td><td colspan="1" rowspan="1"><p>RX</p>
+</td></tr>
+</table>
+<p>Note: Once you have built this circuit I would suggest to disconnect the TX pin from the ESP32. I have found that leaving this connected prevents the flashing of the ESP32-H2 board.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to build and install the Open Thread radio co-processor" duration="10">
+        <p>We will be using the OpenThread Radio CoProcessor Example application which is available on the <a href="https://github.com/espressif/esp-idf/tree/master/examples/openthread/ot_rcp" target="_blank">Espressif ESP-IDF github repo for ot_rcp</a></p>
+<p>To run this example, a board with IEEE 802.15.4 module (for example ESP32-H2) is required. We will use the ESP32-H2.</p>
+<ol type="1">
+<li>First plug in your ESP32-H2 (using the UART not JTAG port) and check which port the board is available on</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">ls /dev/ttyUSB*
+</code></pre>
+<p>Make note of this device.</p>
+<ol type="1" start="2">
+<li>Then, temporarily, disconnect the TX pin from the ESP32. I have found that leaving this connected prevents the flashing of the ESP32-H2 board.</li>
+<li>Before building any matter app or controller we will need to create and initialise the environment</li>
+</ol>
+<p>Run the following commands</p>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
+source scripts/activate.sh
+</code></pre>
+<p>If everything has gone ok with the environment setup you should see:</p>
+<pre><code language="language-shell" class="language-shell">Checking the environment:
+
+20250423 16:49:39 INF Environment passes all checks!
+
+Environment looks good, you are ready to go!
+</code></pre>
+<ol type="1" start="4">
+<li>We need to install the esp-idf environment</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+./install.sh
+source ./export.sh
+</code></pre>
+<ol type="1" start="5">
+<li>We will then navigate to the Espressif Open Thread Radio Co-Processor example.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd examples/openthread/ot_rcp 
+</code></pre>
+<ol type="1" start="6">
+<li>Set the esp target to be the esp32h2</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py set-target esp32h2
+</code></pre>
+<ol type="1" start="7">
+<li>Build the ot_br example for the esp32-h2</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<ol type="1" start="8">
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>esp_ot_rcp.elf</code> in the <code>build</code> directory</li>
+</ol>
+<p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
+<ol type="1" start="9">
+<li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
+</code></pre>
+<ol type="1" start="10">
+<li>Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash # replace the ttyUSB0 with the correct USB device from above
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+<ol type="1" start="11">
+<li>Finally, reconnect the TX pin from the ESP32. This is important.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to build and install the Open Thread Border Router" duration="5">
+        <p>We will be using the OpenThread Border Router Example application which is available on the <a href="https://github.com/espressif/esp-idf/tree/master/examples/openthread/ot_br" target="_blank">Espressif ESP-IDF github repo for ot_br</a></p>
+<p>To run this example, an ESP32 series Wi-Fi SoC (ESP32, ESP32-C, ESP32-S, etc) is required.  In this case, we will use an ESP32 development kit v4.</p>
+<ol type="1">
+<li>First plug in your ESP32 and check which port the board is available on</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">ls /dev/ttyUSB*
+</code></pre>
+<p>Make note of this device.</p>
+<p>Note: if you have not already created the environment for connectedhomeip and esp-idf install then follow the steps on the previous page.</p>
+<ol type="1" start="2">
+<li>We will then navigate to the Espressif Open Thread Border Router example</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+cd examples/openthread/ot_br
+</code></pre>
+<ol type="1" start="3">
+<li>Set the esp target to be the esp32</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py set-target esp32
+</code></pre>
+<ol type="1" start="4">
+<li>Build the ot_br example for the esp32</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<ol type="1" start="5">
+<li>If everything worked OK you should see an Executable Linkable Format file called <code>esp_ot_br.elf</code> in the <code>build</code> directory</li>
+</ol>
+<p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
+<ol type="1" start="6">
+<li>Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB1 erase_flash # replace the ttyUSB1 with the correct USB device from above
+idf.py -p /dev/ttyUSB1 flash monitor 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to set up a Command Line Interface on a thread device" duration="5">
+        <p>We will be using the OpenThread CLI Example application which is available on the <a href="https://github.com/espressif/esp-idf/tree/master/examples/openthread/ot_cli" target="_blank">Espressif ESP-IDF github repo for ot_cli</a></p>
+<p>To run this example, an ESP32 series Wi-Fi SoC (ESP32, ESP32-C, ESP32-S, etc) is required. In this case, we will use a ESP32-C6.</p>
+<ol type="1">
+<li>First plug in your ESP32-C6 and check which port the board is available on</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">ls /dev/ttyUSB*
+</code></pre>
+<p>Make note of this device.</p>
+<p>Note: if you have not already created the environment for connectedhomeip and esp-idf install then follow the steps on the previous page.</p>
+<ol type="1" start="2">
+<li>We will then navigate to the Espressif Open Thread CLI example</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+cd examples/openthread/ot_cli
+</code></pre>
+<ol type="1" start="3">
+<li>Set the esp target to be the esp32-c6</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py set-target esp32-c6
+</code></pre>
+<ol type="1" start="4">
+<li>Build the ot_cli example for the esp32</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<ol type="1" start="5">
+<li>If everything worked OK you should see an Executable Linkable Format file called <code>esp_ot_cli.elf</code> in the <code>build</code> directory</li>
+</ol>
+<p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
+<ol type="1" start="6">
+<li>Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB2 erase_flash # replace the ttyUSB2 with the correct USB device from above
+idf.py -p /dev/ttyUSB2 flash monitor 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to check commmunication between a Thread and a Wifi/IP Network" duration="5">
+        <p>In this section of the codelab, we will check that we can communicate between our Thread network and the external IP network. Specifically, we will try to ping the Google DNS servers (which are on the public Internet)</p>
+<ol type="1">
+<li>In the terminal that is running the CLI example, run the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">factoryreset # the device will reboot
+</code></pre>
+<ol type="1" start="2">
+<li>Set up the Thread network by running the following commands:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">&gt; dataset init new
+Done
+&gt; dataset commit active
+Done
+&gt; ifconfig up
+Done
+&gt; thread start
+Done
+</code></pre>
+<p>If everything has gone ok you should be able to see that this thread device has become a leader. This may take a few seconds.</p>
+<pre><code language="language-shell" class="language-shell">&gt; state
+leader
+Done
+</code></pre>
+<ol type="1" start="3">
+<li>Now the first device has formed a Thread network as a leader. Get some information which will be used in next steps.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">&gt; ipaddr
+fdde:ad00:beef:0:0:ff:fe00:fc00
+fdde:ad00:beef:0:0:ff:fe00:8000
+fdde:ad00:beef:0:a7c6:6311:9c8c:271b
+fe80:0:0:0:5c27:a723:7115:c8f8
+
+# Get the Active Dataset
+&gt; dataset active -x
+0e080000000000010000000300001835060004001fffe00208fe7bb701f5f1125d0708fd75cbde7c6647bd0510b3914792d44f45b6c7d76eb9306eec94030f4f70656e5468726561642d35383332010258320410e35c581af5029b054fc904a24c2b27700c0402a0fff8
+</code></pre>
+<ol type="1" start="4">
+<li>We will now join the OT Border Router to our Wifi network.</li>
+</ol>
+<p>On the Terminal running the OT_BR example type the following command to join the OT border router to the Wifi Network</p>
+<pre><code language="language-shell" class="language-shell">wifi connect -s myssid -p mypassword 
+</code></pre>
+<p>If everything worked OK you should be able to see that the wifi is connected by using:</p>
+<pre><code language="language-shell" class="language-shell">&gt; wifi state
+connected
+Done
+</code></pre>
+<ol type="1" start="5">
+<li>We will then join the OT Border Router to our Thread network.</li>
+</ol>
+<p>On the Terminal running the OT_BR example type the following command to join the OT border router to the Thread Network</p>
+<pre><code language="language-shell" class="language-shell">&gt; dataset set active 0e080000000000010000000300001835060004001fffe00208fe7bb701f5f1125d0708fd75cbde7c6647bd0510b3914792d44f45b6c7d76eb9306eec94030f4f70656e5468726561642d35383332010258320410e35c581af5029b054fc904a24c2b27700c0402a0fff8
+&gt; ifconfig up
+Done
+&gt; thread start
+Done
+</code></pre>
+<p>If everything worked OK you should be able to see that the border router is now a router (or child) on the Thread network:</p>
+<pre><code language="language-shell" class="language-shell">&gt; state
+router  # child is also a valid state
+Done
+</code></pre>
+<h2 is-upgraded>Checking Communication between the Thread network and the IP network</h2>
+<p>In order to do a simple check between the Thread network and the IP network we will ping the Google DNS servers (i.e. 8.8.8.8 or 8.8.4.4) from the Thread device</p>
+<p>On the Thread CLI device run the following command:</p>
+<pre><code language="language-shell" class="language-shell">&gt; ping 8.8.8.8
+</code></pre>
+<p>If everything worked successfully, you should see a response from the Google DNS servers thereby indicating that Thread network traffic has traversed the Border Router into the Wifi network and onwards to the external Internet.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation here: <a href="https://github.com/espressif/esp-idf/tree/master/examples/openthread" target="_blank">Espressif OpenThread Examples</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

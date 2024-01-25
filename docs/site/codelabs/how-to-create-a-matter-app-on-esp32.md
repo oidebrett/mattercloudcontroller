@@ -1,7 +1,7 @@
 summary: How to create a matter app on esp32
 id: how-to-create-a-matter-app-on-esp32
 categories: Sample
-tags: medium
+tags: matter
 status: Published 
 authors: MatterCoder
 Feedback Link: https://mattercoder.com
@@ -57,17 +57,16 @@ mkdir tools
 cd tools
 ```
 
-2. Next we will clone the ESP-IDF github repo
+2. Next we will clone the ESP-IDF github repo. Note the latest version at the time of writing is below. Upgrading to the latest version is recommended.
 
 ```shell
-git clone -b v4.4.4 --recursive https://github.com/espressif/esp-idf.git
+git clone -b v5.1.2 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
-./install.sh
-source ./export.sh
+git submodule update --init --recursive
 ```
 
 3. Once the ESP-IDF toolchain is in place you will ensure that the correct submodules 
-for upodated in the connectedhomeip environment
+are updated in the connectedhomeip environment
 
 ```shell
 cd ~/Projects/connectedhomeip
@@ -85,7 +84,7 @@ Before building our Matter controller and sample app, we need to install a few O
 Duration: 10
 
 In this section we will build a sample matter app for the ESP32. 
-We will use the `Linux all-clusters-app` which has all the main capabilities of a matter end device. 
+We will use the sample `Linux lighting app` which has all the main capabilities of a matter light end device. 
 
 We have previously built the matter controller tool that is provided by Project-Chip. You will need
 to go back and complete that codelab
@@ -104,24 +103,26 @@ If everything has gone ok with the environment setup you should see:
 ```shell
 Checking the environment:
 
-20230423 16:49:39 INF Environment passes all checks!
+20250423 16:49:39 INF Environment passes all checks!
 
 Environment looks good, you are ready to go!
+```
+
+2. We need to install the esp-idf environment
+
+```shell
+cd ~/tools/esp-idf #or where you located your esp-idf environment
+./install.sh
+source ./export.sh
 ```
 
 2. We then need to build the matter application for esp
 
 Run the following commands
 ```shell
-cd examples/all-clusters-app/esp32/
+cd ~/Projects/connectedhomeip
+cd examples/lighting-app/esp32/
 idf.py set-target esp32
-```
-
-2.1. If you get an error with a version of one of the python modules e.g. bitstring, you can
-always manually install the correct version
-
-```shell
-python3 -m pip install bitstring==3.1.6
 ```
 
 3. We then can build the required sample apps using the following commands
@@ -130,11 +131,18 @@ python3 -m pip install bitstring==3.1.6
 idf.py build
 ```
 
-4. If everything worked OK you should see an  Executable Linkable Format file called `chip-all-clusters-app.elf` in the `build` directory
+4. If everything worked OK you should see an  Executable Linkable Format file called `chip-lighting-app.elf` in the `build` directory
 
 Note: if you run into any difficulties in can be useful to clean up the temporary build folder using `rm -rf build` as this can often solve some build issues.
 
-5. Finally, you will then flash the image on to the ESP32. But its good practice to erase the flash before hand
+5. Adding User to dialout or uucp on Linux
+The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:
+
+```shell
+sudo usermod -a -G dialout $USER
+```
+
+6. Finally, you will then flash the image on to the ESP32. But its good practice to erase the flash before hand
 
 ```shell
 idf.py -p /dev/ttyUSB0 erase_flash
@@ -145,7 +153,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 ## Basic testing with ESP32 sample app and chip-tool
 Duration: 10
 
-In this section we will run a sample matter accessory application (all-clusters-app) and control with an administrative
+In this section we will run a sample matter accessory application (chip-lighting-app) and control with an administrative
 tool called the chip-tool that acts as a matter controller.
 
 ### Running the CHIP Tool

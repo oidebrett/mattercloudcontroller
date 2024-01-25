@@ -191,13 +191,6 @@ cd connectedhomeip
 </ol>
 <pre><code language="language-shell" class="language-shell">sudo apt-get clean
 </code></pre>
-<ol type="1" start="7">
-<li>The Connectedhomeip repo requires the ZAP tool for code generation. Unfortunately there are no compatible executables for ARM64 yet and the process of installing the ZAP tool is very complex and requires a lot of disk space. Therefore, I have pregenerated the required code and made it available on my Repo. Execute this commands to get the pregenerated code. Hopefully in the future this process will be easier.</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">wget https://github.com/oidebrett/mattercloudcontroller/raw/main/integrations/docker/zzz_pregenerated.zip
-unzip zzz_pregenerated.zip
-rm zzz_pregenerated.zip
-</code></pre>
 <h2 is-upgraded>Configuring wpa_supplicant for storing permanent changes</h2>
 <p>By default, wpa_supplicant is not allowed to update (overwrite) configuration. If you want the Matter application to be able to store the configuration changes permanently, you need to make the following changes:</p>
 <p>Edit the dbus-fi.w1.wpa_supplicant1.service file to use configuration file instead by running the following command:</p>
@@ -224,14 +217,14 @@ source scripts/activate.sh
 <p>If everything has gone ok with the environment setup you should see:</p>
 <pre><code language="language-shell" class="language-shell">Checking the environment:
 
-20230506 13:25:40 INF Environment passes all checks!
+20250506 13:25:40 INF Environment passes all checks!
 
 Environment looks good, you are ready to go!
 </code></pre>
 <ol type="1" start="2">
 <li>We then need to build the chip tool. Run the following commands</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">gn gen out/chiptool_arm64_release --args=&#39;chip_mdns=&#34;platform&#34; chip_inet_config_enable_ipv4=false chip_code_pre_generated_directory=&#34;../../../zzz_pregenerated/&#34; chip_detail_logging=false symbol_level=0&#39;
+<pre><code language="language-shell" class="language-shell">gn gen out/chiptool_arm64_release --args=&#39;chip_mdns=&#34;platform&#34; chip_inet_config_enable_ipv4=false chip_detail_logging=false symbol_level=0&#39;
 
 ninja -C out/chiptool_arm64_release chip-tool
 </code></pre>
@@ -275,6 +268,17 @@ ls -al
 <p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<p>3.1. Troubleshooting issues</p>
+<p>Make sure you are able to see a bluetooth device using;</p>
+<pre><code language="language-shell" class="language-shell">hcitool dev
+</code></pre>
+<p>Note: if you are having problems finding a bluetooth device. Then you can try this:</p>
+<pre><code language="language-shell" class="language-shell">sudo apt-get dist-upgrade -y
+sudo apt-get install pi-bluetooth
+</code></pre>
+<p>There is also a known bug when a Raspberry Pi is using both Wifi and Etho adapters. Bring the Wifo adapter down using this command:</p>
+<pre><code language="language-shell" class="language-shell">sudo ip link set dev wlan0 down
 </code></pre>
 <ol type="1" start="4">
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions/</li>

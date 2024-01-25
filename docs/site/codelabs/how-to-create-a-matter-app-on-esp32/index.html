@@ -73,15 +73,14 @@ mkdir tools
 cd tools
 </code></pre>
 <ol type="1" start="2">
-<li>Next we will clone the ESP-IDF github repo</li>
+<li>Next we will clone the ESP-IDF github repo. Note the latest version at the time of writing is below. Upgrading to the latest version is recommended.</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">git clone -b v4.4.4 --recursive https://github.com/espressif/esp-idf.git
+<pre><code language="language-shell" class="language-shell">git clone -b v5.1.2 --recursive https://github.com/espressif/esp-idf.git
 cd esp-idf
-./install.sh
-source ./export.sh
+git submodule update --init --recursive
 </code></pre>
 <ol type="1" start="3">
-<li>Once the ESP-IDF toolchain is in place you will ensure that the correct submodules for upodated in the connectedhomeip environment</li>
+<li>Once the ESP-IDF toolchain is in place you will ensure that the correct submodules are updated in the connectedhomeip environment</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
 ./scripts/checkout_submodules.py --recursive --force --platform esp32
@@ -93,7 +92,7 @@ source ./export.sh
       </google-codelab-step>
     
       <google-codelab-step label="How to build a sample matter app for the ESP32 microcontroller" duration="10">
-        <p>In this section we will build a sample matter app for the ESP32. We will use the <code>Linux all-clusters-app</code> which has all the main capabilities of a matter end device.</p>
+        <p>In this section we will build a sample matter app for the ESP32. We will use the sample <code>Linux lighting app</code> which has all the main capabilities of a matter light end device.</p>
 <p>We have previously built the matter controller tool that is provided by Project-Chip. You will need to go back and complete that codelab</p>
 <ol type="1">
 <li>Before building any matter app or controller we will need to create and initialise the environment</li>
@@ -105,19 +104,24 @@ source scripts/activate.sh
 <p>If everything has gone ok with the environment setup you should see:</p>
 <pre><code language="language-shell" class="language-shell">Checking the environment:
 
-20230423 16:49:39 INF Environment passes all checks!
+20250423 16:49:39 INF Environment passes all checks!
 
 Environment looks good, you are ready to go!
+</code></pre>
+<ol type="1" start="2">
+<li>We need to install the esp-idf environment</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+./install.sh
+source ./export.sh
 </code></pre>
 <ol type="1" start="2">
 <li>We then need to build the matter application for esp</li>
 </ol>
 <p>Run the following commands</p>
-<pre><code language="language-shell" class="language-shell">cd examples/all-clusters-app/esp32/
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
+cd examples/lighting-app/esp32/
 idf.py set-target esp32
-</code></pre>
-<p>2.1. If you get an error with a version of one of the python modules e.g. bitstring, you can always manually install the correct version</p>
-<pre><code language="language-shell" class="language-shell">python3 -m pip install bitstring==3.1.6
 </code></pre>
 <ol type="1" start="3">
 <li>We then can build the required sample apps using the following commands</li>
@@ -125,10 +129,15 @@ idf.py set-target esp32
 <pre><code language="language-shell" class="language-shell">idf.py build
 </code></pre>
 <ol type="1" start="4">
-<li>If everything worked OK you should see an  Executable Linkable Format file called <code>chip-all-clusters-app.elf</code> in the <code>build</code> directory</li>
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>chip-lighting-app.elf</code> in the <code>build</code> directory</li>
 </ol>
 <p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
 <ol type="1" start="5">
+<li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
+</code></pre>
+<ol type="1" start="6">
 <li>Finally, you will then flash the image on to the ESP32. But its good practice to erase the flash before hand</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
@@ -139,7 +148,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
       </google-codelab-step>
     
       <google-codelab-step label="Basic testing with ESP32 sample app and chip-tool" duration="10">
-        <p>In this section we will run a sample matter accessory application (all-clusters-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+        <p>In this section we will run a sample matter accessory application (chip-lighting-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
 <h2 is-upgraded>Running the CHIP Tool</h2>
 <p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
 <pre><code language="language-shell" class="language-shell">./out/chip-tool

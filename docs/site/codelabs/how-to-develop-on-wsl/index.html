@@ -1,0 +1,154 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Develop Matter on WSL2</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-develop-on-wsl"
+                  title="How to Develop Matter on WSL2"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to set up windows for developing Matter using Windows Subsystem for Linux (WSL)</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Enable WSL2 on windows</li>
+<li>Set up support for USB to WSL2</li>
+<li>Set up support for mDNS (service discovery)</li>
+</ul>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to enable WSL2 on Windows</li>
+<li>How to set up support for USB in WSL2</li>
+<li>How to set up mDNS supoort (for service discovery)</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a windows 10 architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+<p>You will need</p>
+<ul>
+<li>a laptop or PC running Windows 10</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to enable WSL2 on Windows" duration="5">
+        <p>To install WSL 2 on Windows 10 OS Build 2004 or later you can open a command prompt (with Administrator permissions) and type in the following command:</p>
+<pre><code language="language-shell" class="language-shell">wsl.exe --install
+</code></pre>
+<p>Once done, reboot your computer. Log in to Windows 10 and the command prompt will open again. This time you&#39;ll be walked through setting up Ubuntu with a username and password (these don&#39;t need to be the same as your Windows username and password).</p>
+<p>Once done you can you can launch the ‘Ubuntu&#39; app from the Start Menu to get started, or install the Microsoft Terminal app to start exploring your newly-installed Ubuntu install — don&#39;t forget to run an apt update &amp;&amp; apt upgrade though — this is a REAL Ubuntu system, after all!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to set up support for USB in WSL2" duration="5">
+        
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Steps to attach your USB device to the WSL2" duration="0">
+        <p>Every time an USB device is connected to your PC, you need to do the following steps to make it available for WSL2. You need to share the device on Windows with usbipd first, and attach the shared device to WSL2 with usbip.</p>
+<h3 is-upgraded>On Windows</h3>
+<ol type="1">
+<li>Make sure the usbipd server is running on Windows. You can do this by either:</li>
+<li>Make sure the Windows service <code>USBIP Device Host</code> is still running (Right Click <code>This PC</code> -&gt; Management -&gt; Service). Usually the service that is always running, but sometimes it crashes and cannot recover quickly. I recommend to execute the server in Powershell command instead. (see below)</li>
+<li>Run <code>usbipd server</code> in Powershell can also run the server, but the console needs to be kept open. I think this is more convenient than the Windows service: you can see if the server is running in command line, and disconnect the devices by terminating the server at any time (CTRL+C), or recover the server quickly.</li>
+<li>Run <code>usbipd list</code> in Windows powershell to see all your USB devices. Remember the BUSID of the desired USB device.</li>
+</ol>
+<p>Note: here you will see all the USB devices of this PC. Devices with <code>Shared</code> state will be available for WSL2 to attach. Devices with <code>Attach</code> state is already attached by WSL2, and cannot be attached by other users.</p>
+<ol type="1" start="3">
+<li>Share your USB device on Windows. Run <code>usbipd bind -b [busid]</code> to share the desired device.</li>
+</ol>
+<p>Note: step 2 and 3 only needs to be performed once. After this step, the same device connected to the same physical port will be automatically binded (shared). If WSL2 cannot attach any device, check if the usbipd server is running on Windows (step 1).</p>
+<h3 is-upgraded>On WSL2</h3>
+<ol type="1">
+<li>Get the ip of Windows system by running <code>ip route</code> in WSL2. You will see:</li>
+</ol>
+<pre><code>$ ip route
+default via 172.22.80.1 dev eth0
+172.22.80.0/20 dev eth0 proto kernel scope link src 172.22.88.162
+</code></pre>
+<p>The ip shown in the default line is the IP of the Windows. You can also get this IP easily by alias a command (<code>alias win_ip='ip route | grep default | awk '\''{print $3}'\'''</code>).</p>
+<ol type="1" start="2">
+<li>Check the binded (shared) devices on Windows by running <code>sudo usbip list -r [windows_ip]</code>. You will see:</li>
+</ol>
+<pre><code>$ sudo usbip list -r 172.22.80.1
+Exportable USB devices
+======================
+- 172.22.80.1
+1-1: Silicon Labs : CP210x UART Bridge (10c4:ea60)
+: USB\VID_10C4&amp;PID_EA60\88E1A435661CEC11AA7FA08DF01C6278
+: (Defined at Interface level) (00/00/00)
+: 0 - Vendor Specific Class / unknown subclass / unknown protocol (ff/00/00)
+</code></pre>
+<p>Here 1-1 is the busid of the device. I guess it will also keep the same value, for the same devices connected to the same physical port.</p>
+<ol type="1" start="3">
+<li>Attach the device to WSL2 by <code>sudo usbip attach -r [windows_ip] -b [bus_id]</code>. You can do this easily by alias command (<code>alias usbc='sudo usbip attach -r $(win_ip) -b '</code>), and run <code>usbc 1-1</code>.</li>
+<li>You will see your USB device disappear from the Windows device manager. Now you can see the USB devices in WSL2 by calling <code>dmesg | grep tty</code>, <code>lsusb</code> or <code>ls /dev | grep ttyUSB*</code>.</li>
+</ol>
+<h3 is-upgraded>Troubleshooting</h3>
+<ol type="1">
+<li>If you see <code>usbipd: error: Server is currently not running.</code>, or steps in <code>On WSL2</code> is blocked without any log, it means the usbipd server is not running. Go back to <code>On Windows</code> step 1, run usbipd server and try again.</li>
+<li>(Windows 10) If you see information like: <code>USBIPD is not supported on WSL2</code>, or <code>Using wrong WSL version</code>, it may mean that, the kernel you are using doesn&#39;t have the USB support. Go back to <code>Recompile and replace the WSL2 kernel with USB support</code> and try it again.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to set up mDNS supoort (for service discovery)" duration="2">
+        <p>You will need to set up support for service discovery mDNS which is used by matter devices during commissioning</p>
+<ol type="1">
+<li>We run these commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo service dbus start
+sudo service avahi-daemon start
+</code></pre>
+<ol type="1" start="2">
+<li>Next we will check that the services are running</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">/etc/init.d/dbus status
+/etc/init.d/avahi-daemon status
+</code></pre>
+<p>Note: you may need to run this everytime you restart your WSL2 instance</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
