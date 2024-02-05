@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-05T17:00:50Z",
+  "id": "how-to-install-esp-matter-on-linux",
+  "duration": 60,
+  "title": "How to Install Matter on Linux for ESP32 development",
+  "authors": "MatterCoder",
+  "summary": "How to Install Matter on Linux for ESP32 development",
+  "source": "how-to-install-esp-matter-on-linux.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "sample"
+  ],
+  "tags": [
+    "matter"
+  ],
+  "feedback": "https://mattercoder.com",
+  "url": "how-to-install-esp-matter-on-linux"
+}

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
   <meta name="theme-color" content="#4F7DC9">
   <meta charset="UTF-8">
-  <title>How to Create a Matter app on esp32</title>
+  <title>How to Install a Matter sample app on esp32</title>
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
   <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -22,13 +22,13 @@
 <body>
   <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
   <google-codelab codelab-gaid=""
-                  id="how-to-create-a-matter-app-on-esp32"
-                  title="How to Create a Matter app on esp32"
+                  id="how-to-install-a-matter-app-on-esp32"
+                  title="How to Install a Matter sample app on esp32"
                   environment="web"
                   feedback-link="https://mattercoder.com">
     
       <google-codelab-step label="Overview" duration="25">
-        <p>In this codelab we will show you how to build and install the all-clusters-app on the ESP32.</p>
+        <p>In this codelab we will show you how to build and install a Matter sample app on the ESP32.</p>
 <h2 is-upgraded>What You&#39;ll Build</h2>
 <p>In this codelab, you will:</p>
 <ul>
@@ -50,7 +50,7 @@
       </google-codelab-step>
     
       <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
-        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture. If you are using Mac OS then you should follow the instructions directly from the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md" target="_blank">Matter repo</a></p>
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
 <p>You will need</p>
 <ul>
 <li>an ESP32 microcontroller. ESP32 DEV KIT C</li>
@@ -64,26 +64,55 @@
       </google-codelab-step>
     
       <google-codelab-step label="Where to get the latest version of ESP-IDF" duration="2">
-        <p>A guide on how to install ESP-IDF is available on the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/esp32/setup_idf_chip.mdp" target="_blank">ConnectedHomeIP repo</a></p>
+        <p>A guide on how to install ESP-IDF is available on the <a href="https://docs.espressif.com/projects/esp-matter" target="_blank">Espressif&#39;s Matter SDK repo</a></p>
 <ol type="1">
 <li>First thing we will do is create a new folder so that we can clone the code</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">cd ~
-mkdir tools
-cd tools
+mkdir Project
+cd Project
 </code></pre>
 <ol type="1" start="2">
 <li>Next we will clone the ESP-IDF github repo. Note the latest version at the time of writing is below. Upgrading to the latest version is recommended.</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">git clone -b v5.1.2 --recursive https://github.com/espressif/esp-idf.git
-cd esp-idf
-git submodule update --init --recursive
+<pre><code language="language-shell" class="language-shell">git clone --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf; git checkout v5.1.2; git submodule update --init --recursive;
+./install.sh
+cd ..
 </code></pre>
 <ol type="1" start="3">
-<li>Once the ESP-IDF toolchain is in place you will ensure that the correct submodules are updated in the connectedhomeip environment</li>
+<li>If you have not already done so, you will need top ensure that the Matter ConnectedHomeIP SDK is installed. Do this in the Projects directory.</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
-./scripts/checkout_submodules.py --recursive --force --platform esp32
+<pre><code language="language-shell" class="language-shell">git clone --depth 1 https://github.com/espressif/esp-matter.git
+cd esp-matter
+git submodule update --init --depth 1
+cd ..
+</code></pre>
+<ol type="1" start="4">
+<li>Next set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+</code></pre>
+<ol type="1" start="5">
+<li>Next we will install the required submodules</li>
+</ol>
+<h2 is-upgraded>For Linux host:</h2>
+<pre><code language="language-shell" class="language-shell">cd ./connectedhomeip/connectedhomeip
+./scripts/checkout_submodules.py --platform esp32 linux --shallow
+cd ../..
+./install.sh
+cd ..
+</code></pre>
+<h2 is-upgraded>For Mac OS-X host:</h2>
+<pre><code language="language-shell" class="language-shell">cd ./connectedhomeip/connectedhomeip
+./scripts/checkout_submodules.py --platform esp32 darwin --shallow
+cd ../..
+./install.sh
+cd ..
 </code></pre>
 <p>Note: this process can take a while the very 1st time you install matter.</p>
 <p>Before building our Matter controller and sample app, we need to install a few OS specific dependencies.</p>
@@ -92,53 +121,32 @@ git submodule update --init --recursive
       </google-codelab-step>
     
       <google-codelab-step label="How to build a sample matter app for the ESP32 microcontroller" duration="10">
-        <p>In this section we will build a sample matter app for the ESP32. We will use the sample <code>Linux lighting app</code> which has all the main capabilities of a matter light end device.</p>
+        <p>In this section we will build a sample matter app for the ESP32. We will use the sample <code>Light app</code> which has all the main capabilities of a matter light end device.</p>
 <p>We have previously built the matter controller tool that is provided by Project-Chip. You will need to go back and complete that codelab</p>
 <ol type="1">
-<li>Before building any matter app or controller we will need to create and initialise the environment</li>
+<li>We will build the matter application for esp</li>
 </ol>
 <p>Run the following commands</p>
-<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
-source scripts/activate.sh
-</code></pre>
-<p>If everything has gone ok with the environment setup you should see:</p>
-<pre><code language="language-shell" class="language-shell">Checking the environment:
-
-20250423 16:49:39 INF Environment passes all checks!
-
-Environment looks good, you are ready to go!
-</code></pre>
-<ol type="1" start="2">
-<li>We need to install the esp-idf environment</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
-./install.sh
-source ./export.sh
-</code></pre>
-<ol type="1" start="2">
-<li>We then need to build the matter application for esp</li>
-</ol>
-<p>Run the following commands</p>
-<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
-cd examples/lighting-app/esp32/
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-mattee
+cd examples/light/
 idf.py set-target esp32
 </code></pre>
-<p>2.1. We will confirm the esp build configuration using the idf.py menuconfig command</p>
+<ol type="1" start="2">
+<li>We will confirm the esp build configuration using the idf.py menuconfig command</li>
+</ol>
 <pre><code language="language-shell" class="language-shell">idf.py menuconfig
 </code></pre>
-<p>Navigate into the demo option and confirm the board type and LED GPIO pin. You should see something like this:</p>
-<p class="image-container"><img alt="idfpymenuconfig" src="img/4a4d2df40eb5cec9.JPG"></p>
 <ol type="1" start="3">
 <li>We then can build the required sample apps using the following commands</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py build
 </code></pre>
 <ol type="1" start="4">
-<li>If everything worked OK you should see an  Executable Linkable Format file called <code>chip-lighting-app.elf</code> in the <code>build</code> directory</li>
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>light.elf</code> in the <code>build</code> directory</li>
 </ol>
 <p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
 <ol type="1" start="5">
-<li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
+<li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
 </code></pre>
@@ -148,19 +156,15 @@ idf.py set-target esp32
 <pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
 idf.py -p /dev/ttyUSB0 flash monitor 
 </code></pre>
-<ol type="1" start="7">
-<li>Finally, you will create a circuit with an LED connected to GPIO5 that will indicate the status of the light.</li>
-</ol>
-<p class="image-container"><img alt="ESP32 LED circuit" src="img/4beea08f0c436b58.png"></p>
 
 
       </google-codelab-step>
     
       <google-codelab-step label="Basic testing with ESP32 sample app and chip-tool" duration="10">
-        <p>In this section we will run a sample matter accessory application (chip-lighting-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+        <p>In this section we will run a ESP32 matter loight application (light-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
 <h2 is-upgraded>Running the CHIP Tool</h2>
 <p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool
 </code></pre>
 <p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
 <h2 is-upgraded>Using the CHIP Tool</h2>
@@ -173,7 +177,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <ol type="1" start="3">
 <li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (chip-all-clusters-app).</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
 </code></pre>
 <p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
@@ -183,7 +187,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
 </ol>
 <p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read vendor-name 1 0
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 1 0
 </code></pre>
 <p>In the output logs, you should see that the Vendor Name</p>
 <pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
@@ -191,14 +195,14 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <ol type="1" start="6">
 <li>We can read other information using these commands:</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool basicinformation read product-name 1 0
-./out/chip-tool basicinformation read software-version 1 0
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read product-name 1 0
+./out/host/chip-tool basicinformation read software-version 1 0
 </code></pre>
 <p>We are using the Basic Information <code>cluster</code>. Clusters are logical groupings of Matter functionality.</p>
 <ol type="1" start="7">
 <li>We can read other information from another using these commands:</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool generaldiagnostics read up-time 1 0
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool generaldiagnostics read up-time 1 0
 </code></pre>
 <p>In the output logs, you should see the UpTime</p>
 <pre><code language="language-shell" class="language-shell">[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
@@ -206,13 +210,13 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <ol type="1" start="8">
 <li>We can control the status of the Matter light using the onoff cluster:</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool onoff toggle 1 1
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool onoff toggle 1 1
 </code></pre>
-<p>On the circuit board, you should see the Light turn on and off everytime you run this command.</p>
+<p>In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.</p>
 <ol type="1" start="9">
 <li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/chip-tool 
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool 
 </code></pre>
 <h2 is-upgraded>Cleaning Up</h2>
 <p>You should stop the chip-all-clusters-app process by using Ctrl-C in the first shell window.</p>
@@ -225,7 +229,8 @@ idf.py -p /dev/ttyUSB0 flash monitor
       </google-codelab-step>
     
       <google-codelab-step label="Further Information" duration="1">
-        <p>Checkout the official documentation here: <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
 
 
       </google-codelab-step>

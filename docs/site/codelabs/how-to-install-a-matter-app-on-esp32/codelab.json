@@ -3,13 +3,13 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2024-01-25T19:00:07Z",
-  "id": "how-to-create-a-matter-app-on-esp32",
+  "updated": "2024-02-05T17:05:51Z",
+  "id": "how-to-install-a-matter-app-on-esp32",
   "duration": 50,
-  "title": "How to Create a Matter app on esp32",
+  "title": "How to Install a Matter sample app on esp32",
   "authors": "MatterCoder",
-  "summary": "How to create a matter app on esp32",
-  "source": "how-to-create-a-matter-app-on-esp32.md",
+  "summary": "How to install a matter app on esp32",
+  "source": "how-to-install-a-matter-app-on-esp32.md",
   "theme": "",
   "status": [
     "published"
@@ -21,5 +21,5 @@
     "matter"
   ],
   "feedback": "https://mattercoder.com",
-  "url": "how-to-create-a-matter-app-on-esp32"
+  "url": "how-to-install-a-matter-app-on-esp32"
 }
