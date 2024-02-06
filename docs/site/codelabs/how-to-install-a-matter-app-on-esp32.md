@@ -184,9 +184,9 @@ rm -fr /tmp/chip_*
 ```
 Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.
 
-3. In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the 
+2. In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the 
 process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially,
-we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (chip-all-clusters-app).
+we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).
 
 ```shell
 ./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
@@ -199,7 +199,7 @@ If everything is working you should see output logs and you should see that the 
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 ```
 
-4. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the "interaction model" and "data model" of Matter in later codelabs. But for now, we will do some simple interactions.
+3. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the "interaction model" and "data model" of Matter in later codelabs. But for now, we will do some simple interactions.
 
 In the same shell window, we will read the vendor-name of the Matter accessory using the following command:
 
@@ -213,7 +213,7 @@ In the output logs, you should see that the Vendor Name
 [1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
 ```
 
-6. We can read other information using these commands:
+4. We can read other information using these commands:
 ```shell
 ./out/host/chip-tool basicinformation read product-name 1 0
 ./out/host/chip-tool basicinformation read software-version 1 0
@@ -221,7 +221,7 @@ In the output logs, you should see that the Vendor Name
 
 We are using the Basic Information `cluster`. Clusters are logical groupings of Matter functionality.
 
-7. We can read other information from another using these commands:
+5. We can read other information from another using these commands:
 ```shell
 ./out/host/chip-tool generaldiagnostics read up-time 1 0
 ```
@@ -232,20 +232,20 @@ In the output logs, you should see the UpTime
 [1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
 ```
 
-8. We can control the status of the Matter light using the onoff cluster:
+6. We can control the status of the Matter light using the onoff cluster:
 ```shell
 ./out/host/chip-tool onoff toggle 1 1
 ```
 
 In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.
 
-9. You can find out the other different clusters that are supported by the chip-tool by running:
+7. You can find out the other different clusters that are supported by the chip-tool by running:
 ```shell
 ./out/host/chip-tool 
 ```
 
 ### Cleaning Up
-You should stop the chip-all-clusters-app process by using Ctrl-C in the first shell window.
+You should stop the monitor by using Ctrl-] in the esp32 monitor window and erase the esp32 flash.
 
 It also a great habit to clean up the temporary files after you finish testing by using this command:
 ```shell

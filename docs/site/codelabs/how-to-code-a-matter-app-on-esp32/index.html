@@ -1,0 +1,467 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to code a Matter light app on esp32</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-code-a-matter-app-on-esp32"
+                  title="How to code a Matter light app on esp32"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to code, build and install a Matter sample light app on the ESP32.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Build a sample Matter Accessory on the ESP32</li>
+<li>Use the chip-tool as a Matter controller to controller the accessory.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/5f89212b0c339441.png"></p>
+<p>in this CodeLab we will run the Matter Accessory on an ESP32 microcontroller and the Matter Controller on a Linux Host. This will allow us to create a simple Matter Network very quickly and we will learn how to commission Matter devices over BLE.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>Where to get the latest version of ESP-IDF toolchain</li>
+<li>How to build a sample matter app on the ESP32</li>
+<li>Basic testing with sample app and chip-tool</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
+<p>You will need</p>
+<ul>
+<li>an ESP32 microcontroller. ESP32 DEV KIT C</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Where to get the latest version of ESP-IDF" duration="2">
+        <p>A guide on how to install ESP-IDF is available on the <a href="https://docs.espressif.com/projects/esp-matter" target="_blank">Espressif&#39;s Matter SDK repo</a></p>
+<ol type="1">
+<li>First thing we will do is create a new folder so that we can clone the code</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~
+mkdir Project
+cd Project
+</code></pre>
+<ol type="1" start="2">
+<li>Next we will clone the ESP-IDF github repo. Note the latest version at the time of writing is below. Upgrading to the latest version is recommended.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">git clone --recursive https://github.com/espressif/esp-idf.git
+cd esp-idf; git checkout v5.1.2; git submodule update --init --recursive;
+./install.sh
+cd ..
+</code></pre>
+<ol type="1" start="3">
+<li>If you have not already done so, you will need top ensure that the Matter ConnectedHomeIP SDK is installed. Do this in the Projects directory.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">git clone --depth 1 https://github.com/espressif/esp-matter.git
+cd esp-matter
+git submodule update --init --depth 1
+cd ..
+</code></pre>
+<ol type="1" start="4">
+<li>Next set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+</code></pre>
+<ol type="1" start="5">
+<li>Next we will install the required submodules</li>
+</ol>
+<h2 is-upgraded>For Linux host:</h2>
+<pre><code language="language-shell" class="language-shell">cd ./connectedhomeip/connectedhomeip
+./scripts/checkout_submodules.py --platform esp32 linux --shallow
+cd ../..
+./install.sh
+cd ..
+</code></pre>
+<h2 is-upgraded>For Mac OS-X host:</h2>
+<pre><code language="language-shell" class="language-shell">cd ./connectedhomeip/connectedhomeip
+./scripts/checkout_submodules.py --platform esp32 darwin --shallow
+cd ../..
+./install.sh
+cd ..
+</code></pre>
+<p>Note: this process can take a while the very 1st time you install matter.</p>
+<p>Before building our Matter controller and sample app, we need to install a few OS specific dependencies.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="How to code a sample matter light app for the ESP32 microcontroller" duration="20">
+        <p>In this section we will code a sample matter light app for the ESP32.</p>
+<ol type="1">
+<li>We will clone the starter code from this repository</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects
+git clone https://github.com/oidebrett/starter-esp-matter-app.git
+cd starter-esp-matter-app
+</code></pre>
+<p>1.1. Set up Cache for quicker compiling</p>
+<p>Ccache is a compiler cache. Matter builds are very slow and can take a lot of time. Ccache caches the previous compilations and speeds up recompilation in subsequent builds.</p>
+<pre><code language="language-shell" class="language-shell">export IDF_CCACHE_ENABLE=1
+</code></pre>
+<p>1.2. Make sure you set up the ESP-IDF environment before coding and compiling</p>
+<pre><code language="language-shell" class="language-shell">cd ../esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+cd starter-esp-matter-app
+</code></pre>
+<p>Now that our development environment is ready we will move on to actually coding a sample light app.</p>
+<ol type="1" start="2">
+<li>First we will add a light handler</li>
+</ol>
+<p>A typical Matter application on the ESP32 relies on callbacks. The Espressif engineers have suggested a structure for Matter applications that decomposes and isolates the main handling for callbacks. This is done in the app_driver.cpp file</p>
+<p>Open the app_driver.cpp file in the main folder and add the following code at the end of the file. This will initialise everything that we need to handle the LED lights on the ESP32 for this example app.</p>
+<pre><code language="language-shell" class="language-shell">app_driver_handle_t app_driver_light_init()
+{
+    /* Initialize led */
+    led_driver_config_t config = led_driver_get_config();
+    led_driver_handle_t handle = led_driver_init(&amp;config);
+    return (app_driver_handle_t)handle;
+}
+</code></pre>
+<p>In the app_main.cpp file we will call this initialisation function. Copy the following into the app_main.cpp and place it under the comment that says &#34;Initialize driver&#34;</p>
+<pre><code language="language-shell" class="language-shell">    /* Initialize driver */
+    app_driver_handle_t light_handle = app_driver_light_init();
+</code></pre>
+<ol type="1" start="3">
+<li>Create a Matter node</li>
+</ol>
+<p>Every Matter application requires a node. This is covered in the lesson on the Matter Data Model. We will create a matter node and add some callbacks that will be used to handle things when attributes are updated.</p>
+<p>Copy the following code and place it into the app_main.cpp file under the comments &#34;Create a Matter node and add the mandatory Root Node device type on endpoint 0&#34;</p>
+<pre><code language="language-shell" class="language-shell">    /* Create a Matter node and add the mandatory Root Node device type on endpoint 0 */
+    node::config_t node_config;
+    node_t *node = node::create(&amp;node_config, app_attribute_update_cb, app_identification_cb);
+</code></pre>
+<ol type="1" start="4">
+<li>Create the light endpoint</li>
+</ol>
+<p>Once we have created the Node we then create the endpoint that will represent this light. Add the following code under the code you previously implemented</p>
+<pre><code language="language-shell" class="language-shell">    on_off_light::config_t light_config;
+    light_config.on_off.on_off = DEFAULT_POWER;
+    light_config.on_off.lighting.start_up_on_off = nullptr;
+    endpoint_t *endpoint = on_off_light::create(node, &amp;light_config, ENDPOINT_FLAG_NONE, light_handle);
+</code></pre>
+<p>4.1. Check that everything was set up correctly</p>
+<p>Its good to do some error checking so add the following code under where it says &#34;Confirm that node and endpoint were created successfully&#34;</p>
+<pre><code language="language-shell" class="language-shell">    if (!node || !endpoint) {
+        ESP_LOGE(TAG, &#34;Matter node creation failed&#34;);
+    }
+</code></pre>
+<p>4.2. Save the light endpoint id for later as we will want to check that any attribute changes or events are for this particular endpoint and not others. Add this code under where it says &#34; Get Endpoint Id &#34; and change the logging to show the endpoint id.</p>
+<pre><code language="language-shell" class="language-shell">    light_endpoint_id = endpoint::get_id(endpoint);
+
+    ESP_LOGI(TAG, &#34;Light created with endpoint_id %d&#34;, light_endpoint_id);
+</code></pre>
+<ol type="1" start="5">
+<li>Create the callback handlers for the node</li>
+</ol>
+<p>When we create a node you will notice that we pass the create function two callback functions. These callback functions are used to handle the callbacks from the Matter underlying libraries.</p>
+<p>We need to implement these callbacks in app_main.cpp. But you will notice that we are aiming to isolate the callback code in the app_driver.cpp file so the callbacks in app_main.cpp will simply invoke the callbacks in the app_driver.cpp file.</p>
+<p>Add the following code to the end of the app_main.cpp file to the app_attribute_update_cb function unwithin  the if (type == PRE_UPDATE) code block where it says &#34;Do stuff here&#34;.</p>
+<pre><code language="language-shell" class="language-shell">    if (type == PRE_UPDATE) {
+        /* Driver update */
+        app_driver_handle_t driver_handle = (app_driver_handle_t)priv_data;
+        err = app_driver_attribute_update(driver_handle, endpoint_id, cluster_id, attribute_id, val);
+    }
+</code></pre>
+<ol type="1" start="6">
+<li>Implement the driver for attribute updates</li>
+</ol>
+<p>We will now implement that driver code that handles the attribute updates. As mentioned before, we are aiming to isolate our code into the app_driver.cpp file. So we will update the &#34;app_driver_attribute_update&#34; function to handle attribute changes.</p>
+<p>Add the following code to the app_driver_attribute_update function where it says &#34;Do stuff here&#34;.</p>
+<pre><code language="language-shell" class="language-shell">    if (endpoint_id == light_endpoint_id) {
+        if (cluster_id == OnOff::Id) {
+            if (attribute_id == OnOff::Attributes::OnOff::Id) {
+                err = app_driver_light_set_on_off(val);
+            }
+        }
+    }
+</code></pre>
+<p>This code checks that the endpoint we are dealing with is the endpoint that reflects the light. If so, then it looks at the Cluster Id to see if its the OnOff cluster. And we then check the change is related to the OnOff attribute. Doing this allows us to isolate a particular attribute change on an individual endpoint, cluster and attribute.</p>
+<p>The function calls the &#34;app_driver_light_set_on_off&#34; function, which we will implement now in the app_driver.cpp file.</p>
+<ol type="1" start="7">
+<li>Implement the driver to turn on and off the light</li>
+</ol>
+<p>We will add the configuration for the GPIO pin for the onboard LED. Add the following code to the top of the app_priv.h file</p>
+<pre><code language="language-shell" class="language-shell">/*start of includes for onoff pin for light*/
+#include &lt;driver/gpio.h&gt;
+#define LED        ((gpio_num_t) 2)
+</code></pre>
+<p>At the top of the app_driver.cpp file under &#34;extern uint16_t light_endpoint_id&#34; add the following code:</p>
+<pre><code language="language-shell" class="language-shell">/* Do any conversions/remapping for the actual value here */
+static esp_err_t app_driver_light_set_on_off(esp_matter_attr_val_t *val)
+{
+    ESP_LOGI(TAG, &#34;Changing the GPIO LED!&#34;);
+
+    esp_rom_gpio_pad_select_gpio(LED);
+    gpio_set_direction(LED, GPIO_MODE_OUTPUT);
+    gpio_set_level(LED,  val-&gt;val.b); 
+
+    return ESP_OK;
+}
+</code></pre>
+<ol type="1" start="8">
+<li>Finally, we will implement an initial default set up for the LED light</li>
+</ol>
+<p>In the app_driver.cpp file we will add the code to set up the initial state of the LED light. Add the following code at the bottom of the app_driver.cpp file.</p>
+<pre><code language="language-shell" class="language-shell">esp_err_t app_driver_light_set_defaults(uint16_t endpoint_id)
+{
+    esp_err_t err = ESP_OK;
+    node_t *node = node::get();
+    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    cluster_t *cluster = NULL;
+    attribute_t *attribute = NULL;
+    esp_matter_attr_val_t val = esp_matter_invalid(NULL);
+
+
+    /* Setting power */
+    cluster = cluster::get(endpoint, OnOff::Id);
+    attribute = attribute::get(cluster, OnOff::Attributes::OnOff::Id);
+    attribute::get_val(attribute, &amp;val);
+    err |= app_driver_light_set_on_off(&amp;val);
+
+    return err;
+}
+</code></pre>
+<p>In the app_main.cpp file, under the comment &#34;Starting driver with default values&#34;, add the following line of code</p>
+<pre><code language="language-shell" class="language-shell">    /* Starting driver with default values */
+    app_driver_light_set_defaults(light_endpoint_id);
+</code></pre>
+<ol type="1" start="9">
+<li>We then can build the required sample apps using the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<ol type="1" start="10">
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>light.elf</code> in the <code>build</code> directory</li>
+</ol>
+<p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
+<ol type="1" start="11">
+<li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
+</code></pre>
+<ol type="1" start="12">
+<li>You will then flash the image on to the ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Basic testing of the ESP32 matter light app and chip-tool" duration="10">
+        <p>In this section we will run our ESP32 matter light application (light-app) on the ESP32 and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+<h2 is-upgraded>Running the CHIP Tool</h2>
+<p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool
+</code></pre>
+<p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
+<h2 is-upgraded>Using the CHIP Tool</h2>
+<ol type="1">
+<li>Clean the initialization of state using the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+<ol type="1" start="2">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="3">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+<ol type="1" start="4">
+<li>We can control the status of the Matter light using the onoff cluster:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool onoff toggle 1 1
+</code></pre>
+<p>In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.</p>
+<ol type="1" start="5">
+<li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Controlling the ESP32 matter light app using the onboard buttons" duration="10">
+        <p>In this section, we will write code that controls the light app using the on-board button on the ESP32.</p>
+<p>This is a particularly useful example of how the data model can be used to control the Matter application.</p>
+<p>You will notice in this code that we will change the Matter data model, and this in turn will trigger an attribute change of the OnOff cluster which in turn will turn on and off the light.</p>
+<ol type="1">
+<li>First we need to create and call an button initializaton function. At the bottom of the app_driver.cpp file add the following</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">app_driver_handle_t app_driver_button_init()
+{
+    /* Initialize button */
+    button_config_t config = button_driver_get_config();
+    button_handle_t handle = iot_button_create(&amp;config);
+    iot_button_register_cb(handle, BUTTON_PRESS_DOWN, app_driver_button_toggle_cb, NULL);
+    return (app_driver_handle_t)handle;
+}
+</code></pre>
+<p>You will notice, this initialisation function sets up a button handler that will call a callback.</p>
+<ol type="1" start="2">
+<li>Next we need to implement the &#34;app_driver_button_toggle_cb&#34; callback function. At the top of the app_driver.cpp file and under the &#34;app_driver_light_set_on_off&#34; function, add the following:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">static void app_driver_button_toggle_cb(void *arg, void *data)
+{
+    ESP_LOGI(TAG, &#34;Toggle button pressed&#34;);
+    uint16_t endpoint_id = light_endpoint_id;
+    uint32_t cluster_id = OnOff::Id;
+    uint32_t attribute_id = OnOff::Attributes::OnOff::Id;
+
+    node_t *node = node::get();
+    endpoint_t *endpoint = endpoint::get(node, endpoint_id);
+    cluster_t *cluster = cluster::get(endpoint, cluster_id);
+    attribute_t *attribute = attribute::get(cluster, attribute_id);
+
+    esp_matter_attr_val_t val = esp_matter_invalid(NULL);
+    attribute::get_val(attribute, &amp;val);
+    val.val.b = !val.val.b;
+    attribute::update(endpoint_id, cluster_id, attribute_id, &amp;val);
+}
+</code></pre>
+<p>In particular you should notice the line of this function that switches the value &#34;val.val.b&#34; and then updates the OnOff attribute.</p>
+<ol type="1" start="3">
+<li>Lastly, we will call the initialization of the button driver in the app_main.cpp file under where we initialized the light driver.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">    /* Initialize driver */
+    app_driver_handle_t light_handle = app_driver_light_init();
+    app_driver_handle_t button_handle = app_driver_button_init();
+    app_reset_button_register(button_handle);
+</code></pre>
+<ol type="1" start="4">
+<li>We then can build the required sample apps using the following commands</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<ol type="1" start="5">
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>light.elf</code> in the <code>build</code> directory</li>
+</ol>
+<p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
+<ol type="1" start="6">
+<li>You will then flash the image on to the ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+<p>Try pressing the boot button and you should see the light turning on and off.</p>
+<h2 is-upgraded>Using the CHIP Tool to read the Light state</h2>
+<p>Now that we can control the onoff attribute with the boot button, we will now read this state information using the chip-tool</p>
+<ol type="1">
+<li>Clean the initialization of state using the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+<ol type="1" start="2">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. We will use the interactive mode.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool interactive start
+</code></pre>
+<ol type="1" start="3">
+<li>Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="3">
+<li>Read the onoff cluster&#39;s on-off attribute using the chip-tool.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">onoff read on-off 1 1
+</code></pre>
+<p>You should see the value of the OnOff attribute in the output logs from the chip-tool.</p>
+<pre><code language="language-shell" class="language-shell">[1707241883.519160][55071:55073] CHIP:TOO: Endpoint: 1 Cluster: 0x0000_0006 Attribute 0x0000_0000 DataVersion: 1611469416
+[1707241883.519219][55071:55073] CHIP:TOO:   OnOff: FALSE
+</code></pre>
+<p>Try changing the light state using the button and check the state using the chip-tool.</p>
+<ol type="1" start="4">
+<li>We can subscribe to attribute changes using the interactive chip tool. Type in the following:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">onoff subscribe on-off 5 10 1 1
+</code></pre>
+<p>Now, when we change the light state the changes will be immediately displayed in the chip-tool interactive shell.</p>
+<pre><code language="language-shell" class="language-shell">[1707244169.288842][69088:69090] CHIP:TOO:   OnOff: TRUE
+[1707244169.300058][69088:69090] CHIP:DMG: Refresh LivenessCheckTime for 14224 milliseconds with SubscriptionId = 0x0ad53415 Peer = 01:0000000000000001
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the light-app process by using Ctrl-] in the first esp32 monitor window and then run idf erase flash.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

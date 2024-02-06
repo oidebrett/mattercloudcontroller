@@ -174,8 +174,8 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
 </code></pre>
 <p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
-<ol type="1" start="3">
-<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (chip-all-clusters-app).</li>
+<ol type="1" start="2">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
 </code></pre>
@@ -183,7 +183,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 </code></pre>
-<ol type="1" start="4">
+<ol type="1" start="3">
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
 </ol>
 <p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
@@ -192,14 +192,14 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <p>In the output logs, you should see that the Vendor Name</p>
 <pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
 </code></pre>
-<ol type="1" start="6">
+<ol type="1" start="4">
 <li>We can read other information using these commands:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read product-name 1 0
 ./out/host/chip-tool basicinformation read software-version 1 0
 </code></pre>
 <p>We are using the Basic Information <code>cluster</code>. Clusters are logical groupings of Matter functionality.</p>
-<ol type="1" start="7">
+<ol type="1" start="5">
 <li>We can read other information from another using these commands:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool generaldiagnostics read up-time 1 0
@@ -207,19 +207,19 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <p>In the output logs, you should see the UpTime</p>
 <pre><code language="language-shell" class="language-shell">[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
 </code></pre>
-<ol type="1" start="8">
+<ol type="1" start="6">
 <li>We can control the status of the Matter light using the onoff cluster:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool onoff toggle 1 1
 </code></pre>
 <p>In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.</p>
-<ol type="1" start="9">
+<ol type="1" start="7">
 <li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool 
 </code></pre>
 <h2 is-upgraded>Cleaning Up</h2>
-<p>You should stop the chip-all-clusters-app process by using Ctrl-C in the first shell window.</p>
+<p>You should stop the monitor by using Ctrl-] in the esp32 monitor window and erase the esp32 flash.</p>
 <p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
 <pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
 </code></pre>
