@@ -117,7 +117,7 @@ Before building our Matter controller and sample app, we need to install a few O
 Duration: 10
 
 In this section we will build a sample matter app for the ESP32. 
-We will use the sample `Light app` which has all the main capabilities of a matter light end device. 
+We will use the sample `Light_switch app` which has all the main capabilities of a matter light switch end device. 
 
 We have previously built the matter controller tool that is provided by Project-Chip. You will need
 to go back and complete that codelab
@@ -127,7 +127,7 @@ to go back and complete that codelab
 Run the following commands
 ```shell
 cd ~/Projects/esp-mattee
-cd examples/light/
+cd examples/light_switch/
 idf.py set-target esp32
 ```
 
@@ -143,7 +143,7 @@ idf.py menuconfig
 idf.py build
 ```
 
-4. If everything worked OK you should see an  Executable Linkable Format file called `light.elf` in the `build` directory
+4. If everything worked OK you should see an  Executable Linkable Format file called `light_switch.elf` in the `build` directory
 
 Note: if you run into any difficulties in can be useful to clean up the temporary build folder using `rm -rf build` as this can often solve some build issues.
 
@@ -165,7 +165,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 ## Basic testing with ESP32 sample app and chip-tool
 Duration: 10
 
-In this section we will run a ESP32 matter loight application (light-app) and control with an administrative
+In this section we will run a ESP32 matter loight application (light switch app) and control with an administrative
 tool called the chip-tool that acts as a matter controller.
 
 ### Running the CHIP Tool
@@ -185,8 +185,7 @@ rm -fr /tmp/chip_*
 Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.
 
 2. In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the 
-process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially,
-we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).
+process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light switch app).
 
 ```shell
 ./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
@@ -221,25 +220,18 @@ In the output logs, you should see that the Vendor Name
 
 We are using the Basic Information `cluster`. Clusters are logical groupings of Matter functionality.
 
-5. We can read other information from another using these commands:
+5. We can read other information from another cluster (General Diagnostics) using these commands:
 ```shell
-./out/host/chip-tool generaldiagnostics read up-time 1 0
+./out/host/chip-tool generaldiagnostics read reboot-count 1 0
 ```
 
-In the output logs, you should see the UpTime
+In the output logs, you should see the Reboot Count. Try rebooting the ESP32 by pressing the "EN" button and check that the reboot count increments accordingly.
 
 ```shell
-[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
+[1707327931.613546][60834:60836] CHIP:TOO:   RebootCount: 3
 ```
 
-6. We can control the status of the Matter light using the onoff cluster:
-```shell
-./out/host/chip-tool onoff toggle 1 1
-```
-
-In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.
-
-7. You can find out the other different clusters that are supported by the chip-tool by running:
+6. You can find out the other different clusters that are supported by the chip-tool by running:
 ```shell
 ./out/host/chip-tool 
 ```

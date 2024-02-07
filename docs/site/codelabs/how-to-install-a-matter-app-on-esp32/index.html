@@ -121,14 +121,14 @@ cd ..
       </google-codelab-step>
     
       <google-codelab-step label="How to build a sample matter app for the ESP32 microcontroller" duration="10">
-        <p>In this section we will build a sample matter app for the ESP32. We will use the sample <code>Light app</code> which has all the main capabilities of a matter light end device.</p>
+        <p>In this section we will build a sample matter app for the ESP32. We will use the sample <code>Light_switch app</code> which has all the main capabilities of a matter light switch end device.</p>
 <p>We have previously built the matter controller tool that is provided by Project-Chip. You will need to go back and complete that codelab</p>
 <ol type="1">
 <li>We will build the matter application for esp</li>
 </ol>
 <p>Run the following commands</p>
 <pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-mattee
-cd examples/light/
+cd examples/light_switch/
 idf.py set-target esp32
 </code></pre>
 <ol type="1" start="2">
@@ -142,7 +142,7 @@ idf.py set-target esp32
 <pre><code language="language-shell" class="language-shell">idf.py build
 </code></pre>
 <ol type="1" start="4">
-<li>If everything worked OK you should see an  Executable Linkable Format file called <code>light.elf</code> in the <code>build</code> directory</li>
+<li>If everything worked OK you should see an  Executable Linkable Format file called <code>light_switch.elf</code> in the <code>build</code> directory</li>
 </ol>
 <p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
 <ol type="1" start="5">
@@ -161,7 +161,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
       </google-codelab-step>
     
       <google-codelab-step label="Basic testing with ESP32 sample app and chip-tool" duration="10">
-        <p>In this section we will run a ESP32 matter loight application (light-app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
+        <p>In this section we will run a ESP32 matter loight application (light switch app) and control with an administrative tool called the chip-tool that acts as a matter controller.</p>
 <h2 is-upgraded>Running the CHIP Tool</h2>
 <p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool
@@ -175,7 +175,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 </code></pre>
 <p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
 <ol type="1" start="2">
-<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).</li>
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light switch app).</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
 </code></pre>
@@ -200,20 +200,14 @@ idf.py -p /dev/ttyUSB0 flash monitor
 </code></pre>
 <p>We are using the Basic Information <code>cluster</code>. Clusters are logical groupings of Matter functionality.</p>
 <ol type="1" start="5">
-<li>We can read other information from another using these commands:</li>
+<li>We can read other information from another cluster (General Diagnostics) using these commands:</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">./out/host/chip-tool generaldiagnostics read up-time 1 0
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool generaldiagnostics read reboot-count 1 0
 </code></pre>
-<p>In the output logs, you should see the UpTime</p>
-<pre><code language="language-shell" class="language-shell">[1682446010.495854][5286:5288] CHIP:TOO:   UpTime: 1008
+<p>In the output logs, you should see the Reboot Count. Try rebooting the ESP32 by pressing the &#34;EN&#34; button and check that the reboot count increments accordingly.</p>
+<pre><code language="language-shell" class="language-shell">[1707327931.613546][60834:60836] CHIP:TOO:   RebootCount: 3
 </code></pre>
 <ol type="1" start="6">
-<li>We can control the status of the Matter light using the onoff cluster:</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">./out/host/chip-tool onoff toggle 1 1
-</code></pre>
-<p>In the monitor screen for the ESP32, you should see the Light turn on and off everytime you run this command.</p>
-<ol type="1" start="7">
 <li>You can find out the other different clusters that are supported by the chip-tool by running:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool 
