@@ -550,3 +550,22 @@ sudo docker exec -it otbr sh -c "sudo ot-ctl dataset active -x"
 
 
 
+# Configuring ENV variables for lambda functions that handle DB updates
+
+When the lamda functions are created by CDK. MCCDev-iot-update-db-thing_updatedFunction and MCCDev-iot-update-db-thing_deletedFunction, 
+you need to add the Environment variables so these functins can connect to the postgres database
+
+```bash
+Environment variables (4)
+
+The environment variables below are encrypted at rest with the default Lambda service key.
+Key
+	
+Value
+DATABASE	postgres
+HOST	    aws-0-eu-west-1.pooler.supabase.com
+PASSWORD	"Replace with password"
+USERNAME	postgres.forokggksacjhxizkxcy
+```
+
+CDK code is being updated

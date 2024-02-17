@@ -18,8 +18,11 @@
         },
         "ThingMonitor": {
             "Name": "ThingMonitorStack",
-            "WebhookUrl": "https://1eb4-2a02-8084-81a2-b900-d776-5f69-efc0-ea43.eu.ngrok.io"
-            
+            "WebhookUrl": "https://1eb4-2a02-8084-81a2-b900-d776-5f69-efc0-ea43.eu.ngrok.io",
+            "Database": "postgres",
+            "Host": "CHANGEME",
+            "Password": "CHANGEME",
+            "Username": "CHANGEME"
         },
         "ComponentUpload": {
             "Name": "ComponentUploadStack",
@@ -84,7 +87,7 @@
             ],
             "Thing": {
                 "Name": "mcc-daemon",
-                "Version": "0.2.218",
+                "Version": "0.2.220",
                 "CodePath": "src/component/mcc-daemon",
                 "Args": "-n mcc-thing-ver01-1 -c True"
             }

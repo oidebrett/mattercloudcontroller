@@ -58,6 +58,60 @@ Command message structure (JSON):
     }
     ```
 
+### Testing using iotMatterController.py
+
+1. Add the env && to the greengrass lifecycle run command - this will show you the required environment params to run the iotMatterController python script on the command line
+
+2. Ensure to delete any persistent files
+
+```
+sudo rm -rf ~/data/* /data/* /tmp/chip_* ~/.matter_server/*
+```
+
+3. Run the dockerised python matter server
+
+```
+docker run -d   --name matter-server   --restart=unless-stopped   --security-opt apparmor=unconfined   -v $(pwd)/data:/data   -v /run/dbus:/run/dbus:ro   --network=host   ghcr.io/home-assistant-libs/python-matter-server:stable
+```
+
+4. Start the iotMatterController.py script using the flags
+
+```
+SVCUID=<FROMSTEP1>  AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengrass/v2/ipc.socket python3 -u ./src/component/mcc-daemon/src/iotMatterController.py -p /home/ivob/Projects/python-matter-server  -l True
+```
+
+-l is to allow for localhost serving of the API
+
+5. DOwnload the Matterdashboard and start using yarn rw dev
+
+## Using AWS for iot rules
+
+1. Create the following iot Rules
+
+```
+mccdev_thing_deleted	$aws/things/+/shadow/name/+/delete/accepted	
+SELECT topic(3) as thing_name, topic(6) as shadow_name FROM '$aws/things/+/shadow/name/+/delete/accepted'
+```
+
+```
+mccdev_thing_updated	$aws/things/+/shadow/name/+/update/accepted	
+SELECT topic(3) as thing_name, topic(6) as shadow_name, state.reported as reported FROM '$aws/things/+/shadow/name/+/update/accepted'
+```
+
+```
+mccdev_thing_updated_document		$aws/things/+/shadow/name/+/update/documents
+SELECT topic(3) as thing_name, topic(6) as shadow_name, previous as previous, current as current FROM '$aws/things/+/shadow/name/+/update/documents'	
+```
+
+2. Create and join to the associated SNS topic
+
+```
+for mccdev_thing_deleted: arn:aws:lambda:eu-west-1:XXXX:function:MCCDev-iot-update-db-thing_deletedFunction
+for mccdev_thing_updated: arn:aws:lambda:eu-west-1:XXXX:function:MCCDev-iot-update-db-thing_updatedFunction
+for mccdev_thing_updated_document: https://matterdashboard.netlify.app/.netlify/functions/shadowUpdateWebhookForAWS
+```
+
+
 ## Testing using a local all clusters app
     ```
     sudo sysctl -w net.ipv6.conf.wlo1.accept_ra=2

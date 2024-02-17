@@ -10,3 +10,4 @@ stringcase
 aiohttp
 orjson
 aiorun
+zeroconf

@@ -172,11 +172,17 @@ class RestHandler():
         shadow_name = request.match_info['shadow'] 
 
         response_message = get_thing_shadow_request(thing_name, shadow_name)
+
         resp = {}
         resp["response"] = "OK"
         resp["return_code"] = 200
 
-        response = json.loads(response_message)
+        if isinstance(response_message, list) and not response_message:
+            #List is empty. No JSON to parse
+            response = response_message
+        else:
+            response = json.loads(response_message)
+
         return web.json_response(response)
 
     @routes.get('/deleteshadow/{name}/{shadow}')
@@ -196,4 +202,72 @@ class RestHandler():
             "response": resp["response"],
             "return_code": resp["return_code"]
             }
+        return web.json_response(response_message)
+
+    #Respond to a http POST REST message
+    @routes.post('/message/chip/request')
+    async def return_chip_request(request):
+        queue = request.app['queue']
+        message_router = request.app['message_router']
+        json_str = "{}"
+        if request.body_exists:
+            bytes_value = await request.read()
+            json_str = bytes_value.decode('utf8').replace("'", '"')
+
+        resp = {}
+        resp["return_code"] = 200
+        resp["response"] = ""
+
+        # validate message and attributes
+        try:
+            message_from_rest = json.loads(json_str)
+
+            # Verify required keys are provided
+            if not all(k in message_from_rest for k in ("message_id", "command")):
+                resp["response"] = MSG_MISSING_ATTRIBUTE
+                resp["return_code"] = 255
+                response_message = {
+                    "message": str(json_str),
+                    "response": resp["response"],
+                    "return_code": resp["return_code"]
+                    }
+                #lPrint(f"{MSG_MISSING_ATTRIBUTE} for message")
+                return web.json_response(response_message)
+            
+        except json.JSONDecodeError as e:
+            resp["response"] = MSG_INVALID_JSON
+            resp["return_code"] = 255
+            response_message = {
+                "timestamp": int(round(time.time() * 1000)),
+                "message": str(json_str),
+                "response": resp["response"],
+                "return_code": resp["return_code"]
+                }
+            #lPrint(f"{MSG_INVALID_JSON} for message")
+            return web.json_response(response_message)
+        except Exception as e:
+            raise
+        
+        command = message_from_rest["command"]
+        command = command.lstrip()
+
+        nodeId = None
+        resp["response"] = "accepted"
+        resp["return_code"] = 200
+        resp["message_id"] = message_from_rest["message_id"]
+
+        message_router(message_from_rest)
+
+        # add to the queue
+        await queue.put(json_str)
+
+        # Dummy response message
+        response_message = {
+            "timestamp": int(round(time.time() * 1000)),
+            "message": str(json_str),
+            "message_id": str(resp["message_id"]),
+            "response": resp["response"],
+            "return_code": resp["return_code"]
+            }
+
         return web.json_response(response_message)

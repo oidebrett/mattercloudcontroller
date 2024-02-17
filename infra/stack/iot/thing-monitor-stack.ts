@@ -63,6 +63,12 @@ HTTPS: https://matterdashboard.netlify.app/.netlify/functions/shadowUpdateWebhoo
             handler: `handler.lambda_handler_${ruleName}`,
             timeout: cdk.Duration.seconds(120),
             runtime: lambda.Runtime.PYTHON_3_10,
+            environment: {
+                DATABASE: this.stackConfig.Database,
+                HOST: this.stackConfig.Host,
+                PASSWORD: this.stackConfig.Password,
+                USERNAME: this.stackConfig.Username,
+            },
         })));
 
         new iot.CfnTopicRule(this, ruleName, {

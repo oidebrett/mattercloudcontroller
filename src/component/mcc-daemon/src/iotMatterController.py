@@ -16,7 +16,7 @@
 
 """
 To Run Locally:
-python3 ../Projects/mattercloudcontroller/src/component/mcc-daemon/src/iotMatterController.py -t True -c True
+python3 ../Projects/mattercloudcontroller/src/component/mcc-daemon/src/iotMatterController.py -t True -c True - l True
 
 Listen for incoming chip requests and publish the results onto response topic
 --request-topic - defaults to chip/request
@@ -63,8 +63,9 @@ import concurrent.futures
 from aiohttp import web, ClientWebSocketResponse
 import json
 from concurrent.futures import ThreadPoolExecutor
-from asyncioUtils import MemQueue, TestFileHandler, CancellableSleeps
+from asyncioUtils import MemQueue, TestFileHandler, CancellableSleeps, WebhookHandler
 import random
+import requests 
 
 from iotRestApiService import RestHandler
 
@@ -75,7 +76,9 @@ parser.add_argument("-m", "--monitor", help="monitor and trace the loops", actio
 parser.add_argument("-e", "--maxevents", help="number of matter events logged per device", action="store", default=100)
 parser.add_argument("-c", "--clean", help="true to clean working directory", action="store", default="False")
 parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", action="store", default="False")
-parser.add_argument("-p", "--pythonserver", help="true to auto start the python matter server", action="store", default="False")
+parser.add_argument("-p", "--pythonserverpath", help="provide path to auto start the python matter server if not already started", action="store", default="/home/ggc_user/python-matter-server/")
+parser.add_argument("-l", "--local", help="true to notify local host of shadow changes", action="store", default="False")
+parser.add_argument("-w", "--webhook", help="the webhook for the local host", action="store", default="http://localhost:8911/")
 parser.add_argument("--log-level", type=str, default="info", help="Provide logging level. Example --log-level debug, default=info, possible=(critical, error, warning, info, debug)")
 
 #Set up the variables from the arguments (and defaults)
@@ -90,8 +93,10 @@ MAX_EVENTS = args.maxevents
 THING_NAME = args.name
 MONITOR_ARG = args.monitor
 MONITOR = MONITOR_ARG.lower() == 'true'
-PYTHONSERVER_ARG = args.pythonserver
-PYTHONSERVER_ARG = PYTHONSERVER_ARG.lower() == 'true'
+PYTHONSERVER_PATH = args.pythonserverpath
+LOCAL_ARG = args.local
+LOCAL_ARG = LOCAL_ARG.lower() == 'true' # this notifies localhost of changes on port such as "http://localhost:8911/shadowUpdateWebhookLocal/"+thing_name+"/"+str(node_id)
+WEBHOOK_PATH = args.webhook
 
 #Set up the Websocket client details
 HOST='127.0.0.1' 
@@ -103,6 +108,9 @@ URL = f'http://{HOST}:{PORT}/ws'
 queue = MemQueue(maxsize=1000, maxmemsize=5*1024*1024)
 sleeps = CancellableSleeps()
 shadow_subscriptions = []
+
+# create a semaphore to prevent multiple calls to webhook
+semaphore = asyncio.Semaphore(2)
 
 # holds a list of dicts holding a callback function per message id
 callbacks_per_message_id = {}
@@ -179,7 +187,9 @@ _sample_file_name = 'sample_data.json'
 ##
 #######################################################################################
 
-def message_router(message):
+def message_router(message): # Return true if the message should be forwarded to the websocket
+    forwardToWebsocket = True
+
     if "command" in message and message['command'] == 'open_commissioning_window':
         lPrint("in message router with open_commissioning_window")
         node_id = message['args']['node_id']
@@ -189,7 +199,20 @@ def message_router(message):
 #        lPrint("in message router with discover command")
 #        node_id = message['args']['node_id']
 
-    pass
+    if "command" in message and message['command'] == 'call_webhook':
+        lPrint("Webhook called..........................")
+        webhook_method = message['webhook_method']
+        webhook_url = message['webhook_url']
+        webhook_endpoint = message['webhook_endpoint']
+        data = json.dumps(message['args'])
+        headers = {"Content-Type": "application/json"}
+
+        wh = WebhookHandler()
+        asyncio.create_task(wh.sendWebhook(webhook_method, webhook_url, webhook_endpoint, data, headers))
+
+        forwardToWebsocket = False # dont forward this onto the websocket for the python matter server
+
+    return forwardToWebsocket
 
 def open_commissioning_window_callback(loop, node_id, message):
     lPrint("In open_commissioning_window callback")
@@ -360,14 +383,14 @@ if not LOCAL_TEST:
                     # add to the queue
                     lPrint("adding message_object to queue")
                     message_object = {
-                                    "message_id": rand_message_id, 
-                                    "command": "write_attribute", 
-                                    "args": {"endpoint_id": temp_endpoint, 
-                                            "node_id": temp_node_id, 
-                                            "attribute_path": iterator, 
-                                            "value": state_changes[iterator]
-                                            }
-                                    }
+                        "message_id": rand_message_id, 
+                        "command": "write_attribute", 
+                        "args": {"endpoint_id": temp_endpoint, 
+                                "node_id": temp_node_id, 
+                                "attribute_path": iterator, 
+                                "value": state_changes[iterator]
+                                }
+                    }
                     lPrint(json.dumps(message_object))
 
                     self.loop.create_task(queue.put(json.dumps(message_object)))
@@ -385,6 +408,71 @@ if not LOCAL_TEST:
         def on_stream_closed(self) -> None:
             # Handle close.
             pass
+
+    #Handler for update document subscription callback
+    class UpdateDocumentHandler(client.SubscribeToTopicStreamHandler):
+        loop = None
+        shadow = None
+        def __init__(self, shadow, loop):
+            self.loop = loop
+            self.shadow = shadow
+            super().__init__()
+
+        def on_stream_event(self, event: IoTCoreMessage) -> None:  
+
+            #We dont support Events in the rules
+            if "event" not in self.shadow: 
+                lPrint("Handler for UpdateDocumentHandler callback for " + self.shadow)
+
+                try:
+                    if (isinstance(event, IoTCoreMessage)):
+                        message = str(event.message.payload, 'utf-8')
+                    elif (isinstance(event, SubscriptionResponseMessage)):
+                        message = str(event.binary_message.message, 'utf-8')
+                    else:
+                        return True
+                    
+                    # Load message and check values
+                    jsonmsg = json.loads(message)            
+
+                    rand_message_id = str(random.randint(1, 9999999) )
+
+                    # add to the queue
+                    #lPrint("adding webhook message_object to queue")
+                    message_object = {
+                        "message_id": rand_message_id, 
+                        "command": "call_webhook", 
+                        "webhook_method": "POST", 
+                        "webhook_url": WEBHOOK_PATH, 
+                        "webhook_endpoint": "shadowUpdateWebhookForAWS",
+                        "args": {
+                            "Type": "Notification",
+                            "Message" : json.dumps({
+                                "thing_name" :  THING_NAME,
+                                "shadow_name" : self.shadow,
+                                "previous": jsonmsg["previous"],
+                                "current": jsonmsg["current"] 
+                                })
+                            }
+                    }
+                    #lPrint(json.dumps(message_object))
+
+                    lPrint("adding webhook message_object to queue")
+                    self.loop.create_task(queue.put(json.dumps(message_object)))
+                    self.loop.create_task(asyncio.sleep(0.1))
+
+                    return True
+
+                except:
+                    traceback.print_exc()
+
+        def on_stream_error(self, error: Exception) -> bool:
+            # Handle error.
+            return True  # Return True to close stream, False to keep stream open.
+
+        def on_stream_closed(self) -> None:
+            # Handle close.
+            return True
 
 def subscribeToTopic(topic, handler):
     global operation
@@ -429,7 +517,7 @@ def get_thing_shadow_request(thing_name, shadow_name):
 #Set the local shadow using the IPC
 def update_thing_shadow_request(thing_name, shadow_name, payload):
     lPrint("in update_thing_shadow_request")
-    lPrint(payload)
+    #lPrint(payload)
     try:
         # set up IPC client to connect to the IPC server
         client = GreengrassCoreIPCClientV2()
@@ -560,10 +648,32 @@ async def OnNodeChange(node_id, node_result)-> None:
 
     if not LOCAL_TEST:
         #now that we have created/updated new shadows 
-        #we need to subscrive to any deltas
+        #we need to subscribe to any deltas
         subscribe_to_shadow_deltas(thing_name)
         pass
 
+    if LOCAL_ARG: #This code is only if we run the controller with local mode enabled (i.e. -l True)
+        # acquire the semaphore
+        async with semaphore:
+            #Lets send a webhook to the locally running redwood service
+            webHookUrl = WEBHOOK_PATH + "shadowUpdateWebhookLocal/" + thing_name+"/"+str(node_id)
+
+            rand_message_id = str(random.randint(1, 9999999) )
+
+            # add to the queue
+            lPrint("adding webhook message_object to queue - GET")
+            message_object = {
+                "message_id": rand_message_id, 
+                "command": "call_webhook", 
+                "webhook_method": "GET", 
+                "webhook_url": WEBHOOK_PATH, 
+                "webhook_endpoint": "shadowUpdateWebhookLocal/" + thing_name+"/"+str(node_id),
+                "args": {}
+            }
+            
+            loop = asyncio.get_event_loop()
+            loop.create_task(queue.put(json.dumps(message_object)))
+            loop.create_task(asyncio.sleep(0.1))
 
     lPrint("we will subscribe to attribute changes")
     #This is a node event so we will 
@@ -635,8 +745,8 @@ def OnEventChange(node_id, event_read_result)-> None:
     newStr = json.dumps(prevEvents)
 
     #Calling update thing shadow request for events
-    lPrint("updating error thing shadow:")
-    lPrint(newStr)
+    lPrint("updating event thing shadow:")
+    #lPrint(newStr)
 
     if not LOCAL_TEST:
         result = update_thing_shadow_request(thing_name, shadow_name, bytes(newStr, "utf-8"))
@@ -667,6 +777,17 @@ def subscribe_to_shadow_deltas(thing_name):
             # Setup the MQTT Subscription
             handler = SubHandler(shadow, loop)
             subscribeToTopic(subscribe_shadow_delta_topic, handler)
+
+            if LOCAL_ARG: #This code is only if we run the controller with local mode enabled (i.e. -l True)
+                #set up subscription of device shadow update document
+                subscribe_shadow_document_update_topic = "$aws/things/"+thing_name+"/shadow/name/"+shadow+"/update/documents"
+
+                lPrint("Setting up the Shadow Document Update subscription for: " + shadow)
+                # Setup the Shadow Subscription
+                newLoop = asyncio.get_event_loop()
+                # Setup the MQTT Subscription
+                updateDocumentHandler = UpdateDocumentHandler(shadow, newLoop)
+                subscribeToTopic(subscribe_shadow_document_update_topic, updateDocumentHandler)
 
             #We will keep track of the subscriptions that we have created
             #so that we dont recreate them
@@ -717,7 +838,7 @@ async def mainLoopTask(ws:ClientWebSocketResponse):
 
     while running:
         fh = TestFileHandler()
-        await fh.pollForCommand(curr_dir + '/' + _sample_file_name, ws, queue)
+        await fh.pollForCommand(curr_dir + '/' + _sample_file_name, queue)
         await asyncio.sleep(sleep_time_in_sec)
 
 async def websocketListenTask(ws):
@@ -759,7 +880,9 @@ async def websocketListenTask(ws):
                     #3. It could be a response giving the latest attributes for all nodes (results is a list)
                     #4. Finally it could be a result from a command that is return results non related to nodes such as a open commissioning window request
                     lPrint("message_id:" + message_response["message_id"])
-                    
+                    #lPrint("message_response")
+                    #lPrint(message_response)
+
                     #We will now execute any callbacks
                     if message_response["message_id"] in callbacks_per_message_id:
                         loop = asyncio.get_event_loop()
@@ -783,7 +906,7 @@ async def websocketListenTask(ws):
                             lPrint("Message Response with single node update")
                             #Update the node shadows
                             await OnNodeChange(results["node_id"], results)
-                        elif (isinstance(results, list) and (len(results) > 0) and ("commissioningMode" in results[0])):
+                        elif (isinstance(results, list) and (len(results) > 0) and ("commissioning_mode" in results[0])):
                             lPrint("Message Response with discovery of commissionable nodes")
                             #Here we are dealing with a commissioning response
                             commissionableNodesJsonStr = json.dumps(results)    
@@ -882,10 +1005,11 @@ async def queueListenTask(ws):
         # report
         try:
             #First we will route the message in case we need to process it later
-            message_router(json.loads(item))
-            await ws.send_str(item)
-        except:
-            lPrint("Caught an exception sending item and now exiting:" + item)
+            if message_router(json.loads(item)):
+                await ws.send_str(item)
+        except Exception as e:
+            lPrint("Caught an exception sending item and now exiting:")
+            lPrint(e)
             #sys.exit(0)
 
         # Notify the queue that the "work item" has been processed.
@@ -943,6 +1067,7 @@ def startUpMatterServer():
         Check to see if an process is running. If not, restart.
         Run this in a cron job
         """
+        process_path = PYTHONSERVER_PATH if (PYTHONSERVER_PATH[-1]=='/') else (PYTHONSERVER_PATH+'/')  + 'matter_server/server/server.py'
         process_name= "matter_server.server" # change this to the name of your process
 
         tmp = os.popen("ps -Af").read()
@@ -951,15 +1076,15 @@ def startUpMatterServer():
             lPrint("The process is not running. Let's restart.")
             # The location of the python-matter-server.
             python_matter_server_dir = ''
-            if (os.path.isfile(f'/home/ggc_user/python-matter-server/matter_server/server/server.py')):
+            if (os.path.isfile(process_path)):
                 #this is the location of the python server on the docker image
-                python_matter_server_dir = f'/home/ggc_user/python-matter-server'
+                python_matter_server_dir = PYTHONSERVER_PATH
             elif (os.path.isfile('../python-matter-server/matter_server/server/server.py')):
                 #this is the location of the python server when testing locally
                 python_matter_server_dir = "../python-matter-server"
 
             if python_matter_server_dir != '':
-                current_dir = os. getcwd()
+                current_dir = os.getcwd()
                 os.chdir(python_matter_server_dir) #change to python matter server directory
                 if LOCAL_TEST:
                     newprocess="python3 -m %s --storage-path=/data --log-level debug &" % (process_name)
@@ -970,7 +1095,7 @@ def startUpMatterServer():
                 time.sleep(MATTER_SERVER_STARTUP_BACKOFF_TIMER)
             else:
                 lPrint("Check path of python-matter-server. If running locally in test mode make sure you are in the mattercloudcontroller directory.")
-                lPrint(os. getcwd())
+                lPrint(os.getcwd())
 
         else:
             lPrint("The process is running.")
@@ -1023,7 +1148,7 @@ async def main(retryCount):
         lPrint(f"Something went wrong: {str(e)}")
         if str(e).__contains__("Cannot connect to host "):
 
-            if PYTHONSERVER_ARG:
+            if PYTHONSERVER_PATH != '':
                 if retryCount < MATTER_SERVER_RETRY_COUNT:
                     # Start the matter server
                     startUpMatterServer()

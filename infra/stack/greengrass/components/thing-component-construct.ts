@@ -96,7 +96,7 @@ export class ThingComponent extends base.BaseConstruct {
                             "script": `pip3 install -r {artifacts:decompressedPath}/${this.compName}/requirements.txt \n`
                         },
                         "Run": {
-                            "script": `python3 -u {artifacts:decompressedPath}/${this.compName}/iotMatterController.py ${compArgs}\n`
+                            "script": `env && python3 -u {artifacts:decompressedPath}/${this.compName}/iotMatterController.py ${compArgs}\n`
                         },
                     },
                     "Artifacts": [
