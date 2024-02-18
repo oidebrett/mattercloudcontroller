@@ -84,6 +84,17 @@ SVCUID=<FROMSTEP1>  AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengr
 
 5. DOwnload the Matterdashboard and start using yarn rw dev
 
+6. Experimenting - trying to run the matterControl against the Matterdeashboard running in serve mode
+
+```
+yarn rw build
+yarn rw server
+```
+
+```
+SVCUID=<FROMSTEP1>  AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengrass/v2/ipc.socket python3 -u ./src/component/mcc-daemon/src/iotMatterController.py -p /home/ivob/Projects/python-matter-server  -l True -w http://localhost:8910/ -g .netlify/functions/
+```
+
 ## Using AWS for iot rules
 
 1. Create the following iot Rules
