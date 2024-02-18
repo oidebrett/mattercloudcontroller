@@ -79,6 +79,7 @@ parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", a
 parser.add_argument("-p", "--pythonserverpath", help="provide path to auto start the python matter server if not already started", action="store", default="/home/ggc_user/python-matter-server/")
 parser.add_argument("-l", "--local", help="true to notify local host of shadow changes", action="store", default="False")
 parser.add_argument("-w", "--webhook", help="the webhook for the local host", action="store", default="http://localhost:8911/")
+parser.add_argument("-g", "--graphql", help="the GraphQL endpoint for the local host (e.g. .netlify/functions/graphql/)", action="store", default="")
 parser.add_argument("--log-level", type=str, default="info", help="Provide logging level. Example --log-level debug, default=info, possible=(critical, error, warning, info, debug)")
 
 #Set up the variables from the arguments (and defaults)
@@ -97,6 +98,7 @@ PYTHONSERVER_PATH = args.pythonserverpath
 LOCAL_ARG = args.local
 LOCAL_ARG = LOCAL_ARG.lower() == 'true' # this notifies localhost of changes on port such as "http://localhost:8911/shadowUpdateWebhookLocal/"+thing_name+"/"+str(node_id)
 WEBHOOK_PATH = args.webhook
+WEBHOOK_GRAPHQL_ENDPOINT = args.graphql
 
 #Set up the Websocket client details
 HOST='127.0.0.1' 
@@ -439,12 +441,15 @@ if not LOCAL_TEST:
 
                     # add to the queue
                     #lPrint("adding webhook message_object to queue")
+                    webhook_url = WEBHOOK_PATH
+                    webhook_endpoint = WEBHOOK_GRAPHQL_ENDPOINT + "shadowUpdateWebhookForRules"
+
                     message_object = {
                         "message_id": rand_message_id, 
                         "command": "call_webhook", 
                         "webhook_method": "POST", 
-                        "webhook_url": WEBHOOK_PATH, 
-                        "webhook_endpoint": "shadowUpdateWebhookForAWS",
+                        "webhook_url": webhook_url, 
+                        "webhook_endpoint": webhook_endpoint,
                         "args": {
                             "Type": "Notification",
                             "Message" : json.dumps({
@@ -662,15 +667,20 @@ async def OnNodeChange(node_id, node_result)-> None:
 
             # add to the queue
             lPrint("adding webhook message_object to queue - GET")
+            webhook_url = WEBHOOK_PATH
+
+            webhook_endpoint = WEBHOOK_GRAPHQL_ENDPOINT + "shadowUpdateWebhookLocal/" + thing_name+"/"+str(node_id)
+
             message_object = {
                 "message_id": rand_message_id, 
                 "command": "call_webhook", 
                 "webhook_method": "GET", 
-                "webhook_url": WEBHOOK_PATH, 
-                "webhook_endpoint": "shadowUpdateWebhookLocal/" + thing_name+"/"+str(node_id),
+                "webhook_url": webhook_url, 
+                "webhook_endpoint": webhook_endpoint,
                 "args": {}
             }
-            
+            #lPrint(json.dumps(message_object))
+
             loop = asyncio.get_event_loop()
             loop.create_task(queue.put(json.dumps(message_object)))
             loop.create_task(asyncio.sleep(0.1))

@@ -108,7 +108,7 @@ SELECT topic(3) as thing_name, topic(6) as shadow_name, previous as previous, cu
 ```
 for mccdev_thing_deleted: arn:aws:lambda:eu-west-1:XXXX:function:MCCDev-iot-update-db-thing_deletedFunction
 for mccdev_thing_updated: arn:aws:lambda:eu-west-1:XXXX:function:MCCDev-iot-update-db-thing_updatedFunction
-for mccdev_thing_updated_document: https://matterdashboard.netlify.app/.netlify/functions/shadowUpdateWebhookForAWS
+for mccdev_thing_updated_document: https://matterdashboard.netlify.app/.netlify/functions/shadowUpdateWebhookForRules
 ```
 
 

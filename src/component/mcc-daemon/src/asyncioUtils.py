@@ -87,6 +87,10 @@ class TestFileHandler:
 
 class WebhookHandler:
     async def sendWebhook(self, webhook_method, webhook_url, webhook_endpoint, data, headers):
+        print(webhook_method)
+        print(webhook_url)
+        print(webhook_endpoint)
+        
         async with aiohttp.ClientSession(webhook_url) as session:
             if webhook_method == "POST":
                 async with session.post('/'+webhook_endpoint, data=data, headers=headers) as r:
