@@ -15,7 +15,7 @@ In this codelab we will show you how you can provide Over The Air software updat
 
 ### What You’ll Build 
 In this codelab, you will:
-- Run the Matter light you created on an ESP32
+- Build and run a Matter light from the connectedhomeip repo on an ESP32
 - Learn how to change the software version of your application
 - Learn how to generate an image that can be used for OTA
 - Build and use the ota provider app.
@@ -25,6 +25,8 @@ In this codelab, you will:
 ![alt-architecture-here](assets/matter_esp32_setup.png)
 
 In this CodeLab we will run a Matter Latter on a ESP32 microcontroller, the OTA provider on Linux. This will allow us to provide OTA updates and we will learn how to use the OTA feature of the Matter protocol.
+
+Note, we will use the Matter lighting sample app from the connectedhomeip repo as this application has built in OTA support.
 
 ### What You’ll Learn 
 - What you will need (Pre-requisities)
@@ -45,7 +47,6 @@ You will need
 - an android phone running the chip-tool
 - Visual Studio Code IDE
 - a basic knowledge of Linux shell commands
-- the Matter light built in previous codelabs
 
 The total codelab will take approximately a `Duration of 30 minuates` to complete. 
 
@@ -53,7 +54,9 @@ The total codelab will take approximately a `Duration of 30 minuates` to complet
 ## Flash the Matter Light to an ESP32 
 Duration: 2
 
-You should have built the Matter switch in a previous codelab.
+You should build the Matter switch in the connectedhomeip rep from
+
+~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32
 
 1. The first thing to do is set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)
 
@@ -68,12 +71,13 @@ source ./export.sh
 2. We will navigate to the Matter Light that you had previously coded.
 
 ```shell
-cd ~/Projects/starter-esp-matter-app/
+cd ~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32
 ```
 
-3. You will then flash the Matter light image on to the ESP32. But its good practice to erase the flash before hand.
+3. You will then build and flash the Matter light image on to the ESP32. But its good practice to erase the flash before hand.
 
 ```shell
+idf.py build
 idf.py -p /dev/ttyUSB0 erase_flash
 idf.py -p /dev/ttyUSB0 flash monitor 
 ```
@@ -192,7 +196,7 @@ Duration: 10
 2. Run the OTA provider app and point it to the ota image you created in the last step.
 
 ```shell
-./out/host/chip-ota-provider-app --filepath ~/Projects/starter-esp-matter-app/build/chip-lighting-app-ota.bin 
+./out/host/chip-ota-provider-app --filepath ~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32/build/chip-lighting-app-ota.bin 
 ```
 
 3. Commission / Pair the OTA provider onto the Matter fabric - note it has node id 2
