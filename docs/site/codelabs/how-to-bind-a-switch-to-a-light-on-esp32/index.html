@@ -1,0 +1,242 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to bind a switch to a light on esp32</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-bind-a-switch-to-a-light-on-esp32"
+                  title="How to bind a switch to a light on esp32"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="25">
+        <p>In this codelab we will show you how to bind a Matter switch to a Matter sample light app on the ESP32.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Run a sample Matter Switch app on the ESP32</li>
+<li>Run the Matter light you created on another ESP32</li>
+<li>Use a Matter Switch to controller a Matter light</li>
+<li>Use the chip-tool as a Matter controller to controller the Light.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/3037f75b3d7bb323.png"></p>
+<p>In this CodeLab we will run a Matter Switch on a ESP32 microcontroller, a Matter Light on another ESP32 and the Matter Controller on a Linux Host. This will allow us to create a simple Matter Network very quickly and we will learn how to bind a Matter switch to a Matter light.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to control Access Control on a Matter accessory</li>
+<li>How to bind a Switch to a Light</li>
+<li>How to control a light from a Switch.</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
+<p>You will need</p>
+<ul>
+<li>2 ESP32 microcontrollers. ESP32 DEV KIT C</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+<li>the Matter light and Matter switch app built in previous codelabs</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flash the Matter Switch to an ESP32" duration="2">
+        <p>You should have built the Matter switch in a previous codelab.</p>
+<ol type="1">
+<li>The first thing to do is set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+</code></pre>
+<ol type="1" start="2">
+<li>We will navigate to the Matter Switch example.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd examples/light_switch/
+</code></pre>
+<ol type="1" start="3">
+<li>You will then flash the Matter Switch image on to the ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Commissioning the ESP32 matter switch app using chip-tool" duration="2">
+        <p>In this section we will pair our ESP32 matter switch application on the ESP32 using the chip-tool that acts as a matter controller.</p>
+<h2 is-upgraded>Verifying connections with the CHIP Tool</h2>
+<p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool
+</code></pre>
+<p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
+<h2 is-upgraded>Pairing the Switch using the CHIP Tool</h2>
+<ol type="1">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (switch-app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi 4 ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="3">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 4 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flash the Matter Light to an ESP32" duration="2">
+        <p>You should have coded and built the Matter light in a previous codelab.</p>
+<ol type="1">
+<li>We will navigate to the Matter Light that you had previously coded.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/starter-esp-matter-app/
+</code></pre>
+<ol type="1" start="2">
+<li>You will then flash the Matter Light image on to the other ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB1 erase_flash
+idf.py -p /dev/ttyUSB1 flash monitor 
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Commissioning the ESP32 matter light app using chip-tool" duration="2">
+        <p>In this section we will pair our ESP32 matter light application on the ESP32 using the chip-tool that acts as a matter controller.</p>
+<h2 is-upgraded>Verifying connections with the CHIP Tool</h2>
+<p>Firstly we will check if the CHIP Tool runs correctly. Execute the following command in the connectedhomeip directory:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool
+</code></pre>
+<p>As a result, the CHIP Tool will print all available commands. These are called clusters in this context, but not all listed commands correspond to the clusters in the Data Model (for example, pairing or discover commands).</p>
+<h2 is-upgraded>Pairing the Switch using the CHIP Tool</h2>
+<ol type="1">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the process of bringing a Matter Node into a Matter Fabric. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light-app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi 1 ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="3">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Binding the ESP32 matter light app to the ESP32 switch using chip-tool" duration="0">
+        <p>After commissioning, the next step is to bind Matter device (Light) with the Matter switch and control them via the Boot button on the Matter Switch.</p>
+<ol type="1">
+<li>Set up the Access Control on the Matter Light</li>
+</ol>
+<p>Utilizing chip-tool to write access control to the Matter light device in order to control through ESP-BOX Matter Switch.</p>
+<p>For Light:</p>
+<pre><code language="language-shell" class="language-shell">./chip-tool accesscontrol write acl &#39;[{&#34;fabricIndex&#34;: 1, &#34;privilege&#34;: 5, &#34;authMode&#34;: 2, &#34;subjects&#34;: [ 112233, 4 ], &#34;targets&#34;: null}]&#39; 1 0x0
+</code></pre>
+<p>An explanation of the parameters used in this command is below:</p>
+<p>The privileges are:</p>
+<ul>
+<li>View: 1, Operate: 3, Manage: 4, Administer: 5</li>
+</ul>
+<p>The authentication modes are:</p>
+<ul>
+<li>CASE: 2, Group: 3</li>
+</ul>
+<p>The Subjects is a list containing zero, one, or more subject identifiers, which are:</p>
+<ul>
+<li>Node ID for CASE auth mode, Group ID for Group auth mode</li>
+</ul>
+<p>Targets: We could select a particular cluster that this access control list entry applies to such as {cluster:onoff}, {endpoint:1}, {cluster:levelcontrol,endpoint:2} or leave it at Null.</p>
+<p>Our command is allowing the chip-tool (node id 112233) and the Matter Switch (node id 4) to Administer the light using CASE (certificate Authenticated Session Establishment). Since we have specified no targets, this ACL will apply to all clusters on the Matter Light.</p>
+<ol type="1" start="2">
+<li>Update device binding attribute to the Matter Switch</li>
+</ol>
+<p>To update the Matter Switch binding attribute and add an entry for a remote device (Matter Light) to the binding table, use the following command:</p>
+<p>For Light:</p>
+<pre><code language="language-shell" class="language-shell">./chip-tool binding write binding &#39;[{&#34;fabricIndex&#34;: 1, &#34;node&#34;:1, &#34;endpoint&#34;:1, &#34;cluster&#34;:6}]&#39; 4 0x1
+</code></pre>
+<p>This particular command has bound the Switch to the NodeId 1 (Matter Light) on endpoint 1 and cluster 6 (onOff cluster).</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Controlling the Matter light using the Matter switch" duration="0">
+        <p>We can now control the Matter light using the Matter switch which is entirely independent of the chip-tool.</p>
+<ol type="1">
+<li>Press the Boot button on the Matter Switch You should see the Light turning on or off.</li>
+<li>Check the status of the Matter Light using the chip-tool. You should see the On attribute on the Matter light OnOff cluster change everytime time the Light switch is pressed.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./chip-tool onoff read on-off 1 0x1
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the switch-app process by using Ctrl-] in the first esp32 monitor window, the light-app process by using Ctrl-] in the second esp32 monitor window and then run idf erase flash.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

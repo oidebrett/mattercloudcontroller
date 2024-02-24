@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-24T14:00:41Z",
+  "id": "how-to-bind-a-switch-to-a-light-on-esp32",
+  "duration": 36,
+  "title": "How to bind a switch to a light on esp32",
+  "authors": "MatterCoder",
+  "summary": "How to bind a switch to a light on esp32",
+  "source": "how-to-bind-a-switch-to-a-light-on-esp32.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "sample"
+  ],
+  "tags": [
+    "matter"
+  ],
+  "feedback": "https://mattercoder.com",
+  "url": "how-to-bind-a-switch-to-a-light-on-esp32"
+}

@@ -1,0 +1,184 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to use multi-admin</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-use-multi-admin"
+                  title="How to use multi-admin"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="15">
+        <p>In this codelab we will show you how to use the Multi Admin feature of the Matter protocol.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Run the Matter light you created on an ESP32</li>
+<li>Learn how to configure your Matter light to join wifi network at start time</li>
+<li>Use the chip-tool android app as a Matter controller to act as the first admin.</li>
+<li>Use the chip-tool on Linux as a Matter controller to act as another admin.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/bdfff2defc6f0688.png"></p>
+<p>In this CodeLab we will run a Matter Latter on a ESP32 microcontroller, the Matter Controller on an Android mobile app and another Matter controller on Linux. This will allow us to create two matter fabrics and we will learn how to use the Multi-admin feature of the Matter protocol.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to pair the Matter light to the Android chip tool</li>
+<li>How to open a commissioning window</li>
+<li>How to pair the Matter light to the linux based chip tool</li>
+<li>How to control a light from multiple admins (i.e. multi chip tools).</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
+<p>You will need</p>
+<ul>
+<li>a ESP32 microcontroller. ESP32 DEV KIT C</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>an android phone running the chip-tool</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+<li>the Matter light built in previous codelabs</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flash the Matter Light to an ESP32" duration="2">
+        <p>You should have built the Matter switch in a previous codelab.</p>
+<ol type="1">
+<li>The first thing to do is set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+</code></pre>
+<ol type="1" start="2">
+<li>We will navigate to the Matter Light that you had previously coded.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/starter-esp-matter-app/
+</code></pre>
+<ol type="1" start="3">
+<li>You will then flash the Matter light image on to the ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+<p>** replace the path with your device path</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Commissioning the ESP32 matter light app using Android chip-tool" duration="2">
+        <p>In this section we will pair our ESP32 matter switch application on the ESP32 using the chip-tool on Android.</p>
+<ol type="1">
+<li>On the monitor screen for the esp32 matter light, type the following to display a link to the commissioning QR code:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">matter onboardingcode qrcodeurl
+</code></pre>
+<p>This will display a link. Click on the link and a QR code should open on the webpage.</p>
+<ol type="1" start="2">
+<li>Open the Android chip tool on your Android phone. You can build the tool yourself or download the apk from this (link) [https://github.com/nrfconnect/sdk-connectedhomeip/releases/download/v2.2.0/chip-tool-android_armv7l.apk]</li>
+<li>Select the option to &#34;PROVISION CHIP DEVICE WITH WIFI&#34; and then scan the qr code. Enter your WIFI details</li>
+<li>Verify that you can control the light using the &#34;LIGHT ON/OFF &amp; LEVEL CLUSTER&#34; option</li>
+<li>Open the commissioning window to allow another matter controller to pair with the Matter light. Use the &#34;MULTI-ADMIN CLUSTER&#34; option and use the &#34;Enhanced Commissioning Method&#34;. Take note of the pin code.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Commissioning the ESP32 matter light app using chip-tool" duration="2">
+        <p>In this section we will pair our ESP32 matter light application on the ESP32 using the chip-tool that acts as a matter controller. This will create a second matter fabric and will demonstrate that a Matter light can be simultaneously controlled by multiple admins.</p>
+<h2 is-upgraded>Verify that the commissioning window is open.</h2>
+<p>Firstly, you can verify that the Matter light has an open commissoning window by using the following command on a terminal on your linux host</p>
+<pre><code language="language-shell" class="language-shell">avahi-browse -rt _matterc._udp
+</code></pre>
+<h2 is-upgraded>Pairing with the CHIP Tool</h2>
+<ol type="1">
+<li>Execute the following command in the connectedhomeip directory:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing code 1 34970112332
+</code></pre>
+<p>Replace the code above with the code you noted from the Android chip tool.</p>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="2">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
+</ol>
+<p>In the same shell window, we will read the vendor-name of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 4 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+<ol type="1" start="3">
+<li>Check the status of the Matter Light using the chip-tool. You should see the On attribute on the Matter light OnOff cluster change everytime time the Light switch is pressed.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./chip-tool onoff read on-off 1 0x1
+</code></pre>
+<ol type="1" start="4">
+<li>Change the light on/off using the android chip tool and see and try to read the on-off value again to see that it has changed.</li>
+<li>Toggle the light on/off using the linux chip tool and see and try to read the on-off value on the Andorid app to see that it has changed.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./chip-tool onoff toggle 1 1
+</code></pre>
+<ol type="1" start="6">
+<li>Read the value of the Operational Credentials and notice that we are viewing Fabric Index 2. The Android chip tool has created another Fabric at FabricIndex 1.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./chip-tool operationalcredentials read fabrics 1 0
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the switch-app process by using Ctrl-] in the first esp32 monitor window, the light-app process by using Ctrl-] in the second esp32 monitor window and then run idf erase flash.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

@@ -126,7 +126,7 @@ to go back and complete that codelab
 
 Run the following commands
 ```shell
-cd ~/Projects/esp-mattee
+cd ~/Projects/esp-matter
 cd examples/light_switch/
 idf.py set-target esp32
 ```

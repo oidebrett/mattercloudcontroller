@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-24T18:27:55Z",
+  "id": "how-to-provide-pta",
+  "duration": 60,
+  "title": "How to provide OTA",
+  "authors": "MatterCoder",
+  "summary": "How to provide OTA",
+  "source": "how-to-provide-ota.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "sample"
+  ],
+  "tags": [
+    "matter"
+  ],
+  "feedback": "https://mattercoder.com",
+  "url": "how-to-provide-pta"
+}

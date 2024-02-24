@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-24T18:09:12Z",
+  "id": "how-to-use-multi-admin",
+  "duration": 24,
+  "title": "How to use multi-admin",
+  "authors": "MatterCoder",
+  "summary": "How to use multi-admin",
+  "source": "how-to-use-multi-admin.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "sample"
+  ],
+  "tags": [
+    "matter"
+  ],
+  "feedback": "https://mattercoder.com",
+  "url": "how-to-use-multi-admin"
+}

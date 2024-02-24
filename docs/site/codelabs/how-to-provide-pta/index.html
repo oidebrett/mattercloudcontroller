@@ -1,0 +1,255 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to provide OTA</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-provide-pta"
+                  title="How to provide OTA"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="15">
+        <p>In this codelab we will show you how you can provide Over The Air software updates (OTA) for your ESP32 matter app.</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Run the Matter light you created on an ESP32</li>
+<li>Learn how to change the software version of your application</li>
+<li>Learn how to generate an image that can be used for OTA</li>
+<li>Build and use the ota provider app.</li>
+<li>Use the chip-tool on Linux as a Matter controller to act initiate an Over The Air activation.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/5f89212b0c339441.png"></p>
+<p>In this CodeLab we will run a Matter Latter on a ESP32 microcontroller, the OTA provider on Linux. This will allow us to provide OTA updates and we will learn how to use the OTA feature of the Matter protocol.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How to configure the software version for the Matter light</li>
+<li>How to generate OTA firmware images</li>
+<li>How to build and start the OTA provider</li>
+<li>How to initiate OTA using the chip tool</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
+<p>You will need</p>
+<ul>
+<li>a ESP32 microcontroller. ESP32 DEV KIT C</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>an android phone running the chip-tool</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+<li>the Matter light built in previous codelabs</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flash the Matter Light to an ESP32" duration="2">
+        <p>You should have built the Matter switch in a previous codelab.</p>
+<ol type="1">
+<li>The first thing to do is set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-idf
+source ./export.sh
+cd ..
+cd esp-matter
+source ./export.sh
+</code></pre>
+<ol type="1" start="2">
+<li>We will navigate to the Matter Light that you had previously coded.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/starter-esp-matter-app/
+</code></pre>
+<ol type="1" start="3">
+<li>You will then flash the Matter light image on to the ESP32. But its good practice to erase the flash before hand.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+<p>** replace the path with your device path</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Pairing using the chip-tool and read software version" duration="10">
+        <p>In this section we will run a ESP32 matter light application (light switch app) and control with an administrative tool called the chip-tool that acts as a matter controller. We will read the current software version.</p>
+<h2 is-upgraded>Pairing using the CHIP Tool</h2>
+<ol type="1">
+<li>Clean the initialization of state using the following command:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+<ol type="1" start="2">
+<li>In the same shell window, try to commission the matter accessory using the the CHIP Tool. Commissioning is what we call the  process of bringing a Matter Node into a Matter Fabric. We will explain all of these terms in a further codelab. Essentially, we are creating a secure relationship between the Matter Controller (chip-tool) and the Matter Accessory (light switch app).</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing ble-wifi ${NODE_ID_TO_ASSIGN} ${SSID} ${PASSWORD} 20202021 3840
+</code></pre>
+<p>If everything is working you should see output logs and you should see that the commissioning was successful</p>
+<pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
+[1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
+</code></pre>
+<ol type="1" start="3">
+<li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller.</li>
+</ol>
+<p>In the same shell window, we will read the software-version of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read software-version 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 1
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Update Software Version and Generate OTA image" duration="10">
+        <ol type="1">
+<li>Change the CONFIG_APP_PROJECT_VER_FROM_CONFIG option in the file ~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32/sdkconfig</li>
+</ol>
+<p>from</p>
+<pre><code language="language-shell" class="language-shell"># CONFIG_APP_PROJECT_VER_FROM_CONFIG is not set
+to
+CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
+</code></pre>
+<ol type="1" start="2">
+<li>Set the Software Version With the CONFIG_APP_PROJECT_VER_FROM_CONFIG option enabled, you need to set the version using the following configuration options to set the Software Version:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py menuconfig 
+</code></pre>
+<p>Set the CONFIG_DEVICE_SOFTWARE_VERSION_NUMBER option. (Component config -&gt; CHIP Device Layer -&gt; Device Identification Options -&gt; Device Software Version Number)</p>
+<p>Software Version String Set the CONFIG_APP_PROJECT_VER option. (Application manager -&gt; Get the project version from Kconfig)</p>
+<p>Ensure to increment that software version number i.e. 2</p>
+<ol type="1" start="4">
+<li>Enable the CONFIG_ENABLE_OTA_REQUESTOR option to enable Matter OTA Requestor function</li>
+</ol>
+<p>(Component config -&gt; CHIP Core -&gt; Enable OTA requestor)</p>
+<pre><code language="language-shell" class="language-shell">idf.py menuconfig
+</code></pre>
+<p>(Component config -&gt; CHIP Device Layer -&gt; Matter OTA image)</p>
+<ol type="1" start="5">
+<li>Build the version &#34;2&#34; software</li>
+</ol>
+<p>Do idf.py build (but dont flash)</p>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+<p>Confirm that the ota image is produced in the build folder such as &#34;build/light-ota.bin&#34;</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Build and pair the OTA providers" duration="10">
+        <ol type="1">
+<li>Build the OTA provider example app in connectedhomeip</li>
+</ol>
+<pre><code language="language-shell" class="language-shell"> scripts/build/build_examples.py \
+    --target linux-x64-ota-provider-ipv6only \
+    build \
+    &amp;&amp; mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/host/chip-ota-provider-app \
+    &amp;&amp; rm -rf out/linux-x64-ota-provider-ipv6only
+    ;; 
+</code></pre>
+<ol type="1" start="2">
+<li>Run the OTA provider app and point it to the ota image you created in the last step.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-ota-provider-app --filepath ~/Projects/starter-esp-matter-app/build/chip-lighting-app-ota.bin 
+</code></pre>
+<ol type="1" start="3">
+<li>Commission / Pair the OTA provider onto the Matter fabric - note it has node id 2</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool pairing onnetwork-long 2 20202021 3840
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Initiate the Over The Air Upgrade" duration="10">
+        <h2 is-upgraded>Announce the OTAProvider</h2>
+<ol type="1">
+<li>Issue the AnnounceOTAProvider command</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool otasoftwareupdaterequestor announce-otaprovider 2 0 0 0 1 0
+</code></pre>
+<p>The OTA Requestor application with node ID 1 will process this command and send a QueryImage command to the OTA Provider with node ID 2, as specified in the AnnounceOTAProvider command.</p>
+<ol type="1" start="2">
+<li>Notice the Access Denied on the OTA provider</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">[1707424999.215964][142792:142792] CHIP:DMG: AccessControl: checking f=1 a=c s=0x0000000000000001 t= c=0x0000_0029 e=0 p=o
+[1707424999.216085][142792:142792] CHIP:DMG: AccessControl: denied
+</code></pre>
+<ol type="1" start="3">
+<li>Install necessary ACL entries. write the ACL attribute with two entries:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool accesscontrol write acl &#39;[{&#34;fabricIndex&#34;: 1, &#34;privilege&#34;: 5, &#34;authMode&#34;: 2, &#34;subjects&#34;: [112233], &#34;targets&#34;: null}, {&#34;fabricIndex&#34;: 1, &#34;privilege&#34;: 3, &#34;authMode&#34;: 2, &#34;subjects&#34;: null, &#34;targets&#34;: [{&#34;cluster&#34;: 41, &#34;endpoint&#34;: null, &#34;deviceType&#34;: null}]}]&#39; 2 0
+</code></pre>
+<p>Entry 1: This is the original entry created as part of commissioning which grants administer privilege to the node ID 112233 (default controller node ID) for all clusters on every endpoint Entry 2: This is the new entry being added which grants operate privileges to all nodes for the OTA Provider cluster (0x0029) on every endpoint</p>
+<p>In the example above, the provider is on fabric index 1 with provider node ID being 2</p>
+<ol type="1" start="4">
+<li>Issue the AnnounceOTAProvider command again</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool otasoftwareupdaterequestor announce-otaprovider 2 0 0 0 1 0
+</code></pre>
+<ol type="1" start="5">
+<li>View the Over The Air Activation</li>
+</ol>
+<p>The OTA should start. Wait for the process to finish. It could take some time!</p>
+<ol type="1" start="6">
+<li>Confirm the new software version</li>
+</ol>
+<p>In the same shell window, we will read the software-version of the Matter accessory using the following command:</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read software-version 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 2
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the switch-app process by using Ctrl-] in the first esp32 monitor window, the light-app process by using Ctrl-] in the second esp32 monitor window and then run idf erase flash.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
