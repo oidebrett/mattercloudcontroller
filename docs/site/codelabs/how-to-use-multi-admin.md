@@ -16,7 +16,6 @@ In this codelab we will show you how to use the Multi Admin feature of the Matte
 ### What You’ll Build 
 In this codelab, you will:
 - Run the Matter light you created on an ESP32
-- Learn how to configure your Matter light to join wifi network at start time
 - Use the chip-tool android app as a Matter controller to act as the first admin.
 - Use the chip-tool on Linux as a Matter controller to act as another admin.
 
