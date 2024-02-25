@@ -1,5 +1,5 @@
 summary: How to provide OTA
-id: how-to-provide-pta
+id: how-to-provide-ota
 categories: Sample
 tags: matter
 status: Published 
@@ -137,7 +137,11 @@ from
 
 ```shell
 # CONFIG_APP_PROJECT_VER_FROM_CONFIG is not set
+```
+
 to
+
+```shell
 CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
 ```
 
@@ -155,20 +159,53 @@ Set the CONFIG_APP_PROJECT_VER option. (Application manager -> Get the project v
 
 Ensure to increment that software version number i.e. 2
 
-4. Enable the CONFIG_ENABLE_OTA_REQUESTOR option to enable Matter OTA Requestor function
+3. Enable the CONFIG_ENABLE_OTA_REQUESTOR option to enable Matter OTA Requestor function
 
 (Component config -> CHIP Core -> Enable OTA requestor)
+
+4. Configure Matter OTA image generation
+
+(Component config -> CHIP Device Layer -> Matter OTA image)
 
 ```shell
 idf.py menuconfig
 ```
 
-(Component config -> CHIP Device Layer -> Matter OTA image)
+5. Make sure to set the CONFIG_APP_PROJECT_VER to "2" in sdkconfig
 
+```shell
+CONFIG_APP_PROJECT_VER="2"
+```
 
-5. Build the version "2" software
+6. Set the PROJECT_VER and PROJECT_VER_NUMBER in CMakeLists.txt to align with the new version.
 
-Do idf.py build (but dont flash)
+```shell
+set(PROJECT_VER "2.0")
+set(PROJECT_VER_NUMBER 2)
+```
+
+7. Build the latest version and flash the Matter light image on to the ESP32 as this image now has the OTA requestor. We do not need to erase the flash before hand as we want to remain paired.
+
+```shell
+idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor 
+```
+
+Confirm the software version number using the chip tool
+
+```shell
+./out/host/chip-tool basicinformation read software-version 1 0
+```
+
+In the output logs, you should see that the Vendor Name
+
+```shell
+[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 2
+```
+
+9. Set the Software Version to version 3
+
+Use the steps above to set the version to 3. Build but DO NOT flash. We will use OTA for loading this onto the ESP32.
 
 ```shell
 idf.py build
@@ -176,6 +213,11 @@ idf.py build
 
 Confirm that the ota image is produced in the build folder such as "build/light-ota.bin"
 
+10. Monitor the ESP32 (but DO NOT flash)
+
+```shell
+idf.py -p /dev/ttyUSB0 monitor 
+```
 
 <!-- ------------------------ -->
 ## Build and pair the OTA providers
@@ -189,7 +231,6 @@ Duration: 10
     build \
     && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/host/chip-ota-provider-app \
     && rm -rf out/linux-x64-ota-provider-ipv6only
-    ;; 
 ```
 
 
@@ -260,7 +301,7 @@ In the same shell window, we will read the software-version of the Matter access
 In the output logs, you should see that the Vendor Name
 
 ```shell
-[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 2
+[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 3
 ```
 
 

@@ -22,7 +22,7 @@
 <body>
   <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
   <google-codelab codelab-gaid=""
-                  id="how-to-provide-pta"
+                  id="how-to-provide-ota"
                   title="How to provide OTA"
                   environment="web"
                   feedback-link="https://mattercoder.com">
@@ -135,8 +135,9 @@ idf.py -p /dev/ttyUSB0 flash monitor
 </ol>
 <p>from</p>
 <pre><code language="language-shell" class="language-shell"># CONFIG_APP_PROJECT_VER_FROM_CONFIG is not set
-to
-CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
+</code></pre>
+<p>to</p>
+<pre><code language="language-shell" class="language-shell">CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
 </code></pre>
 <ol type="1" start="2">
 <li>Set the Software Version With the CONFIG_APP_PROJECT_VER_FROM_CONFIG option enabled, you need to set the version using the following configuration options to set the Software Version:</li>
@@ -146,20 +147,51 @@ CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
 <p>Set the CONFIG_DEVICE_SOFTWARE_VERSION_NUMBER option. (Component config -&gt; CHIP Device Layer -&gt; Device Identification Options -&gt; Device Software Version Number)</p>
 <p>Software Version String Set the CONFIG_APP_PROJECT_VER option. (Application manager -&gt; Get the project version from Kconfig)</p>
 <p>Ensure to increment that software version number i.e. 2</p>
-<ol type="1" start="4">
+<ol type="1" start="3">
 <li>Enable the CONFIG_ENABLE_OTA_REQUESTOR option to enable Matter OTA Requestor function</li>
 </ol>
 <p>(Component config -&gt; CHIP Core -&gt; Enable OTA requestor)</p>
+<ol type="1" start="4">
+<li>Configure Matter OTA image generation</li>
+</ol>
+<p>(Component config -&gt; CHIP Device Layer -&gt; Matter OTA image)</p>
 <pre><code language="language-shell" class="language-shell">idf.py menuconfig
 </code></pre>
-<p>(Component config -&gt; CHIP Device Layer -&gt; Matter OTA image)</p>
 <ol type="1" start="5">
-<li>Build the version &#34;2&#34; software</li>
+<li>Make sure to set the CONFIG_APP_PROJECT_VER to &#34;2&#34; in sdkconfig</li>
 </ol>
-<p>Do idf.py build (but dont flash)</p>
+<pre><code language="language-shell" class="language-shell">CONFIG_APP_PROJECT_VER=&#34;2&#34;
+</code></pre>
+<ol type="1" start="6">
+<li>Set the PROJECT_VER and PROJECT_VER_NUMBER in CMakeLists.txt to align with the new version.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">set(PROJECT_VER &#34;2.0&#34;)
+set(PROJECT_VER_NUMBER 2)
+</code></pre>
+<ol type="1" start="7">
+<li>Build the latest version and flash the Matter light image on to the ESP32 as this image now has the OTA requestor. We do not need to erase the flash before hand as we want to remain paired.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor 
+</code></pre>
+<p>Confirm the software version number using the chip tool</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read software-version 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 2
+</code></pre>
+<ol type="1" start="9">
+<li>Set the Software Version to version 3</li>
+</ol>
+<p>Use the steps above to set the version to 3. Build but DO NOT flash. We will use OTA for loading this onto the ESP32.</p>
 <pre><code language="language-shell" class="language-shell">idf.py build
 </code></pre>
 <p>Confirm that the ota image is produced in the build folder such as &#34;build/light-ota.bin&#34;</p>
+<ol type="1" start="10">
+<li>Monitor the ESP32 (but DO NOT flash)</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 monitor 
+</code></pre>
 
 
       </google-codelab-step>
@@ -173,7 +205,6 @@ CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
     build \
     &amp;&amp; mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/host/chip-ota-provider-app \
     &amp;&amp; rm -rf out/linux-x64-ota-provider-ipv6only
-    ;; 
 </code></pre>
 <ol type="1" start="2">
 <li>Run the OTA provider app and point it to the ota image you created in the last step.</li>
@@ -226,7 +257,7 @@ CONFIG_APP_PROJECT_VER_FROM_CONFIG=y
 <pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read software-version 1 0
 </code></pre>
 <p>In the output logs, you should see that the Vendor Name</p>
-<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 2
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 3
 </code></pre>
 <h2 is-upgraded>Cleaning Up</h2>
 <p>You should stop the switch-app process by using Ctrl-] in the first esp32 monitor window, the light-app process by using Ctrl-] in the second esp32 monitor window and then run idf erase flash.</p>
