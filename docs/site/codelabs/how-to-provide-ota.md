@@ -22,7 +22,7 @@ In this codelab, you will:
 - Use the chip-tool on Linux as a Matter controller to act initiate an Over The Air activation.
 
 ### Architecture
-![alt-architecture-here](assets/matter_esp32_setup.png)
+![alt-architecture-here](assets/matter_ota_provider.png)
 
 In this CodeLab we will run a Matter Latter on a ESP32 microcontroller, the OTA provider on Linux. This will allow us to provide OTA updates and we will learn how to use the OTA feature of the Matter protocol.
 
