@@ -86,7 +86,7 @@ In this section we will pair our ESP32 matter switch application on the ESP32 us
 
 1. On the monitor screen for the esp32 matter light, type the following to display a link to the commissioning QR code:
 ```shell
-matter onboardingcode qrcodeurl
+matter onboardingcodes ble
 ```
 
 This will display a link. Click on the link and a QR code should open on the webpage.
@@ -138,7 +138,7 @@ If everything is working you should see output logs and you should see that the 
 In the same shell window, we will read the vendor-name of the Matter accessory using the following command:
 
 ```shell
-./out/host/chip-tool basicinformation read vendor-name 4 0
+./out/host/chip-tool basicinformation read vendor-name 1 0
 ```
 
 In the output logs, you should see that the Vendor Name
