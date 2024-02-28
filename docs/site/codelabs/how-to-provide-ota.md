@@ -26,7 +26,7 @@ In this codelab, you will:
 
 In this CodeLab we will run a Matter Latter on a ESP32 microcontroller, the OTA provider on Linux. This will allow us to provide OTA updates and we will learn how to use the OTA feature of the Matter protocol.
 
-Note, we will use the Matter lighting sample app from the connectedhomeip repo as this application has built in OTA support.
+Note, we will use the Matter lighting app that we coded in a previous codelab.
 
 ### What You’ll Learn 
 - What you will need (Pre-requisities)
@@ -54,9 +54,11 @@ The total codelab will take approximately a `Duration of 30 minuates` to complet
 ## Flash the Matter Light to an ESP32 
 Duration: 2
 
-You should build the Matter switch in the connectedhomeip rep from
+We will use the Matter light that we built in 
 
-~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32
+```shell
+~/Projects/starter-esp-matter-app
+```
 
 1. The first thing to do is set up the ESP Matter SDK and the ESP-IDF environments (you should do this step everytime you open a new terminal)
 
@@ -71,7 +73,7 @@ source ./export.sh
 2. We will navigate to the Matter Light that you had previously coded.
 
 ```shell
-cd ~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32
+cd ~/Projects/starter-esp-matter-app
 ```
 
 3. You will then build and flash the Matter light image on to the ESP32. But its good practice to erase the flash before hand.
@@ -223,10 +225,12 @@ idf.py -p /dev/ttyUSB0 monitor
 ## Build and pair the OTA providers
 Duration: 10
 
-1. Build the OTA provider example app in connectedhomeip
+1. Open a new terminal and build the OTA provider example app in connectedhomeip
 
 ```shell
- scripts/build/build_examples.py \
+cd  ~/Projects/esp-matter/connectedhomeip/connectedhomeip/
+source scripts/activate.sh 
+scripts/build/build_examples.py \
     --target linux-x64-ota-provider-ipv6only \
     build \
     && mv out/linux-x64-ota-provider-ipv6only/chip-ota-provider-app out/host/chip-ota-provider-app \
@@ -237,7 +241,7 @@ Duration: 10
 2. Run the OTA provider app and point it to the ota image you created in the last step.
 
 ```shell
-./out/host/chip-ota-provider-app --filepath ~/Projects/esp-matter/connectedhomeip/connectedhomeip/examples/lighting-app/esp32/build/chip-lighting-app-ota.bin 
+./out/host/chip-ota-provider-app --filepath ~/Projects/starter-esp-matter-app/build/light-ota.bin 
 ```
 
 3. Commission / Pair the OTA provider onto the Matter fabric - note it has node id 2
@@ -298,7 +302,7 @@ In the same shell window, we will read the software-version of the Matter access
 ./out/host/chip-tool basicinformation read software-version 1 0
 ```
 
-In the output logs, you should see that the Vendor Name
+In the output logs, you should see that the updated Software Version
 
 ```shell
 [1682445848.220725][5128:5130] CHIP:TOO:   SoftwareVersion: 3

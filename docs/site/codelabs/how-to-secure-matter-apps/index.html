@@ -1,0 +1,518 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>How to Secure Matter apps</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="how-to-secure-matter-apps"
+                  title="How to Secure Matter apps"
+                  environment="web"
+                  feedback-link="https://mattercoder.com">
+    
+      <google-codelab-step label="Overview" duration="15">
+        <p>In this codelab we will show you how you can secure your matter apps</p>
+<h2 is-upgraded>What You&#39;ll Build</h2>
+<p>In this codelab, you will:</p>
+<ul>
+<li>Learn about the PKI that is used in Matter</li>
+<li>Learn how to generate new Device Attestation Certificates</li>
+<li>Learn how to hard code DACs in to your matter apps</li>
+<li>Learn how to securely flash DACs in to your matter apps.</li>
+<li>Use the chip-tool on Linux as a Matter controller to control your matter apps.</li>
+</ul>
+<h2 is-upgraded>Architecture</h2>
+<p class="image-container"><img alt="alt-architecture-here" src="img/9d4990f63fa50bc4.png"></p>
+<p>In this CodeLab we will generate new Device Attestation Certificates and use these on our Matter applications.</p>
+<p>Note, we will use the Matter lighting app that we coded in a previous codelab.</p>
+<h2 class="checklist" is-upgraded>What You&#39;ll Learn</h2>
+<ul class="checklist">
+<li>What you will need (Pre-requisities)</li>
+<li>How Digital Attestation Certificates are created</li>
+<li>How to hard code DACs in to the Matter light</li>
+<li>How to use secure partitions for more secure loading of DACs</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="What you will need (Pre-requisities)" duration="2">
+        <p>This set of Codelabs will use <code>Ubuntu 22.04</code> on a Amd64 based architecture.</p>
+<p>You will need</p>
+<ul>
+<li>a ESP32 microcontroller. ESP32 DEV KIT C</li>
+<li>a laptop or PC running <code>Ubuntu 22.04</code> with a Bluetooth interface</li>
+<li>Visual Studio Code IDE</li>
+<li>a basic knowledge of Linux shell commands</li>
+</ul>
+<p>The total codelab will take approximately a <code>Duration of 30 minuates</code> to complete.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create new Certificates for ESP32 matter lighting app example" duration="2">
+        <p>We will use the Matter light that we built in</p>
+<pre><code language="language-shell" class="language-shell">~/Projects/starter-esp-matter-app
+</code></pre>
+<h2 is-upgraded>Create the Certificate Declaration</h2>
+<ol type="1">
+<li>The first thing to do is Export your custom VID/PID as environment variables to decrease chances of clerical error when editing your command arguments:</li>
+</ol>
+<p>export VID=hexVendorId export PID=hexProductId</p>
+<pre><code language="language-shell" class="language-shell">export VID=FFAA
+export PID=FFA1
+
+echo ${VID} 
+echo ${PID} 
+</code></pre>
+<ol type="1" start="2">
+<li>Generate the CD using chip-cert. Currently the Commissioner only validates that the VID and PID match the data exposed elsewhere by the device: the Basic Information Cluster, DAC and DAC origin (when it has it). You may leave the other fields unchanged:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-matter/connectedhomeip/connectedhomeip/
+./out/host/chip-cert gen-cd \
+  --key credentials/test/certification-declaration/Chip-Test-CD-Signing-Key.pem \
+  --cert credentials/test/certification-declaration/Chip-Test-CD-Signing-Cert.pem \
+  --out credentials/test/certification-declaration/Chip-Test-CD-${VID}-${PID}.der \
+  --format-version &#34;1&#34; \
+  --vendor-id &#34;${VID}&#34; \
+  --product-id &#34;${PID}&#34; \
+  --device-type-id &#34;0x1234&#34; \
+  --certificate-id &#34;ZIG20141ZB330001-24&#34; \
+  --security-level &#34;0&#34; \
+  --security-info &#34;0&#34; \
+  --version-number &#34;9876&#34; \
+  --certification-type &#34;0&#34;
+</code></pre>
+<p>Look in the credentials/test/certification-declaration directory.</p>
+<ol type="1" start="3">
+<li>Verify the CD. Make sure it contains your VID/PID (in decimal format):</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-cert print-cd credentials/test/certification-declaration/Chip-Test-CD-${VID}-${PID}.der
+</code></pre>
+<h2 is-upgraded>Generate a PAI and DAC</h2>
+<p>In this example we&#39;ll use Matter&#39;s own test Product Attestation Authority (PAA) certificate and signing key Chip-Test-PAA-NoVID as our root certificate. We&#39;ll use it as the root CA to generate our own PAI and DAC.</p>
+<ol type="1" start="4">
+<li>Generate the PAI</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-cert gen-att-cert --type i \
+  --subject-cn &#34;Matter Test PAI&#34; \
+  --subject-vid &#34;${VID}&#34; \
+  --valid-from &#34;2024-01-01 14:23:43&#34; \
+  --lifetime &#34;4294967295&#34; \
+  --ca-key credentials/test/attestation/Chip-Test-PAA-NoVID-Key.pem \
+  --ca-cert credentials/test/attestation/Chip-Test-PAA-NoVID-Cert.pem \
+  --out-key credentials/test/attestation/&#34;test-PAI-${VID}-key&#34;.pem \
+  --out credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.pem
+</code></pre>
+<ol type="1" start="5">
+<li>Generate the DAC using the PAI:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-cert gen-att-cert --type d \
+  --subject-cn &#34;Matter Test DAC 0&#34; \
+  --subject-vid &#34;${VID}&#34; \
+  --subject-pid &#34;${PID}&#34; \
+  --valid-from &#34;2024-01-01 14:23:43&#34; \
+  --lifetime &#34;4294967295&#34; \
+  --ca-key credentials/test/attestation/&#34;test-PAI-${VID}-key&#34;.pem \
+  --ca-cert credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.pem \
+  --out-key credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-key&#34;.pem \
+  --out credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-cert&#34;.pem
+</code></pre>
+<ol type="1" start="6">
+<li>Verify the DAC, PAI and PAA chain. If no errors appear in the output, it means that the certificate attestation chain is successfully verified:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-cert validate-att-cert \
+--dac credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-cert&#34;.pem \
+--pai credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.pem \
+--paa credentials/test/attestation/Chip-Test-PAA-NoVID-Cert.pem
+</code></pre>
+<ol type="1" start="7">
+<li>Inspect your keys using openssl:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">openssl ec -noout -text -in \
+  credentials/test/attestation/test-DAC-${VID}-${PID}-key.pem
+</code></pre>
+<p>The output should look something like this:</p>
+<pre><code language="language-shell" class="language-shell">read EC key
+Private-Key: (256 bit)
+priv:
+    c9:f2:b3:04:b2:db:0d:6f:cd:c6:be:f3:7b:76:8d:
+    8c:01:4e:0b:9e:ce:3e:72:49:3c:0e:35:63:7c:6c:
+    6c:d6
+pub:
+    04:4f:93:ba:3b:bf:63:90:73:98:76:1e:af:87:79:
+    11:e6:77:e8:e2:df:a7:49:f1:7c:ac:a8:a6:91:76:
+    08:5b:39:ce:6c:72:db:6d:9a:92:b3:ba:05:b0:e8:
+    31:a0:bf:36:50:2b:5c:72:55:7f:11:c8:01:ff:3a:
+    46:b9:19:60:28
+ASN1 OID: prime256v1
+NIST CURVE: P-256
+</code></pre>
+<ol type="1" start="8">
+<li>You may also use openssl to inspect your generated certificates:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell"> openssl x509 -noout -text -in \
+  credentials/test/attestation/test-DAC-${VID}-${PID}-cert.pem
+</code></pre>
+<p>The output should look something like this:</p>
+<pre><code language="language-shell" class="language-shell">Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2875998130766646679 (0x27e9990fef088d97)
+        Signature Algorithm: ecdsa-with-SHA256
+        Issuer: CN = Matter Test PAI, 1.3.6.1.4.1.37244.2.1 = hexVendorId
+
+
+        Validity
+            Not Before: Jun 28 14:23:43 2021 GMT
+            Not After : Dec 31 23:59:59 9999 GMT
+        Subject: CN = Matter Test DAC 0, 1.3.6.1.4.1.37244.2.1 = hexVendorId
+
+, 1.3.6.1.4.1.37244.2.2 = hexProductId
+
+
+            Subject Public Key Info:
+                Public Key Algorithm: id-ecPublicKey
+                    Public-Key: (256 bit)
+                    pub:
+                        04:4f:93:ba:3b:bf:63:90:73:98:76:1e:af:87:79:
+                        11:e6:77:e8:e2:df:a7:49:f1:7c:ac:a8:a6:91:76:
+                        08:5b:39:ce:6c:72:db:6d:9a:92:b3:ba:05:b0:e8:
+                        31:a0:bf:36:50:2b:5c:72:55:7f:11:c8:01:ff:3a:
+                        46:b9:19:60:28
+                    ASN1 OID: prime256v1
+                    NIST CURVE: P-256
+            X509v3 extensions:
+                X509v3 Basic Constraints: critical
+                    CA:FALSE
+                X509v3 Key Usage: critical
+                    Digital Signature
+                X509v3 Subject Key Identifier:
+                    21:0A:CA:B1:B6:5F:17:65:D8:61:19:73:84:1A:9D:52:81:19:C5:39
+                X509v3 Authority Key Identifier:
+                    37:7F:24:9A:73:41:4B:16:6E:6A:42:6E:F5:E8:89:FB:75:F8:77:BB
+        Signature Algorithm: ecdsa-with-SHA256
+        Signature Value:
+            30:45:02:20:38:8f:c5:0d:3e:90:95:dd:7d:7c:e9:5a:05:19:
+            1f:2d:14:08:a3:d7:0e:b5:15:6d:d3:b0:0b:f7:b8:28:4d:bf:
+            02:21:00:d4:05:30:43:a6:05:00:0e:b9:99:0d:34:3d:75:fe:
+            d3:c1:4e:73:ff:e7:05:64:7a:62:8d:2d:38:8f:fd:4d:ad
+</code></pre>
+<p>Note: A similar process could be used for generating a self-signed PAA, but doing so is not necessary.</p>
+<p>Instead, what we&#39;ve done here is to use an existing self-signed development PAA that doesn&#39;t include VID information.</p>
+<p>For more examples of generating a CD, look at credentials/test/gen-test-cds.sh And for more examples of generating a PAA, PAI, and DAC, see credentials/test/gen-test-attestation-certs.sh</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Hard coding the DAC into the Matter Light app" duration="10">
+        <p>In this section we will hard code the DAC certs into the Matter Light</p>
+<h2 is-upgraded>Use a script to generate template code</h2>
+<ol type="1">
+<li>Save the following script into a file called generate-embeddable-certs.sh</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">#!/bin/bash
+
+#
+# generate-embeddable-certs.sh script
+# —----------------------------------
+#
+# This script generates self-minted DAC and PAI.
+# The output may easily be included in your C++ source code.
+#
+
+# Edit this information with your paths and certificates
+folder=&#34;credentials/test/attestation&#34;
+chip_cert_tool=&#34;out/chip-cert&#34;
+cert_file_der=&#34;${folder}/test-PAI-${VID}-cert.der&#34;
+cert_file_pem=&#34;${folder}/test-PAI-${VID}-cert.pem&#34;
+key_file_pem=&#34;${folder}/test-PAI-${VID}-key.pem&#34;
+
+type=&#34;Pai&#34;
+
+printf &#34;namespace chip {\n&#34;
+printf &#34;namespace DevelopmentCerts {\n\n&#34;
+printf &#34;#if CHIP_DEVICE_CONFIG_DEVICE_VENDOR_ID == 0x${VID} &amp;&amp; CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID == 0x${PID}\n\n&#34;
+
+printcert() {
+  # convert cert to DER
+  if [ -f &#34;${cert_file_der}&#34; ]; then
+      rm &#34;${cert_file_der}&#34;
+  fi
+  &#34;${chip_cert_tool}&#34; convert-cert &#34;${cert_file_pem}&#34; &#34;${cert_file_der}&#34; --x509-der
+
+  printf &#34;// ------------------------------------------------------------ \n&#34;
+  printf &#34;// ${type} CERTIFICATE ${cert_file_der} \n\n&#34;
+
+  printf &#34;constexpr uint8_t ${type}_Cert_Array[] = {\n&#34;
+  less -f &#34;${cert_file_der}&#34; | od -t x1 -An | sed &#39;s/\&lt;/0x/g&#39; | sed &#39;s/\&gt;/,/g&#39; | sed &#39;s/^/   /g&#39;
+  printf &#34;};\n\n&#34;
+  printf &#34;ByteSpan k${type}Cert = ByteSpan(${type}_Cert_Array);\n\n&#34;
+
+  printf &#34;// ${type} PUBLIC KEY FROM ${key_file_pem} \n\n&#34;
+
+  printf &#34;constexpr uint8_t ${type}_PublicKey_Array[] = {\n&#34;
+  openssl ec -text -noout -in &#34;${key_file_pem}&#34; 2&gt;/dev/null | sed &#39;/ASN1 OID/d&#39; | sed &#39;/NIST CURVE/d&#39; | sed -n &#39;/pub:/,$p&#39; | sed &#39;/pub:/d&#39; | sed &#39;s/\([0-9a-fA-F][0-9a-fA-F]\)/0x\1/g&#39; | sed &#39;s/:/, /g&#39;
+  printf &#34;};\n\n&#34;
+  printf &#34;ByteSpan k${type}PublicKey = ByteSpan(${type}_PublicKey_Array);\n\n&#34;
+
+  printf &#34;// ${type} PRIVATE KEY FROM ${key_file_pem} \n\n&#34;
+
+  printf &#34;constexpr uint8_t ${type}_PrivateKey_Array[] = {\n&#34;
+  openssl ec -text -noout -in &#34;${key_file_pem}&#34; 2&gt;/dev/null | sed &#39;/read EC key/d&#39; | sed &#39;/Private-Key/d&#39; | sed &#39;/priv:/d&#39; | sed &#39;/pub:/,$d&#39; | sed &#39;s/\([0-9a-fA-F][0-9a-fA-F]\)/0x\1/g&#39; | sed &#39;s/:/, /g&#39;
+  printf &#34;};\n\n&#34;
+  printf &#34;ByteSpan k${type}PrivateKey = ByteSpan(${type}_PrivateKey_Array);\n\n&#34;
+}
+
+# generates PAI
+printcert
+
+type=&#34;Dac&#34;
+cert_file_der=&#34;${folder}/test-DAC-${VID}-${PID}-cert.der&#34;
+cert_file_pem=&#34;${folder}/test-DAC-${VID}-${PID}-cert.pem&#34;
+key_file_pem=&#34;${folder}/test-DAC-${VID}-${PID}-key.pem&#34;
+
+# generates DAC
+printcert
+
+printf &#34;#endif // CHIP_DEVICE_CONFIG_DEVICE_PRODUCT_ID\n&#34;
+printf &#34;} // namespace DevelopmentCerts\n&#34;
+printf &#34;} // namespace chip\n&#34;
+</code></pre>
+<pre><code language="language-shell" class="language-shell">cd  ~/Projects/esp-matter/connectedhomeip/connectedhomeip/src/credentials/examples/
+code ExampleDACs.cpp
+</code></pre>
+<ol type="1" start="2">
+<li>Run the script from the connectedhomeip folder</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">. ../certs/generate-embeddable-certs.sh 
+</code></pre>
+<ol type="1" start="3">
+<li>Edit the ExampleDACs.cpp file.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd  ~/Projects/esp-matter/connectedhomeip/connectedhomeip/src/credentials/examples/
+code ExampleDACs.cpp
+</code></pre>
+<ol type="1" start="3">
+<li>Insert the template code into the very end of DeviceAttestationCredentialsProvider::GetProductAttestationIntermediateCert function</li>
+<li>Replace the CD (certification-declaration)</li>
+</ol>
+<p>Extract a text representation of the contents of your CD file using xxd:</p>
+<pre><code language="language-shell" class="language-shell">xxd -i credentials/test/certification-declaration/Chip-Test-CD-${VID}-${PID}.der
+</code></pre>
+<ol type="1" start="5">
+<li>Edit the ExampleDACProvider::GetCertificationDeclaration, in src/credentials/examples/DeviceAttestationCredsExample.cpp</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">#elif CHIP_DEVICE_CONFIG_DEVICE_VENDOR_ID == 0xFFAA
+    const uint8_t kCdForAllExamples[] = {
+            0x30, 0x81, 0xe9, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01,
+            0x07, 0x02, 0xa0, 0x81, 0xdb, 0x30, 0x81, 0xd8, 0x02, 0x01, 0x03, 0x31,
+            0x0d, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
+            0x02, 0x01, 0x30, 0x45, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
+            0x01, 0x07, 0x01, 0xa0, 0x38, 0x04, 0x36, 0x15, 0x24, 0x00, 0x01, 0x25,
+            0x01, 0xfe, 0xca, 0x36, 0x02, 0x05, 0xce, 0xfa, 0x18, 0x25, 0x03, 0x34,
+            0x12, 0x2c, 0x04, 0x13, 0x5a, 0x49, 0x47, 0x32, 0x30, 0x31, 0x34, 0x31,
+            0x5a, 0x42, 0x33, 0x33, 0x30, 0x30, 0x30, 0x31, 0x2d, 0x32, 0x34, 0x24,
+            0x05, 0x00, 0x24, 0x06, 0x00, 0x25, 0x07, 0x76, 0x98, 0x24, 0x08, 0x00,
+            0x18, 0x31, 0x7d, 0x30, 0x7b, 0x02, 0x01, 0x03, 0x80, 0x14, 0x62, 0xfa,
+            0x82, 0x33, 0x59, 0xac, 0xfa, 0xa9, 0x96, 0x3e, 0x1c, 0xfa, 0x14, 0x0a,
+            0xdd, 0xf5, 0x04, 0xf3, 0x71, 0x60, 0x30, 0x0b, 0x06, 0x09, 0x60, 0x86,
+            0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x30, 0x0a, 0x06, 0x08, 0x2a,
+            0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02, 0x04, 0x47, 0x30, 0x45, 0x02,
+            0x20, 0x53, 0x25, 0x03, 0x2c, 0x96, 0x50, 0xb6, 0x64, 0xf4, 0x18, 0xbf,
+            0x99, 0x47, 0xf8, 0x9d, 0xe6, 0xeb, 0x43, 0x94, 0xf1, 0xce, 0xb2, 0x61,
+            0x00, 0xe0, 0xf9, 0x89, 0xa8, 0x71, 0x82, 0x02, 0x0a, 0x02, 0x21, 0x00,
+            0xea, 0x0a, 0x40, 0xab, 0x87, 0xad, 0x7e, 0x25, 0xe1, 0xa1, 0x6c, 0xb1,
+            0x12, 0xfa, 0x86, 0xfe, 0xea, 0x8a, 0xaf, 0x4b, 0xc1, 0xf3, 0x6f, 0x09,
+            0x85, 0x46, 0x50, 0xb6, 0xd0, 0x55, 0x40, 0xe2
+        };
+};
+#Put this code just before the last else code
+#else  /* Fall back to the VID=0xFFF1 CD */
+</code></pre>
+<p>If everything is working you should be able to build and flash the new matter light app</p>
+<h2 is-upgraded>Build and Flash</h2>
+<p>Now build the example - note best to do a full clean and remove the build directory</p>
+<pre><code language="language-shell" class="language-shell">idf.py clean
+idf.py fullclean
+rm -rf build
+
+idf.py set-target esp32
+idf.py build
+idf.py -p /dev/ttyUSB0 erase-flash
+idf.py -p /dev/ttyUSB0 flash monitor
+</code></pre>
+<p>Now try to pair the device using the chip-tool</p>
+<pre><code language="language-shell" class="language-shell">cd connectedhomeip
+rm -rf /tmp/chip*
+./out/host/chip-tool pairing ble-wifi 1 &lt;SSID&gt; &lt;PASSWORD&gt; 20202021 3840
+</code></pre>
+<p>Check that pairing worked by reading basic information</p>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vendor-name 1 0
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Generate PKI credentials for ESP32 matter devices in esp_secure_cert partition" duration="10">
+        <p>In this section, we will generate PKI credentials for ESP32 matter devices and store them in esp_secure_cert partition</p>
+<ol type="1">
+<li>Change format for the certificates and key (.pem to .der format).</li>
+</ol>
+<p>Convert DAC key from .pem to .der format.</p>
+<pre><code language="language-shell" class="language-shell">openssl ec -in credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-key&#34;.pem -out credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-key&#34;.der -inform pem -outform der
+</code></pre>
+<p>Convert DAC and PAI cert from .pem to .der format</p>
+<pre><code language="language-shell" class="language-shell">openssl x509 -in credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-cert&#34;.pem -out credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-cert&#34;.der -inform pem -outform der
+openssl x509 -in credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.pem -out credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.der -inform pem -outform der
+</code></pre>
+<ol type="1" start="2">
+<li>Generate and flash the secure partition The following command generates the secure cert partition and flashes it to the connected device. Additionally, it preserves the generated partition on the host, allowing it to be flashed later if the entire flash is erased.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">configure_esp_secure_cert.py --private-key credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-key&#34;.der \
+    --device-cert credentials/test/attestation/&#34;test-DAC-${VID}-${PID}-cert&#34;.der \
+    --ca-cert credentials/test/attestation/&#34;test-PAI-${VID}-cert&#34;.der \
+    --target_chip esp32 \
+    --keep_ds_data_on_host \
+    --port /dev/ttyUSB0 \
+    --priv_key_algo ECDSA 256
+</code></pre>
+<p>You should notice that a new esp_secure_cert_data folder is created with the esp secure cert file.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure the esp Matter light application to use the secure certificates" duration="10">
+        <p>We must now set up the configuration</p>
+<ol type="1">
+<li>Edit the sdkconfig file and add the following code:</li>
+</ol>
+<pre><code language="language-shell" class="language-shell"># Disable the DS Peripheral support
+CONFIG_ESP_SECURE_CERT_DS_PERIPHERAL=n
+
+# Use DAC Provider implementation which reads attestation data from secure cert partition
+CONFIG_SEC_CERT_DAC_PROVIDER=y
+
+# Enable some options which reads CD and other basic info from the factory partition
+CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER=y
+CONFIG_ENABLE_ESP32_DEVICE_INSTANCE_INFO_PROVIDER=y
+CONFIG_FACTORY_COMMISSIONABLE_DATA_PROVIDER=y
+CONFIG_FACTORY_DEVICE_INSTANCE_INFO_PROVIDER=y
+</code></pre>
+<ol type="1" start="2">
+<li>Run idf.py menuconfig to confirm the settings</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py menuconfig
+</code></pre>
+<ol type="1" start="3">
+<li>Build the applicaton</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py build
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Factory Partition" duration="2">
+        <p>We will not set up the Factory partition which contains basic information like VID, PID, etc, and CD.</p>
+<ol type="1">
+<li>Export the dependent tools path</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">cd esp-matter/tools/mfg_tool
+export PATH=$PATH:$PWD/../../connectedhomeip/connectedhomeip/out/host
+</code></pre>
+<p>Generate the factory partition, please use the APPROPRIATE values for -v (Vendor Id), -p (Product Id), and -cd (Certification Declaration).</p>
+<pre><code language="language-shell" class="language-shell">./mfg_tool.py --passcode 89674523 \
+              --discriminator 2245 \
+              -cd TEST_CD_FFF1_8001.der \
+              -v 0xFFF1 --vendor-name Espressif \
+              -p 0x8001 --product-name Bulb \
+              --hw-ver 1 --hw-ver-str DevKit
+</code></pre>
+<p>Few important output lines are mentioned below. Please take a note of onboarding codes, these can be used for commissioning the device.</p>
+<pre><code language="language-shell" class="language-shell">[2024-12-02 11:18:12,059] [   INFO] - Generated QR code: MT:-24J06PF150QJ850Y10
+[2024-12-02 11:18:12,059] [   INFO] - Generated manual code: 20489154736
+Factory partition binary will be generated at the below path. Please check for &lt;uuid&gt;.bin file in this directory.
+
+[2024-12-02 11:18:12,381] [   INFO] - Generated output files at: out/fff1_8001/e17c95e1-521e-4979-b90b-04d
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Flashing firmware, secure cert and factory partition" duration="10">
+        <ol type="1">
+<li>Flash secure cert partition. Please check partition table for esp_secure_cert partition address.</li>
+</ol>
+<p>Note: Flash only if not flashed on manufacturing line.</p>
+<pre><code language="language-shell" class="language-shell">esptool.py -p (PORT) write_flash 0xd000 ~/Projects/esp-matter/connectedhomeip/connectedhomeip/esp_secure_cert_data/esp_secure_cert.bin
+</code></pre>
+<ol type="1" start="2">
+<li>Flash factory partition, Please check the CONFIG_CHIP_FACTORY_NAMESPACE_PARTITION_LABEL for factory partition label. Then check the partition table for address and flash at that address.</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">esptool.py -p (PORT) write_flash 0x10000 path/to/partition/generated/using/mfg_tool/uuid.bin
+</code></pre>
+<ol type="1" start="3">
+<li>Flash application</li>
+</ol>
+<pre><code language="language-shell" class="language-shell">idf.py -p (PORT) flash
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Confirm Attestation" duration="0">
+        <p>Confirm that the device can be provisioned on to the matter fabric using the chip tool</p>
+<pre><code language="language-shell" class="language-shell">cd connectedhomeip
+rm -rf /tmp/chip*
+./out/host/chip-tool pairing ble-wifi 1 &lt;SSID&gt; &lt;PASSWORD&gt; 89674523 2245
+</code></pre>
+<pre><code language="language-shell" class="language-shell">./out/host/chip-tool basicinformation read vandor-name 1 0
+</code></pre>
+<p>In the output logs, you should see that the Vendor Name</p>
+<pre><code language="language-shell" class="language-shell">[1682445848.220725][5128:5130] CHIP:TOO:   VendorName: TEST_VENDOR
+</code></pre>
+<h2 is-upgraded>Cleaning Up</h2>
+<p>You should stop the switch-app process by using Ctrl-] in the first esp32 monitor window, the light-app process by using Ctrl-] in the second esp32 monitor window and then run idf erase flash.</p>
+<p>It also a great habit to clean up the temporary files after you finish testing by using this command:</p>
+<pre><code language="language-shell" class="language-shell">rm -fr /tmp/chip_*
+</code></pre>
+<p>Note: removing the /tmp/chip* files can sometimes clear up unexpected behaviours.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Further Information" duration="1">
+        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+<p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
