@@ -382,6 +382,7 @@ idf.py fullclean
 rm -rf build
 
 idf.py set-target esp32
+idf.py menuconfig #set the vendor id to VID and product id to PID
 idf.py build
 idf.py -p /dev/ttyUSB0 erase-flash
 idf.py -p /dev/ttyUSB0 flash monitor
