@@ -254,7 +254,7 @@ In this section we will hard code the DAC certs into the Matter Light
 
 # Edit this information with your paths and certificates
 folder="credentials/test/attestation"
-chip_cert_tool="out/chip-cert"
+chip_cert_tool="out/host/chip-cert"
 cert_file_der="${folder}/test-PAI-${VID}-cert.der"
 cert_file_pem="${folder}/test-PAI-${VID}-cert.pem"
 key_file_pem="${folder}/test-PAI-${VID}-key.pem"
