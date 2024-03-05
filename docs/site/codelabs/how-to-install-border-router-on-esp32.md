@@ -89,67 +89,47 @@ Make note of this device.
 2. Then, temporarily, disconnect the TX pin from the ESP32. I have found that leaving this connected prevents the 
 flashing of the ESP32-H2 board.
 
-3. Before building any matter app or controller we will need to create and initialise
-the environment
-
-Run the following commands
-```shell
-cd ~/Projects/connectedhomeip
-source scripts/activate.sh
-```
-
-If everything has gone ok with the environment setup you should see:
+3. We need to initialize the esp-idf environment
 
 ```shell
-Checking the environment:
-
-20250423 16:49:39 INF Environment passes all checks!
-
-Environment looks good, you are ready to go!
-```
-
-4. We need to install the esp-idf environment
-
-```shell
-cd ~/tools/esp-idf #or where you located your esp-idf environment
-./install.sh
+cd ~/Projects/esp-idf #or where you located your esp-idf environment
 source ./export.sh
 ```
 
-5. We will then navigate to the Espressif Open Thread Radio Co-Processor example.
+4. We will then navigate to the Espressif Open Thread Radio Co-Processor example.
 ```shell
 cd examples/openthread/ot_rcp 
 ```
 
-6. Set the esp target to be the esp32h2
+5. Set the esp target to be the esp32h2
 ```shell
 idf.py set-target esp32h2
 ```
 
-7. Build the ot_br example for the esp32-h2
+6. Build the ot_br example for the esp32-h2
 ```shell
 idf.py build
 ```
 
-8. If everything worked OK you should see an  Executable Linkable Format file called `esp_ot_rcp.elf` in the `build` directory
+7. If everything worked OK you should see an  Executable Linkable Format file called `esp_ot_rcp.elf` in the `build` directory
 
 Note: if you run into any difficulties in can be useful to clean up the temporary build folder using `rm -rf build` as this can often solve some build issues.
 
-9. Adding User to dialout or uucp on Linux
+8. Adding User to dialout or uucp on Linux
 The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:
 
 ```shell
 sudo usermod -a -G dialout $USER
 ```
 
-10. Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand
+9. Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand
 
 ```shell
 idf.py -p /dev/ttyUSB0 erase_flash # replace the ttyUSB0 with the correct USB device from above
 idf.py -p /dev/ttyUSB0 flash monitor 
 ```
 
-11. Finally, reconnect the TX pin from the ESP32. This is important.
+10. Finally, reconnect the TX pin from the ESP32. This is important.
 
 
 
@@ -174,7 +154,7 @@ follow the steps on the previous page.
 
 2. We will then navigate to the Espressif Open Thread Border Router example
 ```shell
-cd ~/tools/esp-idf #or where you located your esp-idf environment
+cd ~/Projects/esp-idf #or where you located your esp-idf environment
 cd examples/openthread/ot_br
 ```
 
@@ -221,7 +201,7 @@ follow the steps on the previous page.
 
 2. We will then navigate to the Espressif Open Thread CLI example
 ```shell
-cd ~/tools/esp-idf #or where you located your esp-idf environment
+cd ~/Projects/esp-idf #or where you located your esp-idf environment
 cd examples/openthread/ot_cli
 ```
 
