@@ -95,6 +95,19 @@ yarn rw server
 SVCUID=<FROMSTEP1>  AWS_GG_NUCLEUS_DOMAIN_SOCKET_FILEPATH_FOR_COMPONENT=/greengrass/v2/ipc.socket python3 -u ./src/component/mcc-daemon/src/iotMatterController.py -p /home/ivob/Projects/python-matter-server  -l True -w http://localhost:8910/ -g .netlify/functions/
 ```
 
+7. Pair a smart siwtch using the google home app. Open commissioning window. And then use the send command within controllers
+
+```
+{
+  "message_id": "4810162",
+  "command": "commission_with_code",
+  "args": {
+    "code": "2250-9246-643"
+  }
+}
+```
+8. Run the python matter server dashboard using http://localhost:5010
+
 ## Using AWS for iot rules
 
 1. Create the following iot Rules

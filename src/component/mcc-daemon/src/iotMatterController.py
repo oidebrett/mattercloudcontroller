@@ -79,7 +79,7 @@ parser.add_argument("-s", "--stop", help="true to stop at first resolve fail", a
 parser.add_argument("-p", "--pythonserverpath", help="provide path to auto start the python matter server if not already started", action="store", default="/home/ggc_user/python-matter-server/")
 parser.add_argument("-l", "--local", help="true to notify local host of shadow changes", action="store", default="False")
 parser.add_argument("-w", "--webhook", help="the webhook for the local host", action="store", default="http://localhost:8911/")
-parser.add_argument("-g", "--graphql", help="the GraphQL endpoint for the local host (e.g. .netlify/functions/graphql/)", action="store", default="")
+parser.add_argument("-g", "--graphql", help="the GraphQL endpoint for the local host (e.g. .netlify/functions/)", action="store", default="")
 parser.add_argument("--log-level", type=str, default="info", help="Provide logging level. Example --log-level debug, default=info, possible=(critical, error, warning, info, debug)")
 
 #Set up the variables from the arguments (and defaults)
@@ -316,6 +316,25 @@ def respond(event, loop):
     response.qos = QOS.AT_MOST_ONCE
     response_op = ipc_client.new_publish_to_iot_core()
     response_op.activate(response)
+
+#######################################################################################
+##
+## The following is used to handle errors in the loop / threads
+##
+#######################################################################################
+
+def _global_loop_exception_handler(context,exception) -> None:
+    lPrint("<*****************************************************************************************>")
+    """Handle all exception inside the core loop."""
+    if exception['message'] == 'Unclosed client session':
+        print("Got _global_loop_exception_handler: Should we close the running loop or leave it running?")
+    lPrint("</*****************************************************************************************>")
+
+#######################################################################################
+##
+## The following is code used for the IoT Core handlers
+##
+#######################################################################################
 
 #Start of the code that is not used for local testing
 if not LOCAL_TEST:
@@ -681,9 +700,9 @@ async def OnNodeChange(node_id, node_result)-> None:
             }
             #lPrint(json.dumps(message_object))
 
-            loop = asyncio.get_event_loop()
-            loop.create_task(queue.put(json.dumps(message_object)))
-            loop.create_task(asyncio.sleep(0.1))
+            node_change_loop = asyncio.get_event_loop()
+            node_change_loop.create_task(queue.put(json.dumps(message_object)))
+            node_change_loop.create_task(asyncio.sleep(0.1))
 
     lPrint("we will subscribe to attribute changes")
     #This is a node event so we will 
@@ -783,9 +802,9 @@ def subscribe_to_shadow_deltas(thing_name):
             #But we will leave this here in case we want to do something when the shadow changes
             lPrint("Setting up the Shadow Subscription for: " + shadow)
             # Setup the Shadow Subscription
-            loop = asyncio.get_event_loop()
+            shadow_loop = asyncio.get_event_loop()
             # Setup the MQTT Subscription
-            handler = SubHandler(shadow, loop)
+            handler = SubHandler(shadow, shadow_loop)
             subscribeToTopic(subscribe_shadow_delta_topic, handler)
 
             if LOCAL_ARG: #This code is only if we run the controller with local mode enabled (i.e. -l True)
@@ -821,14 +840,15 @@ def delete_all_shadows(thing_name):
 
 async def mainLoopTask(ws:ClientWebSocketResponse):
     loop = asyncio.get_running_loop()
+    loop.set_exception_handler(_global_loop_exception_handler)
     running = True
     
     if not LOCAL_TEST:
         lPrint("Setting up the MQTT Subscription for MQTT stream")
         # Get the current running loop
-        loop = asyncio.get_event_loop()
+        mqttLoop = asyncio.get_event_loop()
         # Setup the MQTT Subscription
-        handler = StreamHandler(loop)
+        handler = StreamHandler(mqttLoop)
         subscribeToTopic(REQUEST_TOPIC, handler)
 
         #Remove all the named shadows at start up
@@ -895,9 +915,9 @@ async def websocketListenTask(ws):
 
                     #We will now execute any callbacks
                     if message_response["message_id"] in callbacks_per_message_id:
-                        loop = asyncio.get_event_loop()
+                        event_loop = asyncio.get_event_loop()
                         node_id, cb_function = callbacks_per_message_id[message_response["message_id"]]
-                        cb_function(loop, node_id, message_response)
+                        cb_function(event_loop, node_id, message_response)
                         callbacks_per_message_id.pop(message_response["message_id"]) #remove the callback
 
                     #check that we have results before processing them
