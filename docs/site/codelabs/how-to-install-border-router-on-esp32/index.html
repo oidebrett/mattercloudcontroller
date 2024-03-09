@@ -103,57 +103,42 @@
 <p>Make note of this device.</p>
 <ol type="1" start="2">
 <li>Then, temporarily, disconnect the TX pin from the ESP32. I have found that leaving this connected prevents the flashing of the ESP32-H2 board.</li>
-<li>Before building any matter app or controller we will need to create and initialise the environment</li>
+<li>We need to initialize the esp-idf environment</li>
 </ol>
-<p>Run the following commands</p>
-<pre><code language="language-shell" class="language-shell">cd ~/Projects/connectedhomeip
-source scripts/activate.sh
-</code></pre>
-<p>If everything has gone ok with the environment setup you should see:</p>
-<pre><code language="language-shell" class="language-shell">Checking the environment:
-
-20250423 16:49:39 INF Environment passes all checks!
-
-Environment looks good, you are ready to go!
-</code></pre>
-<ol type="1" start="4">
-<li>We need to install the esp-idf environment</li>
-</ol>
-<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
-./install.sh
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-idf #or where you located your esp-idf environment
 source ./export.sh
 </code></pre>
-<ol type="1" start="5">
+<ol type="1" start="4">
 <li>We will then navigate to the Espressif Open Thread Radio Co-Processor example.</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">cd examples/openthread/ot_rcp 
 </code></pre>
-<ol type="1" start="6">
+<ol type="1" start="5">
 <li>Set the esp target to be the esp32h2</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py set-target esp32h2
 </code></pre>
-<ol type="1" start="7">
+<ol type="1" start="6">
 <li>Build the ot_br example for the esp32-h2</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py build
 </code></pre>
-<ol type="1" start="8">
+<ol type="1" start="7">
 <li>If everything worked OK you should see an  Executable Linkable Format file called <code>esp_ot_rcp.elf</code> in the <code>build</code> directory</li>
 </ol>
 <p>Note: if you run into any difficulties in can be useful to clean up the temporary build folder using <code>rm -rf build</code> as this can often solve some build issues.</p>
-<ol type="1" start="9">
+<ol type="1" start="8">
 <li>Adding User to dialout or uucp on Linux The currently logged user should have read and write access the serial port over USB. On most Linux distributions, this is done by adding the user to dialout group with the following command:</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">sudo usermod -a -G dialout $USER
 </code></pre>
-<ol type="1" start="10">
+<ol type="1" start="9">
 <li>Finally, you will then flash the image on to the ESP32-H2. But its good practice to erase the flash before hand</li>
 </ol>
 <pre><code language="language-shell" class="language-shell">idf.py -p /dev/ttyUSB0 erase_flash # replace the ttyUSB0 with the correct USB device from above
 idf.py -p /dev/ttyUSB0 flash monitor 
 </code></pre>
-<ol type="1" start="11">
+<ol type="1" start="10">
 <li>Finally, reconnect the TX pin from the ESP32. This is important.</li>
 </ol>
 
@@ -173,7 +158,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <ol type="1" start="2">
 <li>We will then navigate to the Espressif Open Thread Border Router example</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-idf #or where you located your esp-idf environment
 cd examples/openthread/ot_br
 </code></pre>
 <ol type="1" start="3">
@@ -213,7 +198,7 @@ idf.py -p /dev/ttyUSB1 flash monitor
 <ol type="1" start="2">
 <li>We will then navigate to the Espressif Open Thread CLI example</li>
 </ol>
-<pre><code language="language-shell" class="language-shell">cd ~/tools/esp-idf #or where you located your esp-idf environment
+<pre><code language="language-shell" class="language-shell">cd ~/Projects/esp-idf #or where you located your esp-idf environment
 cd examples/openthread/ot_cli
 </code></pre>
 <ol type="1" start="3">

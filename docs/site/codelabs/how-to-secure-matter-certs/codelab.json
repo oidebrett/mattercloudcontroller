@@ -3,13 +3,13 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2024-01-06T11:08:42Z",
-  "id": "how-to-develop-on-wsl",
-  "duration": 39,
-  "title": "How to Develop Matter on WSL2",
+  "updated": "2024-02-29T16:18:11Z",
+  "id": "how-to-secure-matter-certs",
+  "duration": 62,
+  "title": "How to Secure Matter Certs",
   "authors": "MatterCoder",
-  "summary": "How to Develop for Matter on WSL",
-  "source": "how-to-develop-on-wsl.md",
+  "summary": "How to secure Matter certs",
+  "source": "how-to-secure-matter.md",
   "theme": "",
   "status": [
     "published"
@@ -21,5 +21,5 @@
     "matter"
   ],
   "feedback": "https://mattercoder.com",
-  "url": "how-to-develop-on-wsl"
+  "url": "how-to-secure-matter-certs"
 }
