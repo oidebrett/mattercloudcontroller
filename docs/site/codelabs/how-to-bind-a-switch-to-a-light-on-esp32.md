@@ -107,6 +107,9 @@ If everything is working you should see output logs and you should see that the 
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 ```
 
+Note: If you run into problems using the chip-tool with BLE on Mac, please follow the directions on the [Matter SDK repo documentation here](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/darwin.md#using-chip-tool-on-macos-or-chip-tool-on-ios). In particular, you have to have the Bluetooth Central Matter Client Developer mode profile installed. 
+
+
 3. Now that we have created a secure relationship by "commissioning" the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the "interaction model" and "data model" of Matter in later codelabs. But for now, we will do some simple interactions.
 
 In the same shell window, we will read the vendor-name of the Matter accessory using the following command:
@@ -192,7 +195,7 @@ After commissioning, the next step is to bind Matter device (Light) with the Mat
 
 1. Set up the Access Control on the Matter Light
 
-Utilizing chip-tool to write access control to the Matter light device in order to control through ESP-BOX Matter Switch.
+Utilizing chip-tool to write access control to the Matter light device in order to control through the Matter Switch.
 
 For Light:
 

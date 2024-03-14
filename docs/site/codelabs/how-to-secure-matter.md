@@ -402,6 +402,8 @@ Check that pairing worked by reading basic information
 ./out/host/chip-tool basicinformation read vendor-name 1 0
 ```
 
+Note: If you run into problems using the chip-tool with BLE on Mac, please follow the directions on the [Matter SDK repo documentation here](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/darwin.md#using-chip-tool-on-macos-or-chip-tool-on-ios). In particular, you have to have the Bluetooth Central Matter Client Developer mode profile installed. 
+
 <!-- ------------------------ -->
 ## Generate PKI credentials for ESP32 matter devices in esp_secure_cert partition
 Duration: 10

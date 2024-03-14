@@ -183,6 +183,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 </code></pre>
+<p>Note: If you run into problems using the chip-tool with BLE on Mac, please follow the directions on the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/darwin.md#using-chip-tool-on-macos-or-chip-tool-on-ios" target="_blank">Matter SDK repo documentation here</a>. In particular, you have to have the Bluetooth Central Matter Client Developer mode profile installed.</p>
 <ol type="1" start="3">
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
 </ol>
@@ -223,7 +224,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
       </google-codelab-step>
     
       <google-codelab-step label="Further Information" duration="1">
-        <p>Checkout the official documentation [Espressif Matter SDK documentation here: ] (https://docs.espressif.com/projects/esp-matter/en/latest/esp32/)</p>
+        <p>Checkout the official documentation <a href="https://docs.espressif.com/projects/esp-matter/en/latest/esp32/" target="_blank">Espressif Matter SDK documentation here:</a></p>
 <p>Also check out the Project CHIP Matter SDK repo <a href="https://github.com/project-chip/connectedhomeip/tree/master/docs" target="_blank">Project Chip - ConnectedHomeIp</a></p>
 
 

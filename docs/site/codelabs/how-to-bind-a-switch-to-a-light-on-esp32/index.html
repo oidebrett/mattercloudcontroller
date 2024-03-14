@@ -109,6 +109,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 </code></pre>
+<p>Note: If you run into problems using the chip-tool with BLE on Mac, please follow the directions on the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/darwin.md#using-chip-tool-on-macos-or-chip-tool-on-ios" target="_blank">Matter SDK repo documentation here</a>. In particular, you have to have the Bluetooth Central Matter Client Developer mode profile installed.</p>
 <ol type="1" start="3">
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller. We will get into further details  of the &#34;interaction model&#34; and &#34;data model&#34; of Matter in later codelabs. But for now, we will do some simple interactions.</li>
 </ol>
@@ -174,7 +175,7 @@ idf.py -p /dev/ttyUSB1 flash monitor
 <ol type="1">
 <li>Set up the Access Control on the Matter Light</li>
 </ol>
-<p>Utilizing chip-tool to write access control to the Matter light device in order to control through ESP-BOX Matter Switch.</p>
+<p>Utilizing chip-tool to write access control to the Matter light device in order to control through the Matter Switch.</p>
 <p>For Light:</p>
 <pre><code language="language-shell" class="language-shell">./chip-tool accesscontrol write acl &#39;[{&#34;fabricIndex&#34;: 1, &#34;privilege&#34;: 5, &#34;authMode&#34;: 2, &#34;subjects&#34;: [ 112233, 4 ], &#34;targets&#34;: null}]&#39; 1 0x0
 </code></pre>

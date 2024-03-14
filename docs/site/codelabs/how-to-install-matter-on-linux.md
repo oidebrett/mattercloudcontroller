@@ -103,6 +103,7 @@ the environment
 Run the following commands
 ```shell
 cd ~/Projects/connectedhomeip
+source scripts/bootstrap.sh
 source scripts/activate.sh
 ```
 

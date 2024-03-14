@@ -117,6 +117,7 @@ idf.py -p /dev/ttyUSB0 flash monitor
 <pre><code language="language-shell" class="language-shell">[1683309736.149316][15:17] CHIP:CTL: Successfully finished commissioning step &#39;Cleanup&#39;
 [1683309736.149405][15:17] CHIP:TOO: Device commissioning completed with success
 </code></pre>
+<p>Note: If you run into problems using the chip-tool with BLE on Mac, please follow the directions on the <a href="https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/darwin.md#using-chip-tool-on-macos-or-chip-tool-on-ios" target="_blank">Matter SDK repo documentation here</a>. In particular, you have to have the Bluetooth Central Matter Client Developer mode profile installed.</p>
 <ol type="1" start="3">
 <li>Now that we have created a secure relationship by &#34;commissioning&#34; the matter accessory we will now do some simple interaction with the Matter Accessory using the chip-tool as a Matter controller.</li>
 </ol>
